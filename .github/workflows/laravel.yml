@@ -35,13 +35,15 @@ jobs:
           extensions: mbstring, intl, pdo_mysql
           coverage: none
 
-      - name: Copy .env
+      # 1) Composer install FIRST
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      # 2) Then copy .env and generate key
+      - name: Prepare environment
         run: |
           cp .env.example .env
           php artisan key:generate
-
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Clear config cache
         run: php artisan config:clear
