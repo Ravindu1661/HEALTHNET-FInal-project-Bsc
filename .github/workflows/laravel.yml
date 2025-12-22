@@ -1,4 +1,4 @@
-name: Laravel (MySQL)
+name: Laravel CI (MySQL)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  laravel-tests:
+  tests:
     runs-on: ubuntu-latest
 
     services:
@@ -40,15 +40,16 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Install Dependencies
+      - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Clear config cache
         run: php artisan config:clear
 
-      - name: Run migrations (MySQL)
+      - name: Run migrations
         run: php artisan migrate --force
         env:
+          APP_ENV: testing
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -56,9 +57,10 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
 
-      - name: Run tests (MySQL)
+      - name: Run tests
         run: php artisan test
         env:
+          APP_ENV: testing
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
