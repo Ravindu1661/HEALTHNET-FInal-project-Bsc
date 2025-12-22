@@ -1,4 +1,4 @@
-name: Laravel CI (MySQL)
+name: HEALTHNET CI (MySQL)
 
 on:
   push:
@@ -25,9 +25,11 @@ jobs:
           --health-retries=3
 
     steps:
+      # 1. Repo checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. PHP setup (Laravel + MySQL)
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -35,17 +37,21 @@ jobs:
           extensions: mbstring, intl, pdo_mysql
           coverage: none
 
+      # 3. Composer dependencies
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-suggest
 
+      # 4. Env file + app key
       - name: Prepare environment
         run: |
           cp .env.example .env
           php artisan key:generate
 
+      # 5. Config cache clear
       - name: Clear config cache
         run: php artisan config:clear
 
+      # 6. Run database migrations on MySQL service
       - name: Run migrations
         run: php artisan migrate --force
         env:
@@ -57,6 +63,7 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
 
+      # 7. Run Laravel/Pest tests
       - name: Run tests
         run: php artisan test
         env:
