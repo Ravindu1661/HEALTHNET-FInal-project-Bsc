@@ -515,7 +515,6 @@
     </div>
 </section>
 
-
 {{-- Health Events & Campaigns Section --}}
 <section class="health-events-section">
     <div class="container">
@@ -525,69 +524,292 @@
                 <h2 class="section-title">Health Events & Campaigns</h2>
                 <p class="section-desc">Join health camps and awareness programs near you</p>
             </div>
-            <a href="#" class="btn-view-all-link">
-                <span>View All Events</span>
-                <i class="fas fa-arrow-right"></i>
-            </a>
         </div>
 
-        <div class="events-grid">
-            {{-- Event Card 1 --}}
-            <div class="event-card" data-aos="fade-up">
-                <div class="event-date-badge">
-                    <span class="date-day">25</span>
-                    <span class="date-month">DEC</span>
-                </div>
-                <div class="event-content">
-                    <span class="event-category event-cat-camp">Health Camp</span>
-                    <h3>Free Diabetes Screening</h3>
-                    <p>Complete health checkup with blood sugar and HbA1c tests</p>
-                    <div class="event-meta">
-                        <span><i class="fas fa-map-marker-alt"></i> Colombo General Hospital</span>
-                        <span><i class="fas fa-clock"></i> 9:00 AM - 4:00 PM</span>
-                    </div>
-                    <a href="#" class="btn-event-register">Register Now</a>
-                </div>
-            </div>
+        <div class="events-grid-modern">
+            @php
+                $announcements = $activeAnnouncements ?? [];
+            @endphp
 
-            {{-- Event Card 2 --}}
-            <div class="event-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="event-date-badge event-date-green">
-                    <span class="date-day">28</span>
-                    <span class="date-month">DEC</span>
-                </div>
-                <div class="event-content">
-                    <span class="event-category event-cat-awareness">Awareness</span>
-                    <h3>Heart Health Seminar</h3>
-                    <p>Learn about cardiovascular health and prevention strategies</p>
-                    <div class="event-meta">
-                        <span><i class="fas fa-map-marker-alt"></i> Asiri Hospital Auditorium</span>
-                        <span><i class="fas fa-clock"></i> 2:00 PM - 5:00 PM</span>
-                    </div>
-                    <a href="#" class="btn-event-register">Register Now</a>
-                </div>
-            </div>
+            @if(count($announcements) > 0)
+                @foreach($announcements as $announcement)
+                    @if($announcement && is_object($announcement))
+                        @php
+                            // Safely get properties with defaults
+                            $announcementTitle = $announcement->title ?? 'Untitled Event';
+                            $announcementContent = $announcement->content ?? 'No description available';
+                            $announcementType = $announcement->announcement_type ?? 'general';
+                            $imagePath = $announcement->image_path ?? null;
+                            $startDate = $announcement->start_date ?? null;
+                            $endDate = $announcement->end_date ?? null;
+                            $publisherType = $announcement->publisher_type ?? 'admin';
 
-            {{-- Event Card 3 --}}
-            <div class="event-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="event-date-badge event-date-purple">
-                    <span class="date-day">02</span>
-                    <span class="date-month">JAN</span>
+                            // Get display date
+                            if ($startDate) {
+                                try {
+                                    $displayDate = \Carbon\Carbon::parse($startDate);
+                                } catch (\Exception $e) {
+                                    $displayDate = now();
+                                }
+                            } else {
+                                $displayDate = now();
+                            }
+
+                            // Badge color
+                            $badgeColorClass = 'date-badge-blue';
+                            if (in_array($announcementType, ['healthcamp', 'awareness'])) {
+                                $badgeColorClass = 'date-badge-blue';
+                            } elseif (in_array($announcementType, ['specialoffer', 'newservice'])) {
+                                $badgeColorClass = 'date-badge-purple';
+                            } elseif ($announcementType === 'emergency') {
+                                $badgeColorClass = 'date-badge-red';
+                            }
+
+                            // Type badge styling
+                            $typeBadgeClass = 'event-type-blue';
+                            if (in_array($announcementType, ['healthcamp', 'awareness'])) {
+                                $typeBadgeClass = 'event-type-blue';
+                            } elseif (in_array($announcementType, ['specialoffer', 'newservice'])) {
+                                $typeBadgeClass = 'event-type-purple';
+                            } elseif ($announcementType === 'emergency') {
+                                $typeBadgeClass = 'event-type-red';
+                            } elseif ($announcementType === 'general') {
+                                $typeBadgeClass = 'event-type-gray';
+                            }
+
+                            // Placeholder color
+                            $placeholderColors = [
+                                'healthcamp' => '10b981',
+                                'awareness' => '3b82f6',
+                                'specialoffer' => '8b5cf6',
+                                'emergency' => 'ef4444'
+                            ];
+                            $placeholderColor = $placeholderColors[$announcementType] ?? '4299e1';
+
+                            // Format type name for display
+                            $typeDisplayName = ucwords(str_replace('_', ' ', $announcementType));
+
+                            // Prepare safe data for modal
+                            $modalData = [
+                                'title' => str_replace("'", "\\'", $announcementTitle),
+                                'content' => str_replace("'", "\\'", $announcementContent),
+                                'image' => $imagePath ? asset('storage/' . $imagePath) : '',
+                                'date' => $displayDate->format('M d, Y'),
+                                'type' => $typeDisplayName
+                            ];
+                        @endphp
+
+                        <div class="event-card-modern" data-aos="fade-up" data-aos-delay="{{ $loop->index * 100 }}">
+
+                            {{-- Card Image --}}
+                            <div class="event-card-image">
+                                @if($imagePath)
+                                    <img src="{{ asset('storage/' . $imagePath) }}"
+                                         alt="{{ $announcementTitle }}"
+                                         onerror="this.src='https://via.placeholder.com/400x250/{{ $placeholderColor }}/ffffff?text=Health+Event'">
+                                @else
+                                    <img src="https://via.placeholder.com/400x250/{{ $placeholderColor }}/ffffff?text={{ urlencode(substr($announcementTitle, 0, 20)) }}"
+                                         alt="{{ $announcementTitle }}">
+                                @endif
+
+                                <div class="event-date-badge-overlay {{ $badgeColorClass }}">
+                                    <div class="badge-day">{{ $displayDate->format('d') }}</div>
+                                    <div class="badge-month">{{ strtoupper($displayDate->format('M')) }}</div>
+                                </div>
+
+                                {{-- Event Type Badge --}}
+                                <div class="event-type-badge {{ $typeBadgeClass }}">
+                                    @if($announcementType === 'healthcamp')
+                                        <i class="fas fa-heartbeat"></i>
+                                    @elseif($announcementType === 'awareness')
+                                        <i class="fas fa-info-circle"></i>
+                                    @elseif($announcementType === 'specialoffer')
+                                        <i class="fas fa-tag"></i>
+                                    @elseif($announcementType === 'newservice')
+                                        <i class="fas fa-star"></i>
+                                    @elseif($announcementType === 'emergency')
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    @else
+                                        <i class="fas fa-bullhorn"></i>
+                                    @endif
+                                    <span>{{ $typeDisplayName }}</span>
+                                </div>
+                            </div>
+
+                            {{-- Card Content --}}
+                            <div class="event-card-content">
+                                <h3 class="event-title-modern">{{ $announcementTitle }}</h3>
+                                <p class="event-description-modern">
+                                    {{ strlen($announcementContent) > 100 ? substr($announcementContent, 0, 100) . '...' : $announcementContent }}
+                                </p>
+
+                                <div class="event-info-modern">
+                                    @if($startDate && $endDate)
+                                        <div class="event-info-item">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>
+                                                {{ \Carbon\Carbon::parse($startDate)->format('M d') }} -
+                                                {{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }}
+                                            </span>
+                                        </div>
+                                    @elseif($startDate)
+                                        <div class="event-info-item">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>{{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <button type="button"
+                                        class="btn-register-modern"
+                                        data-title="{{ $modalData['title'] }}"
+                                        data-content="{{ $modalData['content'] }}"
+                                        data-image="{{ $modalData['image'] }}"
+                                        data-date="{{ $modalData['date'] }}"
+                                        data-type="{{ $modalData['type'] }}"
+                                        onclick="openEventModal(this)">
+                                    View Details
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
+            @else
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
+                    <h5 class="text-muted">No Events Available</h5>
+                    <p class="text-muted">No health events or campaigns are currently scheduled.</p>
                 </div>
-                <div class="event-content">
-                    <span class="event-category event-cat-vaccination">Vaccination</span>
-                    <h3>COVID-19 Booster Drive</h3>
-                    <p>Free booster vaccination for all age groups above 18 years</p>
-                    <div class="event-meta">
-                        <span><i class="fas fa-map-marker-alt"></i> Multiple Locations</span>
-                        <span><i class="fas fa-clock"></i> 8:00 AM - 6:00 PM</span>
-                    </div>
-                    <a href="#" class="btn-event-register">Register Now</a>
-                </div>
-            </div>
+            @endif
         </div>
     </div>
 </section>
+
+{{-- Event Details Modal --}}
+<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalLabel">
+                    <i class="fas fa-bullhorn"></i>
+                    <span id="modalTitle">Event Details</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalImageContainer" style="display: none; margin-bottom: 1.5rem;">
+                    <img id="modalImage" src="" alt="Event" style="width: 100%; border-radius: 12px; max-height: 350px; object-fit: cover;">
+                </div>
+
+                {{-- Event Meta Info --}}
+                <div class="modal-event-meta" style="margin-bottom: 1.5rem;">
+                    <div id="modalTypeContainer" style="margin-bottom: 1rem;">
+                        <span id="modalTypeBadge" class="badge" style="font-size: 0.85rem; padding: 0.5rem 1rem;"></span>
+                    </div>
+
+                    <div style="color: #64748b; font-size: 0.95rem; margin-bottom: 0.5rem;">
+                        <i class="fas fa-calendar" style="width: 20px;"></i>
+                        <span id="modalDateText"></span>
+                    </div>
+                </div>
+
+                <div id="modalContent" style="line-height: 1.8; color: #475569; white-space: pre-wrap;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Scripts --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Event modal script loaded');
+});
+
+function openEventModal(button) {
+    try {
+        const title = button.getAttribute('data-title') || 'Event Details';
+        const content = button.getAttribute('data-content') || 'No description available';
+        const imagePath = button.getAttribute('data-image') || '';
+        const date = button.getAttribute('data-date') || '';
+        const type = button.getAttribute('data-type') || '';
+
+        console.log('Opening modal with:', {title, content, imagePath, date, type});
+
+        // Set modal content
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        const modalDateText = document.getElementById('modalDateText');
+        const modalTypeBadge = document.getElementById('modalTypeBadge');
+        const modalImageContainer = document.getElementById('modalImageContainer');
+        const modalImage = document.getElementById('modalImage');
+
+        if (modalTitle) modalTitle.textContent = title;
+        if (modalContent) modalContent.textContent = content;
+        if (modalDateText) modalDateText.textContent = date;
+
+        // Set type badge with color
+        if (modalTypeBadge && type) {
+            modalTypeBadge.textContent = type;
+
+            // Set badge color based on type
+            const typeLower = type.toLowerCase();
+            if (typeLower.includes('health') || typeLower.includes('awareness')) {
+                modalTypeBadge.style.background = 'linear-gradient(135deg, #0066cc, #0052a3)';
+                modalTypeBadge.style.color = 'white';
+            } else if (typeLower.includes('offer') || typeLower.includes('service')) {
+                modalTypeBadge.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+                modalTypeBadge.style.color = 'white';
+            } else if (typeLower.includes('emergency')) {
+                modalTypeBadge.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                modalTypeBadge.style.color = 'white';
+            } else {
+                modalTypeBadge.style.background = '#64748b';
+                modalTypeBadge.style.color = 'white';
+            }
+        }
+
+        // Handle image
+        if (modalImage && modalImageContainer) {
+            if (imagePath && imagePath.trim() !== '') {
+                modalImage.src = imagePath;
+                modalImageContainer.style.display = 'block';
+            } else {
+                modalImageContainer.style.display = 'none';
+            }
+        }
+
+        // Show modal
+        const modalElement = document.getElementById('eventModal');
+        if (modalElement) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                console.log('Modal opened successfully (Bootstrap 5)');
+            } else if (typeof jQuery !== 'undefined' && jQuery.fn.modal) {
+                jQuery('#eventModal').modal('show');
+                console.log('Modal opened successfully (Bootstrap 4)');
+            } else {
+                console.error('Bootstrap Modal library not found');
+                alert('Modal system not available. Please refresh the page.');
+            }
+        } else {
+            console.error('Modal element #eventModal not found in DOM');
+        }
+
+    } catch (error) {
+        console.error('Error opening modal:', error);
+        alert('Error displaying event details. Please try again.');
+    }
+}
+</script>
+
+
 
 {{-- Health Tips Section --}}
 <section class="health-tips-section">

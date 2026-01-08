@@ -479,10 +479,29 @@ Route::middleware(['auth'])->group(function () {
             ->limit(12)
             ->get();
 
+
+               // ✅ NEW: Load Active Announcements from Database
+    $activeAnnouncements = \App\Models\Announcement::query()
+        ->where('is_active', 1) // Only active announcements
+        ->where(function($q) {
+            // Check if start_date is null or in the past/today
+            $q->whereNull('start_date')
+              ->orWhere('start_date', '<=', now()->toDateString());
+        })
+        ->where(function($q) {
+            // Check if end_date is null or in the future/today
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>=', now()->toDateString());
+        })
+        ->orderByDesc('created_at')
+        ->limit(6) // Show only 6 announcements
+        ->get();
+
         return view('Main_Home', compact(
         'featuredDoctors',
         'featuredHospitals',
-        'featuredMedicalCentres'
+        'featuredMedicalCentres',
+         'activeAnnouncements'
     ));
     })->name('patient.dashboard');
 
