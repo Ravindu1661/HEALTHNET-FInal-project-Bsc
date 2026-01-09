@@ -144,7 +144,7 @@
                                 @endif
                             </td>
                             <td>{{ $patient->city ?? '-' }}</td>
-                            <td><small>{{ $patient->created_at->format('Y-m-d') }}</small></td>
+                            <td><small>{{ optional($patient->created_at)->format('Y-m-d') ?? '-' }}</small></td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ route('admin.patients.show', $patient->id) }}"

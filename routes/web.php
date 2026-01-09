@@ -543,7 +543,7 @@ Route::middleware(['auth'])->group(function () {
     // MEDICAL CENTRE DASHBOARD & ROUTES
     // ============================================
     Route::get('/medical-centre/dashboard', function () {
-        return view('medicalcentre.dashboard');
+        return view('medical_centre.dashboard');
     })->name('medical_centre.dashboard');
 
 
