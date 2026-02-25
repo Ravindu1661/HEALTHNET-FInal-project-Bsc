@@ -42,6 +42,7 @@ use App\Http\Controllers\Pharmacy\PharmacyReportController;
 use App\Http\Controllers\Pharmacy\PharmacyRatingController;
 use App\Http\Controllers\Pharmacy\PharmacySettingController;
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Hospital\HospitalDashboardController;
 use App\Models\Doctor;
 use App\Models\Hospital;
 use App\Models\MedicalCentre;
@@ -421,10 +422,25 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     Route::get('/medical-centres', [PatientMedicalCentreController::class, 'index'])->name('medical-centres');
     Route::get('/medical-centres/{id}', [PatientMedicalCentreController::class, 'show'])->name('medical-centres.show');
 
-    // Appointments Routes
-    Route::get('/appointments', [PatientAppointmentController::class, 'index'])->name('appointments.index');
-    Route::get('/appointments/create', [PatientAppointmentController::class, 'create'])->name('appointments.create');
-    Route::post('/appointments/store/{doctor_id}', [PatientAppointmentController::class, 'store'])->name('appointments.store');
+
+    // Patient Appointments
+    Route::get('appointments', [PatientAppointmentController::class, 'index'])
+        ->name('appointments.index');
+    Route::get('appointments/create', [PatientAppointmentController::class, 'create'])
+        ->name('appointments.create');
+    Route::post('appointments/store/{doctorId}', [PatientAppointmentController::class, 'store'])
+        ->name('appointments.store');
+
+    // ✅ Payment Page — නව route
+ Route::get('appointments/{id}/payment', [PatientAppointmentController::class, 'payment'])
+    ->name('appointments.payment');
+
+Route::post('appointments/{id}/pay', [PatientAppointmentController::class, 'pay'])
+    ->name('appointments.pay');
+    Route::delete('appointments/{id}', [PatientAppointmentController::class, 'cancel'])
+    ->name('appointments.cancel');
+    Route::get('appointments/payment/callback', [PatientAppointmentController::class, 'paymentCallback'])
+    ->name('appointments.payment.callback');
 
     // Patient Laboratory Routes
     Route::get('/laboratories', [PatientLaboratoryController::class, 'index'])->name('laboratories');
@@ -521,9 +537,9 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     // HOSPITAL DASHBOARD & ROUTES
     // ============================================
-    Route::get('/hospital/dashboard', function () {
-        return view('hospital.dashboard');
-    })->name('hospital.dashboard');
+    // Route::get('/hospital/dashboard', function () {
+    //     return view('hospital.dashboard');
+    // })->name('hospital.dashboard');
 
     // ============================================
     // LABORATORY DASHBOARD & ROUTES
@@ -547,6 +563,76 @@ Route::middleware(['auth'])->group(function () {
     })->name('medical_centre.dashboard');
 
 
+});
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Hospital Routes (Require Authentication)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('hospital')->name('hospital.')->middleware(['auth'])->group(function () {
+
+    // ============================================
+    // DASHBOARD
+    // ============================================
+    Route::get('/dashboard', [HospitalDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/stats', [HospitalDashboardController::class, 'getStats'])->name('stats');
+    Route::get('/today-appointments', [HospitalDashboardController::class, 'getTodayAppointments'])->name('today-appointments');
+    Route::get('/recent-reviews', [HospitalDashboardController::class, 'getRecentReviews'])->name('recent-reviews');
+
+    // ============================================
+    // APPOINTMENTS MANAGEMENT
+    // ============================================
+    Route::get('/appointments', [HospitalDashboardController::class, 'appointments'])->name('appointments');
+    Route::get('/appointments/data', [HospitalDashboardController::class, 'appointmentsData'])->name('appointments.data');
+    Route::post('/appointments/{id}/confirm', [HospitalDashboardController::class, 'confirmAppointment'])->name('appointments.confirm');
+    Route::post('/appointments/{id}/cancel', [HospitalDashboardController::class, 'cancelAppointment'])->name('appointments.cancel');
+    Route::post('/appointments/{id}/complete', [HospitalDashboardController::class, 'completeAppointment'])->name('appointments.complete');
+
+    // ============================================
+    // DOCTORS MANAGEMENT
+    // ============================================
+    Route::get('/doctors', [HospitalDashboardController::class, 'doctors'])->name('doctors');
+    Route::get('/doctors/data', [HospitalDashboardController::class, 'doctorsData'])->name('doctors.data');
+      Route::get('/doctors/search', [HospitalDashboardController::class, 'searchDoctors'])->name('doctors.search');
+        Route::post('/doctors/add', [HospitalDashboardController::class, 'addDoctor'])->name('doctors.add');
+    Route::post('/doctors/{id}/status', [HospitalDashboardController::class, 'updateDoctorStatus'])->name('doctors.status');
+    // ============================================
+    // REVIEWS & RATINGS
+    // ============================================
+    Route::get('/reviews', [HospitalDashboardController::class, 'reviews'])->name('reviews');
+    Route::get('/reviews/data', [HospitalDashboardController::class, 'reviewsData'])->name('reviews.data');
+
+    // ============================================
+    // REPORTS & ANALYTICS
+    // ============================================
+    Route::get('/reports', [HospitalDashboardController::class, 'reports'])->name('reports');
+    Route::get('/reports/data', [HospitalDashboardController::class, 'reportsData'])->name('reports.data');
+
+    // ============================================
+    // PROFILE MANAGEMENT
+    // ============================================
+    Route::get('/profile', [HospitalDashboardController::class, 'profile'])->name('profile');
+    Route::put('/profile', [HospitalDashboardController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/photo', [HospitalDashboardController::class, 'updatePhoto'])->name('profile.photo');
+    Route::post('/profile/documents', [HospitalDashboardController::class, 'uploadDocument'])->name('profile.documents');
+
+    // ============================================
+    // NOTIFICATIONS
+    // ============================================
+    Route::get('/notifications', [HospitalDashboardController::class, 'notifications'])->name('notifications');
+    Route::get('/notifications/data', [HospitalDashboardController::class, 'notificationsData'])->name('notifications.data');
+    Route::post('/notifications/{id}/read', [HospitalDashboardController::class, 'markNotificationRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [HospitalDashboardController::class, 'markAllNotificationsRead'])->name('notifications.mark-all-read');
+
+    // ============================================
+    // SETTINGS & ACCOUNT
+    // ============================================
+    Route::get('/settings', [HospitalDashboardController::class, 'settings'])->name('settings');
+    Route::post('/settings/password', [HospitalDashboardController::class, 'updatePassword'])->name('settings.password');
+    Route::post('/resend-verification', [HospitalDashboardController::class, 'resendVerification'])->name('resend.verification');
 });
 
 /*
