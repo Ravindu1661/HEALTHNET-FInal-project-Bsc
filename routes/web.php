@@ -46,8 +46,7 @@ use App\Http\Controllers\Hospital\HospitalDashboardController;
 use App\Models\Doctor;
 use App\Models\Hospital;
 use App\Models\MedicalCentre;
-
-
+use App\Http\Controllers\Patient\PatientLabOrderController;
 
 
 /*
@@ -432,10 +431,10 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
         ->name('appointments.store');
 
     // ✅ Payment Page — නව route
- Route::get('appointments/{id}/payment', [PatientAppointmentController::class, 'payment'])
+     Route::get('appointments/{id}/payment', [PatientAppointmentController::class, 'payment'])
     ->name('appointments.payment');
 
-Route::post('appointments/{id}/pay', [PatientAppointmentController::class, 'pay'])
+    Route::post('appointments/{id}/pay', [PatientAppointmentController::class, 'pay'])
     ->name('appointments.pay');
     Route::delete('appointments/{id}', [PatientAppointmentController::class, 'cancel'])
     ->name('appointments.cancel');
@@ -443,8 +442,19 @@ Route::post('appointments/{id}/pay', [PatientAppointmentController::class, 'pay'
     ->name('appointments.payment.callback');
 
     // Patient Laboratory Routes
-    Route::get('/laboratories', [PatientLaboratoryController::class, 'index'])->name('laboratories');
-    Route::get('/laboratories/{id}', [PatientLaboratoryController::class, 'show'])->name('laboratories.show');
+// ── Lab Reports & Orders ──
+Route::get('/laboratories', [PatientLaboratoryController::class, 'index'])->name('laboratories');
+Route::get('/laboratories/{id}', [PatientLaboratoryController::class, 'show'])->name('laboratories.show');
+
+// Lab Orders
+Route::get('/lab-orders', [PatientLabOrderController::class, 'index'])->name('lab-orders.index');
+Route::get('/lab-orders/create/{labId}', [PatientLabOrderController::class, 'create'])->name('lab-orders.create');
+Route::post('/lab-orders/store/{labId}', [PatientLabOrderController::class, 'store'])->name('lab-orders.store');
+Route::get('/lab-orders/{id}', [PatientLabOrderController::class, 'show'])->name('lab-orders.show');
+Route::get('/lab-orders/{id}/payment', [PatientLabOrderController::class, 'payment'])->name('lab-orders.payment');
+Route::post('/lab-orders/{id}/pay', [PatientLabOrderController::class, 'pay'])->name('lab-orders.pay');
+Route::get('/lab-orders/{id}/report', [PatientLabOrderController::class, 'downloadReport'])->name('lab-orders.report');
+Route::get('/lab-orders/{id}/payment/callback', [PatientLabOrderController::class, 'paymentCallback'])->name('lab-orders.payment.callback');
 
     // Patient Pharmacy Routes
     Route::get('/pharmacies', [PatientPharmacyController::class, 'index'])->name('pharmacies');
@@ -980,3 +990,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
 */
 
 
+
+// Laboratory routes
+Route::prefix('laboratory')->name('laboratory.')->middleware(['auth', 'laboratory'])->group(function () {
+    // ... existing routes ...
+
+    // Service Prices
+    Route::get ('service-prices',        [LaboratoryServicePriceController::class, 'index'])  ->name('service-prices.index');
+    Route::put ('service-prices/update', [LaboratoryServicePriceController::class, 'update']) ->name('service-prices.update');
+});

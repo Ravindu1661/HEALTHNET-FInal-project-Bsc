@@ -2,15 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LabTest extends Model
 {
-    use HasFactory;
-
-    protected $table = 'lab_tests';
-
     protected $fillable = [
         'laboratory_id',
         'test_name',
@@ -23,59 +18,28 @@ class LabTest extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'duration_hours' => 'integer',
+        'price'     => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
-    protected $attributes = [
-        'is_active' => true,
-    ];
-
-    // ============================================
-    // Relationships
-    // ============================================
-
-    /**
-     * Laboratory relationship
-     */
     public function laboratory()
     {
         return $this->belongsTo(Laboratory::class);
     }
 
-    /**
-     * Lab order items
-     */
-    public function orderItems()
-    {
-        return $this->hasMany(LabOrderItem::class, 'test_id');
-    }
-
-    /**
-     * Packages containing this test
-     */
     public function packages()
     {
         return $this->belongsToMany(LabPackage::class, 'lab_package_tests', 'test_id', 'package_id');
     }
 
-    // ============================================
-    // Scopes
-    // ============================================
-
-    public function scopeActive($query)
+    public function orderItems()
     {
-        return $query->where('is_active', true);
+        return $this->hasMany(LabOrderItem::class, 'test_id');
     }
 
-    public function scopeByCategory($query, $category)
+    // Scope: active tests for a lab
+    public function scopeActiveForLab($query, int $labId)
     {
-        return $query->where('test_category', $category);
-    }
-
-    public function scopeForLaboratory($query, $laboratoryId)
-    {
-        return $query->where('laboratory_id', $laboratoryId);
+        return $query->where('laboratory_id', $labId)->where('is_active', true);
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Laboratory extends Model
 {
     protected $table = 'laboratories';
-    
+
     protected $fillable = [
         'user_id',
         'status',                    // ✅ ADDED
@@ -31,7 +31,7 @@ class Laboratory extends Model
         'approved_by',
         'approved_at'
     ];
-    
+
     protected $casts = [
         'services' => 'array',
         'rating' => 'decimal:2',
@@ -45,7 +45,7 @@ class Laboratory extends Model
         'rating' => 0.00,
         'total_ratings' => 0,
     ];
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);

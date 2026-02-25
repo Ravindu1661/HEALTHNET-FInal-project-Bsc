@@ -48,18 +48,18 @@
 </head>
 <body>
     <div id="welcomeBox"></div>
-    
+
     <div class="container py-5">
         <div class="dashboard-header">
             <h1><i class="fas fa-flask me-2"></i>Laboratory Dashboard</h1>
             <p class="mb-0">Welcome, {{ Auth::user()->email }}</p>
         </div>
-        
+
         <div class="alert alert-warning">
             <i class="fas fa-clock me-2"></i>
             Your laboratory registration is pending approval. You'll receive an email once verified.
         </div>
-        
+
         <div class="row">
             <div class="col-md-3">
                 <div class="stat-card text-center">
@@ -90,21 +90,21 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="text-center mt-4">
             <a href="{{ route('logout') }}" class="btn btn-danger">
                 <i class="fas fa-sign-out-alt me-2"></i>Logout
             </a>
         </div>
     </div>
-    
+
     <script>
         const msg = sessionStorage.getItem('login_welcome');
         if (msg) {
             showWelcome(msg, '{{ Auth::user()->email }}');
             sessionStorage.removeItem('login_welcome');
         }
-        
+
         function showWelcome(message, email) {
             document.getElementById('welcomeBox').innerHTML = `
                 <div class="welcome-message" id="loginWelcomeMsg">
@@ -114,7 +114,7 @@
             `;
             setTimeout(hideWelcomeMsg, 4000);
         }
-        
+
         function hideWelcomeMsg() {
             const box = document.getElementById('loginWelcomeMsg');
             if (box) box.style.display = 'none';
