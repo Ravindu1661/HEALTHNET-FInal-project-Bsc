@@ -442,19 +442,18 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     ->name('appointments.payment.callback');
 
     // Patient Laboratory Routes
-// ── Lab Reports & Orders ──
-Route::get('/laboratories', [PatientLaboratoryController::class, 'index'])->name('laboratories');
-Route::get('/laboratories/{id}', [PatientLaboratoryController::class, 'show'])->name('laboratories.show');
+    Route::get('/laboratories', [PatientLaboratoryController::class, 'index'])->name('laboratories');
+    Route::get('/laboratories/{id}', [PatientLaboratoryController::class, 'show'])->name('laboratories.show');
 
-// Lab Orders
-Route::get('/lab-orders', [PatientLabOrderController::class, 'index'])->name('lab-orders.index');
-Route::get('/lab-orders/create/{labId}', [PatientLabOrderController::class, 'create'])->name('lab-orders.create');
-Route::post('/lab-orders/store/{labId}', [PatientLabOrderController::class, 'store'])->name('lab-orders.store');
-Route::get('/lab-orders/{id}', [PatientLabOrderController::class, 'show'])->name('lab-orders.show');
-Route::get('/lab-orders/{id}/payment', [PatientLabOrderController::class, 'payment'])->name('lab-orders.payment');
-Route::post('/lab-orders/{id}/pay', [PatientLabOrderController::class, 'pay'])->name('lab-orders.pay');
-Route::get('/lab-orders/{id}/report', [PatientLabOrderController::class, 'downloadReport'])->name('lab-orders.report');
-Route::get('/lab-orders/{id}/payment/callback', [PatientLabOrderController::class, 'paymentCallback'])->name('lab-orders.payment.callback');
+    // Lab Orders
+    Route::get('/lab-orders', [PatientLabOrderController::class, 'index'])->name('lab-orders.index');
+    Route::get('/lab-orders/create/{labId}', [PatientLabOrderController::class, 'create'])->name('lab-orders.create');
+    Route::post('/lab-orders/store/{labId}', [PatientLabOrderController::class, 'store'])->name('lab-orders.store');
+    Route::get('/lab-orders/{id}', [PatientLabOrderController::class, 'show'])->name('lab-orders.show');
+    Route::get('/lab-orders/{id}/payment', [PatientLabOrderController::class, 'payment'])->name('lab-orders.payment');
+    Route::post('/lab-orders/{id}/pay', [PatientLabOrderController::class, 'pay'])->name('lab-orders.pay');
+    Route::get('/lab-orders/{id}/report', [PatientLabOrderController::class, 'downloadReport'])->name('lab-orders.report');
+    Route::get('/lab-orders/{id}/payment/callback', [PatientLabOrderController::class, 'paymentCallback'])->name('lab-orders.payment.callback');
 
     // Patient Pharmacy Routes
     Route::get('/pharmacies', [PatientPharmacyController::class, 'index'])->name('pharmacies');
@@ -554,9 +553,112 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     // LABORATORY DASHBOARD & ROUTES
     // ============================================
-    Route::get('/laboratory/dashboard', function () {
-        return view('laboratory.dashboard');
-    })->name('laboratory.dashboard');
+    // Route::get('/laboratory/dashboard', function () {
+    //     return view('laboratory.dashboard');
+    // })->name('laboratory.dashboard');
+
+
+   // ─────────────────────────────────────────
+// LABORATORY ROUTES
+// ─────────────────────────────────────────
+Route::prefix('laboratory')
+    ->name('laboratory.')
+    ->middleware(['auth'])
+    ->group(function () {
+
+    /* ── Dashboard ── */
+    Route::get('/dashboard',  [\App\Http\Controllers\Laboratory\LaboratoryDashboardController::class, 'index'])->name('dashboard');
+
+    /* ── Profile ── */
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/',           [\App\Http\Controllers\Laboratory\LabProfileController::class, 'index'])->name('index');
+        Route::get('/edit',       [\App\Http\Controllers\Laboratory\LabProfileController::class, 'edit'])->name('edit');
+        Route::put('/update',     [\App\Http\Controllers\Laboratory\LabProfileController::class, 'update'])->name('update');
+        Route::post('/image',     [\App\Http\Controllers\Laboratory\LabProfileController::class, 'uploadImage'])->name('image');
+        Route::post('/documents', [\App\Http\Controllers\Laboratory\LabProfileController::class, 'uploadDocument'])->name('documents');
+    });
+
+    /* ── Tests ── */
+    Route::prefix('tests')->name('tests.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabTestController::class, 'index'])->name('index');
+        Route::get('/create',                   [\App\Http\Controllers\Laboratory\LabTestController::class, 'create'])->name('create');
+        Route::post('/store',                   [\App\Http\Controllers\Laboratory\LabTestController::class, 'store'])->name('store');
+        Route::get('/{test}/edit',              [\App\Http\Controllers\Laboratory\LabTestController::class, 'edit'])->name('edit');
+        Route::put('/{test}',                   [\App\Http\Controllers\Laboratory\LabTestController::class, 'update'])->name('update');
+        Route::delete('/{test}',                [\App\Http\Controllers\Laboratory\LabTestController::class, 'destroy'])->name('destroy');
+        Route::post('/{test}/toggle',           [\App\Http\Controllers\Laboratory\LabTestController::class, 'toggleStatus'])->name('toggle');
+    });
+
+    /* ── Packages ── */
+    Route::prefix('packages')->name('packages.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabPackageController::class, 'index'])->name('index');
+        Route::get('/create',                   [\App\Http\Controllers\Laboratory\LabPackageController::class, 'create'])->name('create');
+        Route::post('/store',                   [\App\Http\Controllers\Laboratory\LabPackageController::class, 'store'])->name('store');
+        Route::get('/{package}/edit',           [\App\Http\Controllers\Laboratory\LabPackageController::class, 'edit'])->name('edit');
+        Route::put('/{package}',                [\App\Http\Controllers\Laboratory\LabPackageController::class, 'update'])->name('update');
+        Route::delete('/{package}',             [\App\Http\Controllers\Laboratory\LabPackageController::class, 'destroy'])->name('destroy');
+        Route::post('/{package}/toggle',        [\App\Http\Controllers\Laboratory\LabPackageController::class, 'toggleStatus'])->name('toggle');
+        Route::post('/{package}/tests/add',     [\App\Http\Controllers\Laboratory\LabPackageController::class, 'addTest'])->name('tests.add');
+        Route::delete('/{package}/tests/{test}',[\App\Http\Controllers\Laboratory\LabPackageController::class, 'removeTest'])->name('tests.remove');
+    });
+
+    /* ── Orders ── */
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabOrderController::class, 'index'])->name('index');
+        Route::get('/{order}',                  [\App\Http\Controllers\Laboratory\LabOrderController::class, 'show'])->name('show');
+        Route::post('/{order}/collect',         [\App\Http\Controllers\Laboratory\LabOrderController::class, 'markCollected'])->name('collect');
+        Route::post('/{order}/process',         [\App\Http\Controllers\Laboratory\LabOrderController::class, 'markProcessing'])->name('process');
+        Route::post('/{order}/complete',        [\App\Http\Controllers\Laboratory\LabOrderController::class, 'markComplete'])->name('complete');
+        Route::post('/{order}/upload-report',   [\App\Http\Controllers\Laboratory\LabOrderController::class, 'uploadReport'])->name('upload-report');
+        Route::post('/{order}/cancel',          [\App\Http\Controllers\Laboratory\LabOrderController::class, 'cancel'])->name('cancel');
+    });
+
+    /* ── Payments ── */
+    Route::prefix('payments')->name('payments.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabPaymentController::class, 'index'])->name('index');
+        Route::get('/{payment}',                [\App\Http\Controllers\Laboratory\LabPaymentController::class, 'show'])->name('show');
+    });
+
+    /* ── Reviews ── */
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabReviewController::class, 'index'])->name('index');
+        Route::get('/{rating}',                 [\App\Http\Controllers\Laboratory\LabReviewController::class, 'show'])->name('show');
+        Route::post('/{rating}/reply',          [\App\Http\Controllers\Laboratory\LabReviewController::class, 'reply'])->name('reply');
+    });
+
+    /* ── Announcements ── */
+    Route::prefix('announcements')->name('announcements.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'index'])->name('index');
+        Route::get('/create',                   [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'create'])->name('create');
+        Route::post('/store',                   [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'store'])->name('store');
+        Route::get('/{announcement}/edit',      [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'edit'])->name('edit');
+        Route::put('/{announcement}',           [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'update'])->name('update');
+        Route::delete('/{announcement}',        [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'destroy'])->name('destroy');
+        Route::post('/{announcement}/toggle',   [\App\Http\Controllers\Laboratory\LabAnnouncementController::class, 'toggleActive'])->name('toggle');
+    });
+
+    /* ── Chat ── */
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabChatController::class, 'index'])->name('index');
+        Route::get('/{userId}',                 [\App\Http\Controllers\Laboratory\LabChatController::class, 'conversation'])->name('conversation');
+        Route::post('/send',                    [\App\Http\Controllers\Laboratory\LabChatController::class, 'send'])->name('send');
+        Route::get('/messages/{userId}',        [\App\Http\Controllers\Laboratory\LabChatController::class, 'getMessages'])->name('messages');
+    });
+
+    /* ── Notifications ── */
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/',                         [\App\Http\Controllers\Laboratory\LabNotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/read',               [\App\Http\Controllers\Laboratory\LabNotificationController::class, 'markRead'])->name('read');
+        Route::post('/mark-all-read',           [\App\Http\Controllers\Laboratory\LabNotificationController::class, 'markAllRead'])->name('mark-all-read');
+        Route::delete('/{id}',                  [\App\Http\Controllers\Laboratory\LabNotificationController::class, 'destroy'])->name('destroy');
+        Route::get('/count',                    [\App\Http\Controllers\Laboratory\LabNotificationController::class, 'getCount'])->name('count');
+    });
+
+    /* ── Settings ── */
+    Route::get('/settings',                     [\App\Http\Controllers\Laboratory\LabSettingController::class, 'index'])->name('settings');
+    Route::put('/settings/update',              [\App\Http\Controllers\Laboratory\LabSettingController::class, 'update'])->name('settings.update');
+    Route::post('/settings/change-password',    [\App\Http\Controllers\Laboratory\LabSettingController::class, 'changePassword'])->name('settings.change-password');
+});
 
     // ============================================
     // PHARMACY DASHBOARD & ROUTES
@@ -988,14 +1090,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
 | Laravel Breeze Auth Routes
 |--------------------------------------------------------------------------
 */
-
-
-
-// Laboratory routes
-Route::prefix('laboratory')->name('laboratory.')->middleware(['auth', 'laboratory'])->group(function () {
-    // ... existing routes ...
-
-    // Service Prices
-    Route::get ('service-prices',        [LaboratoryServicePriceController::class, 'index'])  ->name('service-prices.index');
-    Route::put ('service-prices/update', [LaboratoryServicePriceController::class, 'update']) ->name('service-prices.update');
-});
+        Route::prefix('doctor')->name('doctor.')->middleware(['auth'])->group(function () {
+   });
