@@ -9,224 +9,201 @@
         <form method="POST" action="{{ route('laboratory.tests.update', $test) }}" class="space-y-5">
             @csrf
             @method('PUT')
+
+            @php
+                /**
+                 * ✅ Categories (merge controller + defaults, no duplicates)
+                 */
+                $defaultCategories = [
+                    'Hematology',
+                    'Biochemistry',
+                    'Microbiology',
+                    'Immunology / Serology',
+                    'Hormones / Endocrinology',
+                    'Urine & Stool',
+                    'Pathology / Histopathology',
+                    'Radiology / Imaging',
+                    'Cardiology',
+                    'Infectious Diseases',
+                    'Tumor Markers',
+                    'Allergy',
+                    'Genetic / Molecular',
+                    'Prenatal / Fertility',
+                    'Health Packages',
+                    'Other',
+                ];
+
+                $controllerCategories = isset($categories) && is_array($categories) ? $categories : [];
+                $allCategories = array_values(array_unique(array_merge($controllerCategories, $defaultCategories)));
+
+                /**
+                 * ✅ Tests list (dropdown + optgroups)
+                 * Includes your given names + common additions
+                 */
+                $testsByCategory = [
+                    'Hematology' => [
+                        'Complete Blood Count (CBC)',
+                        'Full Blood Count (FBC)',
+                        'Erythrocyte Sedimentation Rate (ESR)',
+                        'Blood Film / Peripheral Smear',
+                        'Platelet Count',
+                        'Hemoglobin (Hb)',
+                        'Blood Grouping & Rh Factor',
+                        'Coagulation Profile (PT/INR, APTT)',
+                    ],
+                    'Biochemistry' => [
+                        'Blood Sugar (FBS / RBS / PPBS)',
+                        'HbA1c',
+                        'Lipid Profile',
+                        'Liver Function Tests (LFT)',
+                        'Kidney Function Tests (KFT)',
+                        'Electrolytes (Na, K, Cl)',
+                        'Uric Acid',
+                        'CRP (C-Reactive Protein)',
+                    ],
+                    'Urine & Stool' => [
+                        'Urine Full Report (UFR) / Urine Analysis',
+                        'Urine Culture',
+                        'Stool Full Report (SFR)',
+                        'Stool Culture',
+                        'Occult Blood Test (Stool)',
+                    ],
+                    'Cardiology' => [
+                        'ECG',
+                        'Echo Cardiogram (2D Echo)',
+                    ],
+                    'Radiology / Imaging' => [
+                        'X-Ray',
+                        'Ultrasound Scan',
+                        'CT Scan',
+                        'MRI Scan',
+                    ],
+                    'Immunology / Serology' => [
+                        'Allergy Tests',
+                        'COVID-19 PCR Test',
+                        'COVID-19 Antigen Test',
+                        'Dengue NS1 / IgM / IgG',
+                        'HIV 1&2 (Screening)',
+                        'VDRL / RPR (Syphilis)',
+                        'Hepatitis B (HBsAg)',
+                        'Hepatitis C (HCV Ab)',
+                    ],
+                    'Hormones / Endocrinology' => [
+                        'Thyroid Function Tests (TFT)',
+                        'TSH',
+                        'T3',
+                        'T4',
+                        'Hormone Tests',
+                        'Vitamin D',
+                        'Vitamin B12',
+                    ],
+                    'Tumor Markers' => [
+                        'Cancer Markers / Tumor Markers',
+                        'PSA',
+                        'CA-125',
+                        'CEA',
+                        'AFP',
+                    ],
+                    'Microbiology' => [
+                        'Microbiology Tests',
+                        'Culture & Sensitivity (C&S)',
+                        'Blood Culture',
+                        'Urine Culture (C&S)',
+                        'Sputum AFB',
+                        'Throat Swab Culture',
+                    ],
+                    'Pathology / Histopathology' => [
+                        'Pathology Services',
+                        'Biopsy',
+                        'Pap Smear',
+                        'FNAC',
+                    ],
+                    'Prenatal / Fertility' => [
+                        'Pregnancy Test (Urine / Serum β-hCG)',
+                        'TORCH Profile',
+                        'Antenatal Profile',
+                    ],
+                    'Health Packages' => [
+                        'Health Screening Package',
+                        'Pre-Employment Medical Package',
+                        'Pre-Operative / Pre-Surgical Package',
+                    ],
+                    'Other' => [
+                        'Other / Custom Test',
+                    ],
+                ];
+
+                // build test->category map
+                $testCategoryMap = [];
+                foreach ($testsByCategory as $cat => $tests) {
+                    foreach ($tests as $t) {
+                        $testCategoryMap[$t] = $cat;
+                    }
+                }
+
+                // current value (edit)
+                $currentTestName = old('test_name', $test->test_name);
+                $currentCategory = old('test_category', $test->test_category);
+
+                $isKnownTest = array_key_exists($currentTestName, $testCategoryMap) || $currentTestName === 'Other / Custom Test';
+            @endphp
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                {{-- Test Name --}}
+                {{-- ✅ Test Name (Dropdown + Custom) --}}
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">
                         Test Name <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" name="test_name"
-                        value="{{ old('test_name', $test->test_name) }}" required
-                        placeholder="e.g. Complete Blood Count (CBC)"
+
+                    <select id="test_name_select" name="test_name" required
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none @error('test_name') border-red-400 @enderror">
+                        <option value="" {{ $currentTestName ? '' : 'selected' }}>Select test</option>
+
+                        @foreach($testsByCategory as $cat => $tests)
+                            <optgroup label="{{ $cat }}">
+                                @foreach($tests as $t)
+                                    <option value="{{ $t }}" {{ $currentTestName === $t ? 'selected' : '' }}>
+                                        {{ $t }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+
+                        {{-- ✅ If DB has a custom test (not in list), show it as selected --}}
+                        @if($currentTestName && !$isKnownTest)
+                            <option value="{{ $currentTestName }}" selected>{{ $currentTestName }} (Custom)</option>
+                        @endif
+                    </select>
+
                     @error('test_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+
+                    {{-- Custom input shows only if "Other / Custom Test" selected --}}
+                    <div id="custom_test_wrap" class="mt-3 hidden">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">
+                            Custom Test Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="custom_test_input"
+                            placeholder="Type your custom test name..."
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                        <p class="text-xs text-gray-500 mt-1">
+                            Choose “Other / Custom Test” above to type your own test name.
+                        </p>
+                    </div>
                 </div>
 
-                {{-- Category --}}
+                {{-- ✅ Category (Dropdown) --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
-                    <select name="test_category"
+                    <select name="test_category" id="test_category"
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white text-gray-700 cursor-pointer">
-                        <option value="">— Select Category —</option>
+                        <option value="" {{ $currentCategory ? '' : 'selected' }}>Select category</option>
 
-                        {{-- Existing categories from this lab --}}
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat }}"
-                                {{ old('test_category', $test->test_category) == $cat ? 'selected' : '' }}>
+                        @foreach($allCategories as $cat)
+                            <option value="{{ $cat }}" {{ $currentCategory === $cat ? 'selected' : '' }}>
                                 {{ $cat }}
                             </option>
                         @endforeach
-
-                        <optgroup label="🩸 Haematology">
-                            @php $haemItems = [
-                                'Haematology'         => 'Haematology (General)',
-                                'Full Blood Count'    => 'Full Blood Count (FBC)',
-                                'Blood Grouping'      => 'Blood Grouping & Cross Match',
-                                'Coagulation'         => 'Coagulation / Clotting Studies',
-                                'ESR'                 => 'ESR / Sedimentation Rate',
-                                'Peripheral Blood Film'=> 'Peripheral Blood Film',
-                                'Haemoglobinopathy'   => 'Haemoglobinopathy (HbA1c, Hb Electrophoresis)',
-                            ]; @endphp
-                            @foreach($haemItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🧪 Clinical Biochemistry">
-                            @php $bioItems = [
-                                'Clinical Biochemistry' => 'Clinical Biochemistry (General)',
-                                'Liver Function Tests'  => 'Liver Function Tests (LFT)',
-                                'Renal Function Tests'  => 'Renal Function Tests (RFT)',
-                                'Lipid Profile'         => 'Lipid Profile / Cholesterol',
-                                'Blood Glucose'         => 'Blood Glucose / Diabetes',
-                                'Electrolytes'          => 'Electrolytes (Na, K, Cl, Bicarbonate)',
-                                'Cardiac Markers'       => 'Cardiac Markers (Troponin, CK-MB, BNP)',
-                                'Thyroid Function'      => 'Thyroid Function (TSH, T3, T4)',
-                                'Bone Profile'          => 'Bone Profile (Calcium, Phosphate, ALP)',
-                                'Iron Studies'          => 'Iron Studies (Serum Iron, Ferritin, TIBC)',
-                                'Vitamins & Minerals'   => 'Vitamins & Minerals (B12, D3, Folate, Zinc)',
-                                'Tumour Markers'        => 'Tumour Markers (PSA, CEA, CA-125, AFP)',
-                                'Arterial Blood Gas'    => 'Arterial Blood Gas (ABG)',
-                                'Drug Monitoring'       => 'Therapeutic Drug Monitoring',
-                            ]; @endphp
-                            @foreach($bioItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🦠 Microbiology">
-                            @php $microItems = [
-                                'Microbiology'        => 'Microbiology (General)',
-                                'Culture & Sensitivity'=> 'Culture & Sensitivity (C&S)',
-                                'Bacteriology'        => 'Bacteriology',
-                                'Parasitology'        => 'Parasitology (Malaria, Stool O&P)',
-                                'Mycology'            => 'Mycology (Fungal Tests)',
-                                'AFB / TB Studies'    => 'AFB / Tuberculosis Studies',
-                            ]; @endphp
-                            @foreach($microItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🧬 Serology & Immunology">
-                            @php $seroItems = [
-                                'Serology'       => 'Serology (General)',
-                                'Viral Markers'  => 'Viral Markers (Hepatitis B, C, HIV)',
-                                'Dengue Tests'   => 'Dengue Tests (NS1, IgG/IgM)',
-                                'Autoimmune'     => 'Autoimmune (ANA, RF, Anti-dsDNA)',
-                                'Allergy Testing'=> 'Allergy Testing (IgE)',
-                                'Widal / Typhoid'=> 'Widal / Typhoid Tests',
-                                'COVID-19 Tests' => 'COVID-19 Tests (PCR, Antigen, Antibody)',
-                                'Leptospira'     => 'Leptospira / MAT',
-                                'VDRL / Syphilis'=> 'VDRL / Syphilis Tests',
-                            ]; @endphp
-                            @foreach($seroItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="⚗️ Hormones & Endocrinology">
-                            @php $hormItems = [
-                                'Hormones'             => 'Hormones (General)',
-                                'Reproductive Hormones'=> 'Reproductive Hormones (FSH, LH, Estrogen)',
-                                'Adrenal Hormones'     => 'Adrenal Hormones (Cortisol, ACTH, DHEA)',
-                                'Fertility Tests'      => 'Fertility Tests (AMH, Semen Analysis)',
-                                'Growth Hormone'       => 'Growth Hormone / IGF-1',
-                                'Insulin & C-Peptide'  => 'Insulin & C-Peptide',
-                            ]; @endphp
-                            @foreach($hormItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🔬 Urine & Body Fluid">
-                            @php $urineItems = [
-                                'Urine Analysis'    => 'Urine Full Report (UFR)',
-                                'Urine Culture'     => 'Urine Culture & Sensitivity',
-                                'Urine Biochemistry'=> 'Urine Biochemistry',
-                                'Stool Analysis'    => 'Stool Full Report / Occult Blood',
-                                'CSF Analysis'      => 'CSF Analysis',
-                                'Sputum Analysis'   => 'Sputum Analysis',
-                                'Body Fluid Analysis'=> 'Body Fluid Analysis',
-                                'Semen Analysis'    => 'Semen Analysis',
-                            ]; @endphp
-                            @foreach($urineItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🧫 Histopathology & Cytology">
-                            @php $histoItems = [
-                                'Histopathology' => 'Histopathology (Biopsy)',
-                                'Cytology'       => 'Cytology (FNAC, Pap Smear)',
-                                'Pap Smear'      => 'Pap Smear / Cervical Screening',
-                            ]; @endphp
-                            @foreach($histoItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🧬 Genetics & Molecular">
-                            @php $geneItems = [
-                                'Molecular Diagnostics' => 'Molecular Diagnostics (PCR)',
-                                'Genetic Testing'       => 'Genetic Testing',
-                                'DNA Testing'           => 'DNA / Paternity Testing',
-                            ]; @endphp
-                            @foreach($geneItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="👶 Prenatal & Neonatal">
-                            @php $prenatalItems = [
-                                'Prenatal Screening' => 'Prenatal Screening',
-                                'Antenatal Profile'  => 'Antenatal Profile',
-                                'Neonatal Screening' => 'Neonatal Screening',
-                                'TORCH Profile'      => 'TORCH Profile',
-                            ]; @endphp
-                            @foreach($prenatalItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="📦 Health Packages">
-                            @php $pkgItems = [
-                                'Health Screening' => 'Health Screening Panels',
-                                'Pre-Employment'   => 'Pre-Employment Medical',
-                                'Pre-Surgical'     => 'Pre-Surgical / Pre-Operative',
-                                'Executive Health' => 'Executive Health Check',
-                            ]; @endphp
-                            @foreach($pkgItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-
-                        <optgroup label="🏥 Other">
-                            @php $otherItems = [
-                                'Toxicology'        => 'Toxicology / Drug Screening',
-                                'Transfusion Medicine'=> 'Transfusion Medicine',
-                                'Point of Care'     => 'Point of Care Testing (POCT)',
-                                'Radiology'         => 'Radiology',
-                                'Other'             => 'Other',
-                            ]; @endphp
-                            @foreach($otherItems as $val => $label)
-                                <option value="{{ $val }}"
-                                    {{ old('test_category', $test->test_category) == $val ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
                     </select>
                 </div>
 
@@ -296,4 +273,71 @@
         </form>
     </div>
 </div>
+
+{{-- ✅ JS: auto-set category by selected test + allow custom test name --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const testSelect = document.getElementById('test_name_select');
+    const categorySelect = document.getElementById('test_category');
+    const customWrap = document.getElementById('custom_test_wrap');
+    const customInput = document.getElementById('custom_test_input');
+
+    const testCategoryMap = @json($testCategoryMap);
+
+    function isCustomSelected() {
+        return testSelect.value === 'Other / Custom Test';
+    }
+
+    function toggleCustomField() {
+        if (isCustomSelected()) {
+            customWrap.classList.remove('hidden');
+            customInput.required = true;
+        } else {
+            customWrap.classList.add('hidden');
+            customInput.required = false;
+            customInput.value = '';
+        }
+    }
+
+    function syncCategory() {
+        const selected = testSelect.value;
+        if (!selected) return;
+
+        // auto fill category if known
+        if (testCategoryMap[selected]) {
+            categorySelect.value = testCategoryMap[selected];
+        }
+
+        // if custom selected, force category to Other
+        if (selected === 'Other / Custom Test') {
+            categorySelect.value = 'Other';
+        }
+    }
+
+    // on submit: if custom selected and typed, replace select value with typed text
+    const form = testSelect.closest('form');
+    form.addEventListener('submit', function () {
+        if (isCustomSelected()) {
+            const v = (customInput.value || '').trim();
+            if (v.length > 0) {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.text = v;
+                opt.selected = true;
+                testSelect.appendChild(opt);
+            }
+        }
+    });
+
+    // change handlers
+    testSelect.addEventListener('change', function () {
+        toggleCustomField();
+        syncCategory();
+    });
+
+    // initial run
+    toggleCustomField();
+    syncCategory();
+});
+</script>
 @endsection

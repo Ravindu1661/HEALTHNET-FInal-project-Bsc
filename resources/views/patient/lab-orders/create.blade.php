@@ -1,176 +1,268 @@
 @include('partials.header')
 
 <style>
-.create-hdr {
-    background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%);
-    padding: 6rem 0 2.5rem; color: white; position: relative; overflow: hidden;
+/* ══════════════════════════════════════════
+   BOOK LAB TEST — Teal Theme
+══════════════════════════════════════════ */
+.loc-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #0891b2 60%, #06b6d4 100%);
+    padding: 7rem 0 3rem; color: white;
+    position: relative; overflow: hidden;
 }
-.create-hdr::before {
-    content: ''; position: absolute; inset: 0; opacity: .08;
-    background: url('https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&w=2070&q=80') center/cover;
+.loc-header::before {
+    content:''; position:absolute; inset:0;
+    background: url('https://images.unsplash.com/photo-1579154204601-01588f351e67?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover;
+    opacity: 0.06;
 }
-.create-hdr .container { position: relative; z-index: 1; }
+.loc-header .container { position:relative; z-index:1; }
+.loc-header::after {
+    content:''; position:absolute; bottom:-1px; left:0; right:0;
+    height:45px; background:#f4f6f9;
+    clip-path: ellipse(55% 100% at 50% 100%);
+}
+.loc-main { background:#f4f6f9; padding:2rem 0 4rem; }
 
-.f-card {
-    background: white; border-radius: 14px; padding: 1.8rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,.07); margin-bottom: 1.5rem;
+/* Lab Info Box */
+.lab-info-box {
+    background: linear-gradient(135deg,rgba(8,145,178,0.08),rgba(8,145,178,0.15));
+    border: 2px solid rgba(8,145,178,0.25);
+    border-radius: 14px; padding: 1.4rem;
+    display: flex; gap: 1.2rem; align-items: center;
+    margin-bottom: 1.5rem;
 }
-.f-card h5 {
-    color: #7b1fa2; font-weight: 700; font-size: .95rem;
-    border-bottom: 2px solid #f3e5f5; padding-bottom: .6rem;
-    margin-bottom: 1.2rem; display: flex; align-items: center; gap: .5rem;
+.lab-info-box .lab-avatar {
+    width: 70px; height: 70px; border-radius: 12px;
+    background: linear-gradient(135deg,#0891b2,#0c4a6e);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.8rem; flex-shrink: 0;
 }
-.f-label { display: block; font-size: .82rem; font-weight: 600; color: #4a148c; margin-bottom: .4rem; }
-.f-input, .f-select, .f-textarea {
-    width: 100%; padding: .7rem .9rem; border: 1.5px solid #e0d0f0;
-    border-radius: 8px; font-size: .88rem; background: white;
-    transition: all .3s; color: #333;
-}
-.f-input:focus, .f-select:focus, .f-textarea:focus {
-    border-color: #7b1fa2; outline: none;
-    box-shadow: 0 0 0 3px rgba(123,31,162,.1);
-}
+.lab-info-box .lab-name { font-size: 1.15rem; font-weight: 700; color: #0c4a6e; }
+.lab-info-box .lab-meta { font-size: 0.82rem; color: #666; margin-top: 0.3rem; }
 
-/* ── Tab buttons ── */
-.tab-bar {
-    display: flex; gap: .5rem; flex-wrap: wrap;
-    margin-bottom: 1.2rem; border-bottom: 2px solid #f3e5f5;
-    padding-bottom: .8rem;
+/* Form Card */
+.loc-card {
+    background: white; border-radius: 14px;
+    padding: 1.6rem; box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+    margin-bottom: 1.5rem;
 }
-.tab-btn {
-    padding: .45rem 1.1rem; border-radius: 20px; border: 1.5px solid #e1bee7;
-    background: transparent; color: #7b1fa2; font-size: .78rem;
-    font-weight: 700; cursor: pointer; transition: all .2s;
-    display: inline-flex; align-items: center; gap: .35rem;
+.loc-section-title {
+    font-size: 1rem; font-weight: 700; color: #0c4a6e;
+    margin-bottom: 1.1rem; padding-bottom: 0.7rem;
+    border-bottom: 2px solid #e0f2fe;
+    display: flex; align-items: center; gap: 0.5rem;
 }
-.tab-btn.active {
-    background: #7b1fa2; color: white; border-color: #7b1fa2;
-}
-.tab-btn:hover:not(.active) { background: #f3e5f5; }
-.tab-pane { display: none; }
-.tab-pane.show { display: block; }
+.loc-section-title i { color: #0891b2; }
 
-/* ── Service / Test grid ── */
-.test-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .6rem;
+/* ── Test / Package Items ── */
+.test-item, .pkg-item {
+    border: 2px solid #e9ecef; border-radius: 10px;
+    padding: 1rem; margin-bottom: 0.8rem;
+    cursor: pointer; transition: all 0.3s;
+    display: flex; align-items: flex-start; gap: 0.9rem;
+    user-select: none;
 }
-.test-item {
-    border: 1.5px solid #e1bee7; border-radius: 10px; padding: .75rem .9rem;
-    cursor: pointer; transition: all .2s; display: flex; align-items: flex-start; gap: .6rem;
-    background: #fdf8ff;
+.test-item:hover, .pkg-item:hover {
+    border-color: #0891b2;
+    box-shadow: 0 4px 12px rgba(8,145,178,0.1);
 }
-.test-item:hover { border-color: #7b1fa2; background: #f3e5f5; }
-.test-item.selected { border-color: #7b1fa2; background: #f3e5f5;
-    box-shadow: 0 0 0 3px rgba(123,31,162,.12); }
-.test-item input[type="checkbox"] {
-    accent-color: #7b1fa2; width: 15px; height: 15px;
-    flex-shrink: 0; margin-top: 2px;
-}
-.price-tag-green { font-size: .72rem; color: #2e7d32; font-weight: 700; margin-top: .2rem; }
-.price-tag-orange { font-size: .72rem; color: #f57c00; font-weight: 600; margin-top: .2rem; }
-
-/* ── Package items ── */
-.pkg-item {
-    border: 1.5px solid #e1bee7; border-radius: 10px; padding: .9rem 1rem;
-    cursor: pointer; transition: all .2s; display: flex; align-items: flex-start;
-    gap: .7rem; margin-bottom: .6rem; background: #fdf8ff;
-}
-.pkg-item:hover { border-color: #7b1fa2; background: #f3e5f5; }
-.pkg-item.selected { border-color: #7b1fa2; background: #f3e5f5;
-    box-shadow: 0 0 0 3px rgba(123,31,162,.12); }
-.pkg-item input[type="checkbox"] {
-    accent-color: #7b1fa2; width: 15px; height: 15px;
-    margin-top: 3px; flex-shrink: 0;
+.test-item.selected, .pkg-item.selected {
+    border-color: #0891b2; background: #f0f9ff;
+    box-shadow: 0 4px 14px rgba(8,145,178,0.15);
 }
 
-/* ── Collection buttons ── */
-.coll-opts { display: flex; gap: .8rem; flex-wrap: wrap; }
-.coll-opt {
-    flex: 1; min-width: 130px; border: 2px solid #e1bee7;
-    border-radius: 10px; padding: .9rem; text-align: center;
-    cursor: pointer; transition: all .3s;
-}
-.coll-opt:hover { border-color: #7b1fa2; background: #faf4fc; }
-.coll-opt.active { border-color: #7b1fa2; background: #f3e5f5; }
-.coll-opt input { display: none; }
-.coll-opt i { font-size: 1.4rem; color: #7b1fa2; margin-bottom: .4rem; display: block; }
-.coll-opt span { font-size: .78rem; font-weight: 700; color: #4a148c; }
-.coll-opt small { display: block; font-size: .68rem; color: #888; margin-top: .2rem; }
+/* hide real checkbox */
+.item-cb { display: none !important; }
 
-/* ── Upload ── */
-.upload-area {
-    border: 2px dashed #ce93d8; border-radius: 10px; padding: 1.5rem;
-    text-align: center; cursor: pointer; transition: all .3s; background: #faf4fc;
+.item-check {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid #ccc; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; background: white; margin-top: 2px;
 }
-.upload-area:hover { border-color: #7b1fa2; background: #f3e5f5; }
-.upload-area.has-file { border-color: #43a047; background: #e8f5e9; }
+.test-item.selected .item-check,
+.pkg-item.selected  .item-check {
+    background: #0891b2; border-color: #0891b2;
+}
+.item-check-icon { font-size: 0.7rem; color: transparent; transition: color 0.15s; }
+.test-item.selected .item-check-icon,
+.pkg-item.selected  .item-check-icon { color: white; }
 
-/* ── Summary ── */
-.sum-card {
-    background: white; border-radius: 14px; padding: 1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,.07); position: sticky; top: 100px;
-}
-.sum-card h5 {
-    color: #7b1fa2; font-weight: 700; font-size: .95rem;
-    border-bottom: 2px solid #f3e5f5; padding-bottom: .6rem; margin-bottom: 1rem;
-}
-.sum-item {
-    display: flex; justify-content: space-between;
-    font-size: .82rem; padding: .45rem 0;
-    border-bottom: 1px solid #f7f7f7; color: #555;
-}
-.sum-item:last-child { border-bottom: none; }
-.sum-total {
-    display: flex; justify-content: space-between;
-    font-size: 1rem; font-weight: 700; color: #2e7d32;
-    padding-top: .8rem; margin-top: .4rem; border-top: 2px solid #f3e5f5;
-}
-.btn-submit {
-    background: linear-gradient(135deg, #7b1fa2, #4a148c);
-    color: white; border: none; padding: 1rem 2rem; border-radius: 25px;
-    font-size: 1rem; font-weight: 700; cursor: pointer; transition: all .3s;
-    width: 100%; display: flex; align-items: center; justify-content: center;
-    gap: .6rem; box-shadow: 0 4px 15px rgba(123,31,162,.3);
-}
-.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(123,31,162,.4); }
+.item-name  { font-weight: 700; color: #0c4a6e; font-size: 0.9rem; margin-bottom: 0.15rem; }
+.item-meta  { font-size: 0.75rem; color: #888; line-height: 1.5; }
+.item-price { font-weight: 700; color: #0891b2; font-size: 1rem; flex-shrink: 0; margin-left: auto; padding-left: 0.5rem; }
 
-/* ── Section label ── */
-.sub-label {
-    font-size: .78rem; font-weight: 700; color: #7b1fa2;
-    margin-bottom: .6rem; display: flex; align-items: center; gap: .4rem;
+/* Cat Label */
+.cat-label {
+    font-size: 0.8rem; font-weight: 700; color: #0891b2;
+    margin: 1rem 0 0.5rem;
+    display: flex; align-items: center; gap: 0.4rem;
 }
-.cat-title {
-    font-size: .68rem; font-weight: 700; color: #bbb;
-    text-transform: uppercase; letter-spacing: 1px;
-    margin: .7rem 0 .4rem;
+
+/* Form Controls */
+.loc-label { display:block; font-size:0.88rem; font-weight:700; color:#0c4a6e; margin-bottom:0.45rem; }
+.loc-input, .loc-select, .loc-textarea {
+    width:100%; padding:0.72rem 1rem;
+    border:2px solid #e9ecef; border-radius:10px;
+    font-size:0.9rem; color:#333; transition:all 0.3s;
+    background: white; font-family: inherit;
 }
-.info-banner {
-    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-    border-left: 4px solid #1565c0; border-radius: 8px;
-    padding: .75rem 1rem; font-size: .8rem; color: #0d47a1; margin-bottom: 1rem;
+.loc-input:focus, .loc-select:focus, .loc-textarea:focus {
+    border-color:#0891b2; outline:none;
+    box-shadow:0 0 0 3px rgba(8,145,178,0.1);
+}
+.loc-textarea { resize:vertical; min-height:90px; }
+
+/* ── Collection Type Cards ── */
+.col-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+@media (max-width: 500px) { .col-type-grid { grid-template-columns: 1fr; } }
+
+.col-type-card {
+    border: 2px solid #e9ecef;
+    border-radius: 12px; padding: 1.1rem 1rem;
+    cursor: pointer; transition: all 0.3s;
+    display: flex; align-items: center; gap: 0.8rem;
+    background: #f8f9fa;
+    user-select: none;
+}
+.col-type-card:hover { border-color: #0891b2; background: white; }
+.col-type-card.active {
+    border-color: #0891b2; background: #f0f9ff;
+    box-shadow: 0 4px 12px rgba(8,145,178,0.15);
+}
+.col-type-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: #e0f2fe; display: flex;
+    align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 1.1rem; color: #0891b2;
+    transition: all 0.3s;
+}
+.col-type-card.active .col-type-icon {
+    background: linear-gradient(135deg,#0891b2,#0c4a6e);
+    color: white;
+}
+.col-type-title { font-weight: 700; color: #0c4a6e; font-size: 0.88rem; }
+.col-type-sub   { font-size: 0.72rem; color: #888; }
+
+/* Home address reveal */
+#homeAddressSection {
+    background: #f0f9ff; border: 1.5px solid #bae6fd;
+    border-radius: 12px; padding: 1.1rem;
+    margin-top: 1rem; display: none;
+    animation: slideDown 0.3s ease;
+}
+@keyframes slideDown {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+
+/* Summary Box */
+.order-summary {
+    background: white; border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+    overflow: hidden; position: sticky; top: 80px;
+}
+.summary-header {
+    background: linear-gradient(135deg,#0891b2,#0c4a6e);
+    color: white; padding: 1.1rem 1.4rem;
+    font-weight: 700; font-size: 0.95rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.summary-body { padding: 1.2rem 1.4rem; }
+.summary-item {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 0.6rem 0; border-bottom: 1px solid #f0f9ff; font-size: 0.85rem;
+}
+.summary-item:last-child { border-bottom: none; }
+.summary-name  { color: #555; flex: 1; padding-right: 0.5rem; line-height: 1.4; }
+.summary-price { font-weight: 700; color: #0891b2; flex-shrink: 0; }
+.summary-total {
+    background: #e0f2fe; padding: 1rem 1.4rem;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.summary-empty {
+    text-align: center; padding: 1.5rem 0;
+    color: #bbb; font-size: 0.85rem;
+}
+.summary-empty i { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+
+/* Submit */
+.loc-submit-btn {
+    background: linear-gradient(135deg,#0891b2,#0c4a6e);
+    color: white; border: none;
+    padding: 1rem 2rem; border-radius: 12px;
+    font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; transition: all 0.3s; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    box-shadow: 0 4px 14px rgba(8,145,178,0.3);
+}
+.loc-submit-btn:hover:not(:disabled) {
+    filter: brightness(1.1); transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(8,145,178,0.4);
+}
+.loc-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Alerts */
+.loc-alert {
+    border-radius: 12px; padding: 1rem 1.3rem; margin-bottom: 1.5rem;
+    display: flex; align-items: flex-start; gap: 0.8rem; font-size: 0.9rem;
+}
+.loc-alert.error   { background:#fee2e2; color:#991b1b; border-left:5px solid #dc2626; }
+.loc-alert.warning { background:#fef3c7; color:#92400e; border-left:5px solid #f59e0b; }
+.loc-alert.info    { background:#e0f2fe; color:#0c4a6e; border-left:5px solid #0891b2; }
+
+@media (max-width:768px) {
+    .loc-header { padding: 5rem 0 2.5rem; }
+    .lab-info-box { flex-direction: column; text-align: center; }
+    .order-summary { position: static; margin-top: 1.5rem; }
 }
 </style>
 
-{{-- ══════════ HEADER ══════════ --}}
-<section class="create-hdr">
+{{-- PAGE HEADER --}}
+<section class="loc-header">
     <div class="container">
         <a href="{{ route('patient.laboratories.show', $laboratory->id) }}"
-           style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.88rem;display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1rem;">
-            <i class="fas fa-arrow-left"></i> {{ $laboratory->name }}
+           style="color:rgba(255,255,255,0.9);text-decoration:none;font-size:0.88rem;
+                  display:inline-flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
+                  transition:all 0.3s;">
+            <i class="fas fa-arrow-left"></i> Back to Lab Profile
         </a>
-        <h1 style="font-size:1.8rem;font-weight:700;margin-bottom:.3rem;">
-            <i class="fas fa-calendar-plus me-2"></i> Book Lab Test
-        </h1>
-        <p style="opacity:.85;font-size:.9rem;">{{ $laboratory->name }} · {{ $laboratory->city }}</p>
+        <div class="row text-center">
+            <div class="col-lg-8 mx-auto">
+                <h1 style="font-size:2rem;font-weight:700;margin-bottom:0.4rem;">
+                    <i class="fas fa-flask me-2" style="opacity:0.85;"></i> Book Lab Test
+                </h1>
+                <p style="opacity:0.9;font-size:0.95rem;margin:0;">
+                    Select tests, choose collection method and submit your order
+                </p>
+            </div>
+        </div>
     </div>
 </section>
 
-<section style="background:#faf4fc;padding:2.5rem 0;min-height:600px;">
+<section class="loc-main">
     <div class="container">
 
+        {{-- Alerts --}}
+        @if(session('error'))
+        <div class="loc-alert error">
+            <i class="fas fa-exclamation-circle fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+        @endif
+
         @if($errors->any())
-        <div class="alert alert-danger border-0 rounded-3 mb-3">
-            <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+        <div class="loc-alert error">
+            <i class="fas fa-exclamation-circle fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+            <div>
+                @foreach($errors->all() as $err)
+                <div>{{ $err }}</div>
+                @endforeach
+            </div>
         </div>
         @endif
 
@@ -178,460 +270,300 @@
               method="POST" enctype="multipart/form-data" id="orderForm">
             @csrf
 
+            {{-- Hidden real radio for collection_type — value set by JS --}}
+            <input type="hidden" name="collection_type" id="collectionTypeInput" value="walk_in">
+
             <div class="row g-4">
 
-                {{-- ═══════════════════════════
-                     LEFT COLUMN
-                ═══════════════════════════ --}}
+                {{-- ═══════════════ LEFT COLUMN ═══════════════ --}}
                 <div class="col-lg-8">
 
-                    {{-- Lab Info Banner --}}
-                    <div class="f-card" style="background:linear-gradient(135deg,#f3e5f5,#fce4ec);border:none;padding:1.2rem 1.5rem;">
-                        <div class="d-flex align-items-center gap-3">
-                            <img src="{{ $laboratory->profile_image ? asset('storage/'.$laboratory->profile_image) : asset('images/default-lab.png') }}"
-                                 style="width:55px;height:55px;border-radius:50%;object-fit:cover;border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.1);"
-                                 onerror="this.src='{{ asset('images/default-lab.png') }}'">
-                            <div>
-                                <div style="font-weight:700;color:#4a148c;font-size:1rem;">{{ $laboratory->name }}</div>
-                                <div style="font-size:.78rem;color:#666;">
-                                    <i class="fas fa-map-marker-alt me-1"></i>
-                                    {{ $laboratory->city }}, {{ $laboratory->province }}
-                                </div>
-                                @if($laboratory->operating_hours)
-                                <div style="font-size:.72rem;color:#888;">
-                                    <i class="fas fa-clock me-1"></i>{{ $laboratory->operating_hours }}
-                                </div>
+                    {{-- Lab Info --}}
+                    <div class="lab-info-box">
+                        @if($laboratory->profile_image)
+                            <img src="{{ asset('storage/'.$laboratory->profile_image) }}"
+                                 alt="{{ $laboratory->name }}"
+                                 style="width:70px;height:70px;border-radius:12px;object-fit:cover;
+                                        border:3px solid rgba(8,145,178,0.3);">
+                        @else
+                            <div class="lab-avatar"><i class="fas fa-flask"></i></div>
+                        @endif
+                        <div>
+                            <div class="lab-name">{{ $laboratory->name }}</div>
+                            <div class="lab-meta">
+                                @if($laboratory->city)
+                                <span>
+                                    <i class="fas fa-map-marker-alt me-1" style="color:#0891b2;"></i>
+                                    {{ $laboratory->city }}
+                                </span>
+                                @endif
+                                @if($laboratory->phone)
+                                <span class="ms-2">
+                                    <i class="fas fa-phone me-1" style="color:#0891b2;"></i>
+                                    {{ $laboratory->phone }}
+                                </span>
                                 @endif
                             </div>
                         </div>
                     </div>
 
-                    {{-- ═══════════════════════════
-                         SELECT SERVICES / TESTS
-                    ═══════════════════════════ --}}
-                    @php
-                        // laboratories.services JSON decode
-                        $labServices = $laboratory->services ?? [];
-                        if (is_string($labServices)) {
-                            $labServices = json_decode($labServices, true) ?? [];
-                        }
-                        $labServices = array_filter(array_map('trim', $labServices));
-
-                        $hasServices = count($labServices) > 0;
-                        $hasTests    = $labTests->count() > 0;
-                        $hasPackages = $labPackages->count() > 0;
-                        $hasAnything = $hasServices || $hasTests || $hasPackages;
-
-                        // Default active tab
-                        $defaultTab = $hasTests ? 'tests' : ($hasServices ? 'services' : 'packages');
-                    @endphp
-
-                    @if($hasAnything)
-                    <div class="f-card">
-                        <h5><i class="fas fa-vials"></i> Select Services / Tests</h5>
-
-                        <div class="info-banner">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Items marked <strong style="color:#f57c00;">"Price to confirm"</strong> — the lab will
-                            confirm the fee after booking. You can select multiple items.
+                    {{-- ── Individual Tests ── --}}
+                    @if($labTests->count() > 0)
+                    <div class="loc-card">
+                        <div class="loc-section-title">
+                            <i class="fas fa-vial"></i> Individual Tests
                         </div>
 
-                        {{-- ── Tab Buttons ── --}}
-                        <div class="tab-bar">
-                            @if($hasTests)
-                            <button type="button"
-                                    class="tab-btn {{ $defaultTab==='tests' ? 'active' : '' }}"
-                                    id="tab-tests"
-                                    onclick="switchTab('tests')">
-                                <i class="fas fa-vial"></i>
-                                Tests
-                                <span style="background:rgba(255,255,255,.3);border-radius:8px;padding:.05rem .4rem;font-size:.7rem;">
-                                    {{ $labTests->count() }}
-                                </span>
-                            </button>
-                            @endif
+                        @php $cats = $labTests->groupBy('test_category'); @endphp
 
-                            @if($hasServices)
-                            <button type="button"
-                                    class="tab-btn {{ $defaultTab==='services' ? 'active' : '' }}"
-                                    id="tab-services"
-                                    onclick="switchTab('services')">
-                                <i class="fas fa-flask"></i>
-                                Services
-                                <span style="background:rgba(255,255,255,.3);border-radius:8px;padding:.05rem .4rem;font-size:.7rem;">
-                                    {{ count($labServices) }}
-                                </span>
-                            </button>
-                            @endif
-
-                            @if($hasPackages)
-                            <button type="button"
-                                    class="tab-btn {{ $defaultTab==='packages' ? 'active' : '' }}"
-                                    id="tab-packages"
-                                    onclick="switchTab('packages')">
-                                <i class="fas fa-box-open"></i>
-                                Packages
-                                <span style="background:rgba(255,255,255,.3);border-radius:8px;padding:.05rem .4rem;font-size:.7rem;">
-                                    {{ $labPackages->count() }}
-                                </span>
-                            </button>
-                            @endif
-                        </div>
-
-                        {{-- ══════════════════════════════
-                             TAB: PRICED TESTS (lab_tests)
-                        ══════════════════════════════ --}}
-                        @if($hasTests)
-                        <div class="tab-pane {{ $defaultTab==='tests' ? 'show' : '' }}"
-                             id="pane-tests">
-                            @php $byCategory = $labTests->groupBy('test_category'); @endphp
-                            @foreach($byCategory as $cat => $tests)
-                            <div class="cat-title">
-                                <i class="fas fa-folder me-1"></i>{{ $cat ?? 'General' }}
+                        @foreach($cats as $cat => $tests)
+                            @if($cat)
+                            <div class="cat-label">
+                                <i class="fas fa-tag"></i> {{ $cat }}
                             </div>
-                            <div class="test-grid" style="margin-bottom:.8rem;">
-                                @foreach($tests as $test)
-                                <label class="test-item" id="ti-{{ $test->id }}"
-                                       onclick="toggleItem(this)">
-                                    <input type="checkbox"
-                                           name="selected_items[]"
-                                           value="test_{{ $test->id }}"
-                                           data-price="{{ number_format($test->price, 2, '.', '') }}"
-                                           data-name="{{ addslashes($test->test_name) }}"
-                                           data-free="{{ $test->price <= 0 ? '1' : '0' }}"
-                                           onchange="calcTotal()">
-                                    <div style="flex:1;">
-                                        <div style="font-size:.82rem;font-weight:600;color:#4a148c;line-height:1.3;">
-                                            {{ $test->test_name }}
-                                        </div>
-                                        @if($test->requirements)
-                                        <div style="font-size:.68rem;color:#888;margin-top:.15rem;">
-                                            <i class="fas fa-info-circle me-1"></i>{{ Str::limit($test->requirements, 38) }}
-                                        </div>
+                            @endif
+
+                            @foreach($tests as $test)
+                            <div class="test-item" data-value="test_{{ $test->id }}" data-price="{{ $test->price ?? 0 }}" data-name="{{ $test->test_name }}">
+                                <div class="item-check">
+                                    <i class="fas fa-check item-check-icon"></i>
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div class="item-name">{{ $test->test_name }}</div>
+                                    <div class="item-meta">
+                                        @if($test->test_category)
+                                        <span class="me-2">
+                                            <i class="fas fa-tag me-1" style="color:#0891b2;"></i>
+                                            {{ $test->test_category }}
+                                        </span>
                                         @endif
                                         @if($test->duration_hours)
-                                        <div style="font-size:.68rem;color:#888;">
-                                            <i class="fas fa-clock me-1"></i>Results in {{ $test->duration_hours }}h
-                                        </div>
+                                        <span class="me-2">
+                                            <i class="fas fa-clock me-1" style="color:#7c3aed;"></i>
+                                            {{ $test->duration_hours }}h
+                                        </span>
                                         @endif
-                                        @if($test->price > 0)
-                                        <div class="price-tag-green">
-                                            <i class="fas fa-tag me-1"></i>Rs. {{ number_format($test->price, 2) }}
-                                        </div>
-                                        @else
-                                        <div class="price-tag-orange">
-                                            <i class="fas fa-question-circle me-1"></i>Price to confirm
-                                        </div>
+                                        @if($test->requirements)
+                                        <span style="color:#d97706;">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            {{ Str::limit($test->requirements, 50) }}
+                                        </span>
                                         @endif
-                                    </div>
-                                </label>
-                                @endforeach
-                            </div>
-                            @endforeach
-                        </div>
-                        @endif
-
-                        {{-- ══════════════════════════════════════
-                             TAB: SERVICES (laboratories.services JSON)
-                        ══════════════════════════════════════ --}}
-                        @if($hasServices)
-                        <div class="tab-pane {{ $defaultTab==='services' ? 'show' : '' }}"
-                             id="pane-services">
-
-                            <div style="font-size:.78rem;color:#888;margin-bottom:.8rem;">
-                                <i class="fas fa-info-circle me-1" style="color:#7b1fa2;"></i>
-                                These are the services this lab offers. Select what you need — the lab will
-                                confirm exact pricing and schedule after submission.
-                            </div>
-
-                            <div class="test-grid">
-                                @foreach($labServices as $svcIndex => $svcName)
-                                @php $svcName = trim($svcName); @endphp
-                                @if($svcName !== '')
-                                <label class="test-item" id="si-{{ $svcIndex }}"
-                                       onclick="toggleItem(this)">
-                                    <input type="checkbox"
-                                           name="selected_items[]"
-                                           value="service_{{ $svcIndex }}_{{ Str::slug($svcName) }}"
-                                           data-price="0"
-                                           data-name="{{ addslashes($svcName) }}"
-                                           data-free="1"
-                                           onchange="calcTotal()">
-                                    <div style="flex:1;">
-                                        <div style="font-size:.82rem;font-weight:600;color:#4a148c;line-height:1.3;">
-                                            <i class="fas fa-flask me-1" style="color:#ab47bc;font-size:.75rem;"></i>
-                                            {{ $svcName }}
-                                        </div>
-                                        <div class="price-tag-orange">
-                                            <i class="fas fa-question-circle me-1"></i>Price to confirm
-                                        </div>
-                                    </div>
-                                </label>
-                                @endif
-                                @endforeach
-                            </div>
-
-                        </div>
-                        @endif
-
-                        {{-- ══════════════════════════════
-                             TAB: PACKAGES (lab_packages)
-                        ══════════════════════════════ --}}
-                        @if($hasPackages)
-                        <div class="tab-pane {{ $defaultTab==='packages' ? 'show' : '' }}"
-                             id="pane-packages">
-                            @foreach($labPackages as $pkg)
-                            @php
-                                $pkgPrice = $pkg->discount_percentage
-                                    ? round($pkg->price * (1 - $pkg->discount_percentage / 100), 2)
-                                    : $pkg->price;
-                            @endphp
-                            <label class="pkg-item" id="pi-{{ $pkg->id }}"
-                                   onclick="toggleItem(this)">
-                                <input type="checkbox"
-                                       name="selected_items[]"
-                                       value="package_{{ $pkg->id }}"
-                                       data-price="{{ number_format($pkgPrice, 2, '.', '') }}"
-                                       data-name="{{ addslashes($pkg->package_name) }} (Package)"
-                                       data-free="0"
-                                       onchange="calcTotal()">
-                                <div style="flex:1;">
-                                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
-                                        <strong style="font-size:.87rem;color:#4a148c;">
-                                            {{ $pkg->package_name }}
-                                        </strong>
-                                        <div>
-                                            @if($pkg->discount_percentage)
-                                            <span class="badge bg-danger"
-                                                  style="font-size:.62rem;vertical-align:middle;">
-                                                {{ $pkg->discount_percentage }}% OFF
-                                            </span>
-                                            @endif
-                                            <strong style="color:#2e7d32;font-size:.9rem;margin-left:.3rem;">
-                                                Rs. {{ number_format($pkgPrice, 2) }}
-                                            </strong>
-                                            @if($pkg->discount_percentage)
-                                            <del style="font-size:.72rem;color:#bbb;margin-left:.3rem;">
-                                                Rs. {{ number_format($pkg->price, 2) }}
-                                            </del>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    @if($pkg->description)
-                                    <div style="font-size:.75rem;color:#666;margin-top:.25rem;">
-                                        {{ $pkg->description }}
-                                    </div>
-                                    @endif
-                                    <div style="font-size:.7rem;color:#ab47bc;margin-top:.25rem;">
-                                        <i class="fas fa-layer-group me-1"></i>
-                                        {{ $pkg->tests->count() }} tests included
                                     </div>
                                 </div>
-                            </label>
+                                <div class="item-price">Rs. {{ number_format($test->price ?? 0, 2) }}</div>
+                            </div>
                             @endforeach
-                        </div>
-                        @endif
-
-                    </div>
-                    @else
-                    {{-- No tests/services at all --}}
-                    <div class="f-card" style="text-align:center;padding:2rem;">
-                        <i class="fas fa-info-circle"
-                           style="font-size:2rem;color:#7b1fa2;display:block;margin-bottom:.6rem;"></i>
-                        <p style="font-size:.88rem;color:#666;margin:0;">
-                            No specific tests listed yet. Your order will be submitted as a
-                            <strong>general inquiry</strong> — the lab will contact you.
-                        </p>
+                        @endforeach
                     </div>
                     @endif
 
-                    {{-- ══════════════════
-                         PRESCRIPTION
-                    ══════════════════ --}}
-                    <div class="f-card">
-                        <h5><i class="fas fa-file-prescription"></i> Doctor's Prescription
-                            <span style="font-size:.72rem;color:#999;font-weight:400;">(Optional)</span>
-                        </h5>
-
-                        @if($referralNote)
-                        <div style="background:#e8f5e9;border-left:4px solid #43a047;border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem;font-size:.82rem;color:#1b5e20;">
-                            <i class="fas fa-notes-medical me-2"></i>
-                            <strong>Doctor's Note:</strong> {{ $referralNote }}
+                    {{-- ── Packages ── --}}
+                    @if($labPackages->count() > 0)
+                    <div class="loc-card">
+                        <div class="loc-section-title">
+                            <i class="fas fa-box"></i> Test Packages
                         </div>
-                        @endif
 
-                        <div class="upload-area" id="uploadArea"
-                             onclick="document.getElementById('prescription_file').click()">
-                            <input type="file" name="prescription_file" id="prescription_file"
-                                   accept=".pdf,.jpg,.jpeg,.png" style="display:none;"
-                                   onchange="handleFile(this)">
-                            <div id="upPlaceholder">
-                                <i class="fas fa-cloud-upload-alt"
-                                   style="font-size:2rem;color:#ce93d8;margin-bottom:.5rem;display:block;"></i>
-                                <div style="font-size:.85rem;font-weight:600;color:#7b1fa2;">
-                                    Click to upload prescription
-                                </div>
-                                <div style="font-size:.72rem;color:#999;margin-top:.3rem;">
-                                    PDF, JPG, PNG · Max 5MB
+                        @foreach($labPackages as $pkg)
+                        @php
+                            $finalPrice = $pkg->discount_percentage
+                                ? round($pkg->price * (1 - $pkg->discount_percentage / 100), 2)
+                                : $pkg->price;
+                        @endphp
+                        <div class="pkg-item" data-value="package_{{ $pkg->id }}" data-price="{{ $finalPrice }}" data-name="{{ $pkg->package_name }}">
+                            <div class="item-check">
+                                <i class="fas fa-check item-check-icon"></i>
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="item-name">{{ $pkg->package_name }}</div>
+                                <div class="item-meta">
+                                    @if($pkg->tests->count() > 0)
+                                        <i class="fas fa-list me-1" style="color:#0891b2;"></i>
+                                        {{ $pkg->tests->count() }} tests:
+                                        @foreach($pkg->tests->take(3) as $pt)
+                                            {{ $pt->test_name }}@if(!$loop->last), @endif
+                                        @endforeach
+                                        @if($pkg->tests->count() > 3)
+                                            &amp; {{ $pkg->tests->count() - 3 }} more
+                                        @endif
+                                    @endif
                                 </div>
                             </div>
-                            <div id="upPreview" style="display:none;">
-                                <i class="fas fa-check-circle"
-                                   style="font-size:2rem;color:#43a047;margin-bottom:.5rem;display:block;"></i>
-                                <div id="upName" style="font-size:.85rem;font-weight:600;color:#2e7d32;"></div>
-                                <div style="font-size:.72rem;color:#888;margin-top:.2rem;">Click to change file</div>
+                            <div style="text-align:right;flex-shrink:0;padding-left:0.5rem;">
+                                <div class="item-price">Rs. {{ number_format($finalPrice, 2) }}</div>
+                                @if($pkg->discount_percentage)
+                                <div style="text-decoration:line-through;color:#aaa;font-size:0.75rem;">
+                                    Rs. {{ number_format($pkg->price, 2) }}
+                                </div>
+                                <span style="background:#dcfce7;color:#166534;padding:0.1rem 0.4rem;
+                                             border-radius:6px;font-size:0.7rem;font-weight:700;">
+                                    {{ $pkg->discount_percentage }}% OFF
+                                </span>
+                                @endif
                             </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+
+                    {{-- ── Collection Type ── --}}
+                    <div class="loc-card">
+                        <div class="loc-section-title">
+                            <i class="fas fa-truck"></i> Collection Type
+                        </div>
+
+                        <div class="col-type-grid">
+                            {{-- Walk-In --}}
+                            <div class="col-type-card active" data-col="walk_in" id="card-walk_in">
+                                <div class="col-type-icon">
+                                    <i class="fas fa-walking"></i>
+                                </div>
+                                <div>
+                                    <div class="col-type-title">Walk-In</div>
+                                    <div class="col-type-sub">Visit the laboratory in person</div>
+                                </div>
+                            </div>
+
+                            {{-- Home Collection --}}
+                            <div class="col-type-card" data-col="home" id="card-home">
+                                <div class="col-type-icon">
+                                    <i class="fas fa-home"></i>
+                                </div>
+                                <div>
+                                    <div class="col-type-title">Home Collection</div>
+                                    <div class="col-type-sub">Technician visits your home</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Home Address (animated reveal) --}}
+                        <div id="homeAddressSection">
+                            <label class="loc-label" style="color:#0369a1;">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                Collection Address <span style="color:#dc2626;">*</span>
+                            </label>
+                            <textarea name="collection_address"
+                                      id="collectionAddress"
+                                      class="loc-textarea"
+                                      rows="2"
+                                      placeholder="House No., Street, City, Postal Code...">{{ old('collection_address') }}</textarea>
                         </div>
                     </div>
 
-                    {{-- ══════════════════
-                         COLLECTION METHOD
-                    ══════════════════ --}}
-                    <div class="f-card">
-                        <h5><i class="fas fa-map-marker-alt"></i> Collection Method</h5>
-                        <div class="coll-opts">
-                            <label class="coll-opt active" id="co-walk_in"
-                                   onclick="setColl('walk_in')">
-                                <input type="radio" name="collection_type" value="walk_in" checked>
-                                <i class="fas fa-walking"></i>
-                                <span>Walk-in</span>
-                                <small>Visit the lab directly</small>
-                            </label>
-                            <label class="coll-opt" id="co-appointment"
-                                   onclick="setColl('appointment')">
-                                <input type="radio" name="collection_type" value="appointment">
-                                <i class="fas fa-calendar-check"></i>
-                                <span>Appointment</span>
-                                <small>Book a time slot</small>
-                            </label>
-                            @if($laboratory->home_collection ?? false)
-                            <label class="coll-opt" id="co-home"
-                                   onclick="setColl('home')">
-                                <input type="radio" name="collection_type" value="home">
-                                <i class="fas fa-home"></i>
-                                <span>Home Collection</span>
-                                <small>Sample at your home</small>
-                            </label>
-                            @endif
+                    {{-- ── Date & Time ── --}}
+                    <div class="loc-card">
+                        <div class="loc-section-title">
+                            <i class="fas fa-calendar-alt"></i> Preferred Date & Time
                         </div>
-                    </div>
-
-                    {{-- ══════════════════
-                         DATE & TIME
-                    ══════════════════ --}}
-                    <div class="f-card">
-                        <h5><i class="fas fa-calendar-alt"></i> Preferred Date &amp; Time</h5>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="f-label">
-                                    Date <span style="color:#dc3545;">*</span>
+                                <label class="loc-label">
+                                    Collection Date <span style="color:#dc2626;">*</span>
                                 </label>
-                                <input type="date" name="collection_date" class="f-input"
-                                       min="{{ date('Y-m-d') }}"
-                                       value="{{ old('collection_date') }}" required>
+                                <input type="date" name="collection_date" class="loc-input"
+                                       value="{{ old('collection_date') }}"
+                                       min="{{ date('Y-m-d') }}" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="f-label">
+                                <label class="loc-label">
                                     Preferred Time
-                                    <span style="font-size:.7rem;color:#999;">(Optional)</span>
+                                    <span style="color:#888;font-weight:400;">(optional)</span>
                                 </label>
-                                <input type="time" name="collection_time" class="f-input"
+                                <input type="time" name="collection_time" class="loc-input"
                                        value="{{ old('collection_time') }}">
                             </div>
                         </div>
                     </div>
 
-                    {{-- ══════════════════
-                         HOME ADDRESS
-                    ══════════════════ --}}
-                    <div id="homeSection" style="display:none;">
-                        <div class="f-card" style="border-left:4px solid #2196F3;">
-                            <h5><i class="fas fa-home"></i> Home Collection Address</h5>
-                            <label class="f-label">
-                                Full Address <span style="color:#dc3545;">*</span>
-                            </label>
-                            <textarea name="collection_address" id="homeAddr"
-                                      class="f-textarea" rows="3"
-                                      placeholder="House No., Street, City, Postal Code">{{ old('collection_address') }}</textarea>
+                    {{-- ── Prescription ── --}}
+                    <div class="loc-card">
+                        <div class="loc-section-title">
+                            <i class="fas fa-file-medical"></i> Prescription
+                            <span style="font-weight:400;font-size:0.82rem;color:#aaa;">(optional)</span>
+                        </div>
+
+                        @if($referralNote)
+                        <div class="loc-alert info" style="margin-bottom:1rem;">
+                            <i class="fas fa-notes-medical" style="flex-shrink:0;"></i>
+                            <span>
+                                Doctor referral note: <strong>{{ $referralNote }}</strong>
+                            </span>
+                        </div>
+                        @endif
+
+                        <label class="loc-label">Upload Prescription / Doctor's Note</label>
+                        <input type="file" name="prescription_file" class="loc-input"
+                               accept=".pdf,.jpg,.jpeg,.png"
+                               style="padding:0.5rem 1rem;cursor:pointer;">
+                        <div style="font-size:0.75rem;color:#aaa;margin-top:0.4rem;">
+                            <i class="fas fa-paperclip me-1"></i>
+                            Accepted: PDF, JPG, PNG &middot; Max: 5MB
                         </div>
                     </div>
 
-                    {{-- ══════════════════
-                         NOTES
-                    ══════════════════ --}}
-                    <div class="f-card">
-                        <h5><i class="fas fa-sticky-note"></i> Additional Notes
-                            <span style="font-size:.72rem;color:#999;font-weight:400;">(Optional)</span>
-                        </h5>
-                        <textarea name="notes" class="f-textarea" rows="3"
-                                  placeholder="Special instructions, symptoms, doctor's verbal instructions…">{{ old('notes') }}</textarea>
+                    {{-- ── Notes ── --}}
+                    <div class="loc-card">
+                        <div class="loc-section-title">
+                            <i class="fas fa-sticky-note"></i> Additional Notes
+                            <span style="font-weight:400;font-size:0.82rem;color:#aaa;">(optional)</span>
+                        </div>
+                        <textarea name="notes" class="loc-textarea"
+                                  placeholder="Special instructions, medical conditions, fasting status..."
+                                  rows="3">{{ old('notes') }}</textarea>
                     </div>
 
                 </div>
+                {{-- END LEFT --}}
 
-                {{-- ═══════════════════════════
-                     RIGHT — ORDER SUMMARY
-                ═══════════════════════════ --}}
+                {{-- ═══════════════ RIGHT: SUMMARY ═══════════════ --}}
                 <div class="col-lg-4">
-                    <div class="sum-card">
-                        <h5><i class="fas fa-receipt me-2"></i>Order Summary</h5>
-
-                        <div style="margin-bottom:.8rem;">
-                            <div style="font-size:.7rem;color:#bbb;font-weight:600;margin-bottom:.2rem;text-transform:uppercase;letter-spacing:.5px;">Laboratory</div>
-                            <div style="font-weight:700;color:#4a148c;font-size:.9rem;">{{ $laboratory->name }}</div>
-                            <div style="font-size:.72rem;color:#999;">{{ $laboratory->city }}</div>
+                    <div class="order-summary">
+                        <div class="summary-header">
+                            <i class="fas fa-receipt"></i> Order Summary
+                            <span id="summaryCount"
+                                  style="margin-left:auto;background:rgba(255,255,255,0.25);
+                                         padding:0.1rem 0.55rem;border-radius:10px;
+                                         font-size:0.78rem;">0 items</span>
                         </div>
 
-                        <div id="sumItems" style="min-height:32px;margin-bottom:.5rem;">
-                            <div style="font-size:.78rem;color:#bbb;font-style:italic;text-align:center;padding:.5rem 0;">
-                                No tests selected
+                        <div class="summary-body" id="summaryBody">
+                            <div class="summary-empty" id="summaryEmpty">
+                                <i class="fas fa-vial"></i>
+                                Select tests or packages to see summary
                             </div>
                         </div>
 
-                        <div class="sum-total">
-                            <span>Total</span>
-                            <span id="sumTotal">Rs. 0.00</span>
+                        <div class="summary-total" id="summaryTotal" style="display:none;">
+                            <span style="font-weight:700;color:#0c4a6e;font-size:0.95rem;">
+                                <i class="fas fa-coins me-1" style="color:#0891b2;"></i> Total
+                            </span>
+                            <span style="font-size:1.4rem;font-weight:800;color:#0891b2;"
+                                  id="totalDisplay">Rs. 0.00</span>
                         </div>
 
-                        <div id="freeNote"
-                             style="font-size:.72rem;color:#f57c00;text-align:center;margin-top:.5rem;display:none;background:#fff3e0;border-radius:6px;padding:.4rem;">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Lab will confirm fee after booking
-                        </div>
+                        <div style="padding:1.2rem 1.4rem;border-top:1px solid #e0f2fe;">
+                            <div style="font-size:0.75rem;color:#888;margin-bottom:1rem;line-height:1.6;">
+                                <i class="fas fa-info-circle me-1" style="color:#0891b2;"></i>
+                                Payment can be made online after order submission.
+                            </div>
 
-                        <div id="hasFreeItems"
-                             style="font-size:.72rem;color:#1565c0;text-align:center;margin-top:.4rem;display:none;background:#e3f2fd;border-radius:6px;padding:.4rem;">
-                            <i class="fas fa-asterisk me-1"></i>
-                            * Some prices are to be confirmed
-                        </div>
+                            <button type="submit" class="loc-submit-btn" id="submitBtn" disabled>
+                                <i class="fas fa-paper-plane"></i> Submit Order
+                            </button>
 
-                        <button type="submit" class="btn-submit" style="margin-top:1.2rem;">
-                            <i class="fas fa-paper-plane"></i>
-                            <span id="submitTxt">Submit Lab Order</span>
-                        </button>
-
-                        <div style="text-align:center;margin-top:.8rem;">
                             <a href="{{ route('patient.laboratories.show', $laboratory->id) }}"
-                               style="font-size:.78rem;color:#bbb;text-decoration:none;">
-                                <i class="fas fa-times me-1"></i> Cancel
+                               style="display:flex;align-items:center;justify-content:center;gap:0.5rem;
+                                      margin-top:0.8rem;padding:0.7rem;border-radius:10px;
+                                      background:#f4f6f9;color:#666;text-decoration:none;
+                                      font-size:0.85rem;font-weight:600;transition:all 0.3s;">
+                                <i class="fas fa-times"></i> Cancel
                             </a>
-                        </div>
-
-                        <div style="display:flex;justify-content:center;gap:1.2rem;margin-top:1.2rem;flex-wrap:wrap;">
-                            <span style="font-size:.68rem;color:#bbb;display:flex;align-items:center;gap:.3rem;">
-                                <i class="fas fa-shield-alt" style="color:#43a047;"></i> Secure
-                            </span>
-                            <span style="font-size:.68rem;color:#bbb;display:flex;align-items:center;gap:.3rem;">
-                                <i class="fas fa-file-pdf" style="color:#1565c0;"></i> PDF Report
-                            </span>
-                            <span style="font-size:.68rem;color:#bbb;display:flex;align-items:center;gap:.3rem;">
-                                <i class="fab fa-whatsapp" style="color:#25D366;"></i> Notify
-                            </span>
                         </div>
                     </div>
                 </div>
 
-            </div>{{-- end row --}}
+            </div>
         </form>
     </div>
 </section>
@@ -639,139 +571,166 @@
 @include('partials.footer')
 
 <script>
-// ══════════════════════════════════════
-// Tab switching
-// ══════════════════════════════════════
-function switchTab(name) {
-    // Deactivate all tabs & panes
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show'));
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Activate selected
-    const btn  = document.getElementById('tab-' + name);
-    const pane = document.getElementById('pane-' + name);
-    if (btn)  btn.classList.add('active');
-    if (pane) pane.classList.add('show');
-}
+    // ══════════════════════════════════════
+    // 1. ITEM SELECTION (test / package)
+    //    — uses div clicks, no label/checkbox confusion
+    // ══════════════════════════════════════
+    const itemCards   = document.querySelectorAll('.test-item, .pkg-item');
+    const summaryBody = document.getElementById('summaryBody');
+    const summaryEmpty= document.getElementById('summaryEmpty');
+    const summaryTotal= document.getElementById('summaryTotal');
+    const summaryCount= document.getElementById('summaryCount');
+    const totalDisplay= document.getElementById('totalDisplay');
+    const submitBtn   = document.getElementById('submitBtn');
 
-// ══════════════════════════════════════
-// Toggle checkbox item visual
-// ══════════════════════════════════════
-function toggleItem(label) {
-    // Slight delay so checkbox state updates first
-    setTimeout(() => {
-        const cb = label.querySelector('input[type="checkbox"]');
-        if (cb && cb.checked) {
-            label.classList.add('selected');
-        } else {
-            label.classList.remove('selected');
-        }
-    }, 0);
-}
+    // Track selected items: Map<value, {name, price}>
+    const selected = new Map();
 
-// ══════════════════════════════════════
-// Calculate total & update summary
-// ══════════════════════════════════════
-function calcTotal() {
-    const checked   = document.querySelectorAll('input[name="selected_items[]"]:checked');
-    const sumDiv    = document.getElementById('sumItems');
-    const totalEl   = document.getElementById('sumTotal');
-    const freeNote  = document.getElementById('freeNote');
-    const freeItems = document.getElementById('hasFreeItems');
-    const submitTxt = document.getElementById('submitTxt');
+    // Hidden inputs container (we inject <input type="hidden"> for each selected item)
+    const form = document.getElementById('orderForm');
 
-    let total    = 0;
-    let hasFree  = false;
-    let html     = '';
+    function renderSummary() {
+        // Clear old hidden inputs for selected_items
+        form.querySelectorAll('input[name="selected_items[]"]').forEach(el => el.remove());
 
-    checked.forEach(cb => {
-        const price  = parseFloat(cb.dataset.price) || 0;
-        const isFree = cb.dataset.free === '1';
-        total += price;
-        if (isFree) hasFree = true;
-
-        html += `<div class="sum-item">
-            <span style="flex:1;padding-right:.4rem;">${cb.dataset.name}</span>
-            <span style="flex-shrink:0;font-weight:600;color:${isFree ? '#f57c00' : '#333'};">
-                ${isFree ? 'TBC' : 'Rs. ' + price.toFixed(2)}
-            </span>
-        </div>`;
-    });
-
-    sumDiv.innerHTML = html
-        || '<div style="font-size:.78rem;color:#bbb;font-style:italic;text-align:center;padding:.5rem 0;">No tests selected</div>';
-
-    totalEl.textContent = total > 0
-        ? 'Rs. ' + total.toFixed(2)
-        : (checked.length > 0 ? 'TBC' : 'Rs. 0.00');
-
-    // Notes
-    freeNote.style.display  = (checked.length === 0) ? 'block' : 'none';
-    freeItems.style.display = (hasFree && checked.length > 0) ? 'block' : 'none';
-
-    // Submit button text
-    if (total > 0) {
-        submitTxt.textContent = 'Proceed to Payment — Rs. ' + total.toFixed(2);
-    } else if (checked.length > 0) {
-        submitTxt.textContent = 'Submit Order (Price TBC)';
-    } else {
-        submitTxt.textContent = 'Submit Lab Order';
-    }
-}
-
-// ══════════════════════════════════════
-// Collection type toggle
-// ══════════════════════════════════════
-function setColl(type) {
-    document.querySelectorAll('.coll-opt').forEach(el => el.classList.remove('active'));
-    const el = document.getElementById('co-' + type);
-    if (el) el.classList.add('active');
-
-    document.querySelectorAll('input[name="collection_type"]').forEach(r => {
-        r.checked = (r.value === type);
-    });
-
-    const homeSection = document.getElementById('homeSection');
-    const homeAddr    = document.getElementById('homeAddr');
-    if (type === 'home') {
-        homeSection.style.display = 'block';
-        if (homeAddr) homeAddr.required = true;
-    } else {
-        homeSection.style.display = 'none';
-        if (homeAddr) homeAddr.required = false;
-    }
-}
-
-// ══════════════════════════════════════
-// File upload handler
-// ══════════════════════════════════════
-function handleFile(input) {
-    const area = document.getElementById('uploadArea');
-    const ph   = document.getElementById('upPlaceholder');
-    const pv   = document.getElementById('upPreview');
-    const nm   = document.getElementById('upName');
-
-    if (input.files && input.files[0]) {
-        if (input.files[0].size > 5 * 1024 * 1024) {
-            alert('File too large! Maximum size is 5MB.');
-            input.value = '';
+        if (selected.size === 0) {
+            summaryBody.innerHTML = '';
+            summaryBody.appendChild(summaryEmpty);
+            summaryEmpty.style.display = 'block';
+            summaryTotal.style.display = 'none';
+            summaryCount.textContent   = '0 items';
+            submitBtn.disabled         = true;
+            submitBtn.style.opacity    = '0.5';
             return;
         }
-        area.classList.add('has-file');
-        ph.style.display = 'none';
-        pv.style.display = 'block';
-        nm.textContent   = input.files[0].name;
-    } else {
-        area.classList.remove('has-file');
-        ph.style.display = 'block';
-        pv.style.display = 'none';
-    }
-}
 
-// ══════════════════════════════════════
-// Init: show free note by default
-// ══════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-    calcTotal();
+        let total = 0;
+        let html  = '';
+
+        selected.forEach((item, value) => {
+            total += item.price;
+            html  += `<div class="summary-item">
+                        <span class="summary-name">${item.name}</span>
+                        <span class="summary-price">Rs. ${item.price.toFixed(2)}</span>
+                      </div>`;
+
+            // Inject hidden input so the form submits correctly
+            const inp = document.createElement('input');
+            inp.type  = 'hidden';
+            inp.name  = 'selected_items[]';
+            inp.value = value;
+            form.appendChild(inp);
+        });
+
+        summaryBody.innerHTML      = html;
+        summaryTotal.style.display = 'flex';
+        totalDisplay.textContent   = 'Rs. ' + total.toFixed(2);
+        summaryCount.textContent   = selected.size + ' item' + (selected.size > 1 ? 's' : '');
+        submitBtn.disabled         = false;
+        submitBtn.style.opacity    = '1';
+    }
+
+    itemCards.forEach(card => {
+        card.addEventListener('click', function () {
+            const value = this.dataset.value;
+            const price = parseFloat(this.dataset.price) || 0;
+            const name  = this.dataset.name;
+
+            if (selected.has(value)) {
+                selected.delete(value);
+                this.classList.remove('selected');
+            } else {
+                selected.set(value, { name, price });
+                this.classList.add('selected');
+            }
+
+            renderSummary();
+        });
+    });
+
+    // ══════════════════════════════════════
+    // 2. COLLECTION TYPE TOGGLE
+    //    — card-based UI, sets hidden input value
+    // ══════════════════════════════════════
+    const colCards          = document.querySelectorAll('.col-type-card');
+    const colTypeInput      = document.getElementById('collectionTypeInput');
+    const homeSection       = document.getElementById('homeAddressSection');
+    const collectionAddress = document.getElementById('collectionAddress');
+
+    // Restore old value on validation error
+    const oldColType = '{{ old("collection_type", "walk_in") }}';
+    colTypeInput.value = oldColType;
+
+    colCards.forEach(card => {
+        // Set initial active state
+        if (card.dataset.col === oldColType) {
+            card.classList.add('active');
+        } else {
+            card.classList.remove('active');
+        }
+
+        card.addEventListener('click', function () {
+            const val = this.dataset.col;
+
+            // Update cards
+            colCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+
+            // Update hidden input
+            colTypeInput.value = val;
+
+            // Show/hide address section
+            if (val === 'home') {
+                homeSection.style.display = 'block';
+                collectionAddress.required = true;
+            } else {
+                homeSection.style.display = 'none';
+                collectionAddress.required = false;
+                collectionAddress.value = '';
+            }
+        });
+    });
+
+    // Initial home section state
+    if (oldColType === 'home') {
+        homeSection.style.display  = 'block';
+        collectionAddress.required = true;
+    }
+
+    // ══════════════════════════════════════
+    // 3. FORM SUBMIT GUARD
+    //    — validate address if home selected
+    // ══════════════════════════════════════
+    form.addEventListener('submit', function (e) {
+        if (colTypeInput.value === 'home' && !collectionAddress.value.trim()) {
+            e.preventDefault();
+            collectionAddress.focus();
+            collectionAddress.style.borderColor = '#dc2626';
+            collectionAddress.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.1)';
+            const errDiv = document.createElement('div');
+            errDiv.style.cssText = 'color:#dc2626;font-size:0.82rem;margin-top:0.4rem;font-weight:600;';
+            errDiv.id = 'addr-err';
+            if (!document.getElementById('addr-err')) {
+                homeSection.appendChild(errDiv);
+            }
+            document.getElementById('addr-err').textContent = '⚠ Please enter your collection address.';
+            return;
+        }
+
+        // Show loading state
+        submitBtn.disabled     = true;
+        submitBtn.innerHTML    = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        submitBtn.style.opacity = '0.85';
+    });
+
+    collectionAddress.addEventListener('input', function () {
+        this.style.borderColor = '#e9ecef';
+        this.style.boxShadow   = 'none';
+        const err = document.getElementById('addr-err');
+        if (err) err.remove();
+    });
+
 });
 </script>

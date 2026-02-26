@@ -1,144 +1,434 @@
 @include('partials.header')
 
 <style>
-.pay-hdr { background:linear-gradient(135deg,#4a148c 0%,#7b1fa2 100%); padding:6rem 0 2.5rem; color:white; position:relative; overflow:hidden; }
-.pay-hdr::before { content:''; position:absolute; inset:0; opacity:.07; background:url('https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&w=2070&q=80') center/cover; }
-.pay-hdr .container { position:relative; z-index:1; }
+/* ══════════════════════════════════════════
+   LAB ORDER PAYMENT — Teal + Stripe Theme
+══════════════════════════════════════════ */
+.lop-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #0891b2 60%, #06b6d4 100%);
+    padding: 7rem 0 3.5rem; color: white;
+    position: relative; overflow: hidden;
+}
+.lop-header::before {
+    content:''; position:absolute; inset:0;
+    background: url('https://images.unsplash.com/photo-1579154204601-01588f351e67?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover;
+    opacity: 0.06;
+}
+.lop-header .container { position:relative; z-index:1; }
+.lop-header::after {
+    content:''; position:absolute; bottom:-1px; left:0; right:0;
+    height:45px; background:#f4f6f9;
+    clip-path: ellipse(55% 100% at 50% 100%);
+}
+.lop-main { background:#f4f6f9; padding:2rem 0 4rem; min-height:600px; }
 
-.pay-card { background:white; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.08); overflow:hidden; margin-bottom:1.5rem; }
-.pay-card-hdr { padding:1.1rem 1.5rem; display:flex; align-items:center; gap:.6rem; font-weight:700; font-size:.95rem; }
-.pay-card-body { padding:1.6rem; }
+/* Summary Card */
+.lop-summary-card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+    overflow: hidden; margin-bottom: 1.5rem;
+}
+.lop-card-header {
+    background: linear-gradient(135deg,#0891b2,#0c4a6e);
+    color:white; padding:1.1rem 1.5rem;
+    display:flex; align-items:center; gap:0.6rem;
+    font-weight:700; font-size:1rem;
+}
+.lop-card-body { padding:1.5rem; }
 
-.pay-row { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid #f5f5f5; font-size:.88rem; }
-.pay-row:last-child { border-bottom:none; }
+/* Info Rows */
+.lop-info-row {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:0.65rem 0; border-bottom:1px solid #f0f9ff; font-size:0.9rem;
+}
+.lop-info-row:last-child { border-bottom:none; }
+.lop-info-label { color:#888; display:flex; align-items:center; gap:0.5rem; white-space:nowrap; }
+.lop-info-label i { color:#0891b2; width:16px; }
+.lop-info-value { font-weight:600; color:#333; text-align:right; max-width:60%; }
 
-.f-lbl { display:block; font-size:.82rem; font-weight:600; color:#4a148c; margin-bottom:.4rem; }
-.f-in { width:100%; padding:.75rem 1rem; border:2px solid #e9ecef; border-radius:8px; font-size:.9rem; transition:all .3s; }
-.f-in:focus { border-color:#7b1fa2; outline:none; box-shadow:0 0 0 3px rgba(123,31,162,.1); }
+/* Items mini list */
+.lop-items-list { margin-top:0.5rem; }
+.lop-item-row {
+    display:flex; justify-content:space-between;
+    padding:0.5rem 0; border-bottom:1px dashed #e0f2fe;
+    font-size:0.82rem;
+}
+.lop-item-row:last-child { border-bottom:none; }
+.lop-item-name { color:#555; }
+.lop-item-price { font-weight:700; color:#0891b2; }
 
-.stripe-wrap { border:2px solid #e9ecef; border-radius:10px; padding:.9rem 1rem; background:white; transition:border-color .3s; min-height:48px; }
-.stripe-wrap.focused { border-color:#7b1fa2; box-shadow:0 0 0 3px rgba(123,31,162,.1); }
+/* Total Box */
+.lop-total-box {
+    background: linear-gradient(135deg,rgba(8,145,178,0.08),rgba(8,145,178,0.15));
+    border: 2px solid rgba(8,145,178,0.25);
+    border-radius:12px; padding:1.2rem;
+    text-align:center; margin-top:1.2rem;
+}
+.lop-total-label  { font-size:0.85rem; color:#666; margin-bottom:0.3rem; }
+.lop-total-amount { font-size:2.5rem; font-weight:800; color:#0891b2; line-height:1; }
+.lop-total-sub    { font-size:0.75rem; color:#aaa; margin-top:0.3rem; }
 
-.err-box { background:#f8d7da; color:#721c24; border-left:4px solid #dc3545; padding:.75rem 1rem; border-radius:8px; font-size:.85rem; margin-top:.7rem; display:none; align-items:center; gap:.5rem; }
-.err-box.show { display:flex; }
+/* Payment Form Card */
+.lop-form-card {
+    background: white; border-radius:14px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.08);
+    overflow:hidden;
+}
+.lop-form-header {
+    background: linear-gradient(135deg,#059669,#047857);
+    color:white; padding:1.1rem 1.5rem;
+    display:flex; align-items:center; gap:0.6rem;
+    font-weight:700; font-size:1rem;
+}
+.lop-form-body { padding:1.8rem; }
 
-.btn-pay { background:linear-gradient(135deg,#7b1fa2,#4a148c); color:white; border:none; padding:1rem 2rem; border-radius:25px; font-size:1rem; font-weight:700; cursor:pointer; transition:all .3s; width:100%; display:flex; align-items:center; justify-content:center; gap:.6rem; box-shadow:0 4px 15px rgba(123,31,162,.35); margin-top:1.5rem; }
-.btn-pay:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 22px rgba(123,31,162,.45); }
-.btn-pay:disabled { opacity:.75; cursor:not-allowed; transform:none; }
+/* Test Mode Banner */
+.test-banner {
+    background:#fff3cd; border:1px solid #ffc107;
+    border-radius:10px; padding:0.9rem 1rem;
+    margin-bottom:1.3rem; font-size:0.85rem; color:#856404;
+}
+.test-banner code {
+    background:rgba(0,0,0,0.07); padding:0.15rem 0.5rem;
+    border-radius:4px; font-size:0.9em; letter-spacing:1px;
+}
 
-.pay-spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,.4); border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; display:none; flex-shrink:0; }
+/* Form Labels + Inputs */
+.lop-label {
+    display:block; font-size:0.88rem; font-weight:700;
+    color:#0c4a6e; margin-bottom:0.45rem;
+}
+.lop-input {
+    width:100%; padding:0.72rem 1rem;
+    border:2px solid #e9ecef; border-radius:10px;
+    font-size:0.9rem; color:#333; transition:all 0.3s;
+    background:white;
+}
+.lop-input:focus {
+    border-color:#0891b2; outline:none;
+    box-shadow:0 0 0 3px rgba(8,145,178,0.1);
+}
+
+/* Stripe Card Element */
+.stripe-card-wrap {
+    border:2px solid #e9ecef; border-radius:10px;
+    padding:0.88rem 1rem; background:white;
+    transition:border-color 0.3s; min-height:48px;
+}
+.stripe-card-wrap.focused {
+    border-color:#0891b2;
+    box-shadow:0 0 0 3px rgba(8,145,178,0.1);
+}
+.stripe-card-wrap.StripeElement--invalid {
+    border-color:#dc2626;
+    box-shadow:0 0 0 3px rgba(220,38,38,0.1);
+}
+
+/* Error Box */
+.card-error-box {
+    background:#fee2e2; color:#991b1b;
+    border-left:4px solid #dc2626;
+    padding:0.75rem 1rem; border-radius:8px;
+    font-size:0.88rem; margin-top:0.8rem;
+    display:none; align-items:center; gap:0.5rem;
+}
+.card-error-box.show { display:flex; }
+
+/* Submit Button */
+.lop-pay-btn {
+    background:linear-gradient(135deg,#059669,#047857);
+    color:white; border:none;
+    padding:1rem 2rem; border-radius:12px;
+    font-size:1.05rem; font-weight:700;
+    cursor:pointer; transition:all 0.3s; width:100%;
+    display:flex; align-items:center; justify-content:center; gap:0.6rem;
+    box-shadow:0 4px 15px rgba(5,150,105,0.35); margin-top:1.5rem;
+}
+.lop-pay-btn:hover:not(:disabled) {
+    transform:translateY(-2px);
+    box-shadow:0 6px 22px rgba(5,150,105,0.45);
+    filter:brightness(1.05);
+}
+.lop-pay-btn:disabled { opacity:0.75; cursor:not-allowed; transform:none; }
+
+/* Spinner */
+.pay-spinner {
+    width:20px; height:20px;
+    border:3px solid rgba(255,255,255,0.4);
+    border-top-color:white; border-radius:50%;
+    animation:spin 0.8s linear infinite;
+    display:none; flex-shrink:0;
+}
 @keyframes spin { to { transform:rotate(360deg); } }
 
-.fee-box { background:linear-gradient(135deg,rgba(123,31,162,.08),rgba(123,31,162,.15)); border:2px solid rgba(123,31,162,.25); border-radius:12px; padding:1.2rem; text-align:center; margin-top:1rem; }
-.fee-amount { font-size:2.2rem; font-weight:700; color:#7b1fa2; }
+/* Alert */
+.lop-alert {
+    border-radius:12px; padding:1rem 1.3rem;
+    margin-bottom:1.3rem;
+    display:flex; align-items:flex-start; gap:0.8rem;
+    font-size:0.9rem;
+}
+.lop-alert.error   { background:#fee2e2; color:#991b1b; border-left:5px solid #dc2626; }
+.lop-alert.success { background:#dcfce7; color:#166534; border-left:5px solid #059669; }
+.lop-alert.info    { background:#e0f2fe; color:#0c4a6e; border-left:5px solid #0891b2; }
+
+/* Security Row */
+.security-row {
+    display:flex; justify-content:center; gap:1.5rem;
+    margin-top:1.2rem; flex-wrap:wrap;
+}
+.security-badge { display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:#aaa; }
+.security-badge i { color:#059669; }
+
+/* Divider */
+.or-divider {
+    display:flex; align-items:center; gap:0.8rem;
+    margin:1.5rem 0; font-size:0.82rem; color:#aaa;
+}
+.or-divider::before, .or-divider::after {
+    content:''; flex:1; border-top:1px solid #e9ecef;
+}
+
+/* Back Link */
+.back-lnk {
+    color:rgba(255,255,255,0.9); text-decoration:none;
+    font-size:0.88rem; display:inline-flex;
+    align-items:center; gap:0.5rem; margin-bottom:1rem; transition:all 0.3s;
+}
+.back-lnk:hover { color:white; transform:translateX(-4px); }
+
+@media (max-width:768px) {
+    .lop-header { padding:5rem 0 2.5rem; }
+    .lop-total-amount { font-size:2rem; }
+}
 </style>
 
-<section class="pay-hdr">
+{{-- ═══════════════════════════
+     PAGE HEADER
+═══════════════════════════ --}}
+<section class="lop-header">
     <div class="container">
-        <a href="{{ route('patient.lab-orders.show', $order->id) }}"
-           style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.88rem;display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1rem;">
+        <a href="{{ route('patient.lab-orders.show', $order->id) }}" class="back-lnk">
             <i class="fas fa-arrow-left"></i> Back to Order
         </a>
-        <h1 style="font-size:1.8rem;font-weight:700;margin-bottom:.3rem;">
-            <i class="fas fa-credit-card me-2"></i> Complete Payment
-        </h1>
-        <p style="opacity:.85;font-size:.9rem;">Secure payment powered by Stripe</p>
+        <div class="row text-center">
+            <div class="col-lg-8 mx-auto">
+                <h1 style="font-size:2rem;font-weight:700;margin-bottom:0.4rem;">
+                    <i class="fas fa-credit-card me-2" style="opacity:0.85;"></i>
+                    Complete Payment
+                </h1>
+                <p style="opacity:0.9;font-size:0.95rem;margin:0;">
+                    Secure payment for Lab Order
+                    <strong style="background:rgba(255,255,255,0.2);padding:0.15rem 0.6rem;border-radius:8px;">
+                        {{ $order->reference_number }}
+                    </strong>
+                </p>
+            </div>
+        </div>
     </div>
 </section>
 
-<section style="background:#faf4fc;padding:2.5rem 0;min-height:600px;">
+{{-- ═══════════════════════════
+     MAIN
+═══════════════════════════ --}}
+<section class="lop-main">
     <div class="container">
 
         @if(session('error'))
-        <div class="alert alert-danger border-0 rounded-3 mb-3">
-            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <div class="lop-alert error">
+            <i class="fas fa-exclamation-circle fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+        @endif
+        @if(session('success'))
+        <div class="lop-alert success">
+            <i class="fas fa-check-circle fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+        @endif
+        @if(session('info'))
+        <div class="lop-alert info">
+            <i class="fas fa-info-circle fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+            <span>{{ session('info') }}</span>
         </div>
         @endif
 
         <div class="row g-4 justify-content-center">
 
-            {{-- Summary --}}
+            {{-- ══ LEFT: Order Summary ══ --}}
             <div class="col-lg-5">
-                <div class="pay-card">
-                    <div class="pay-card-hdr" style="background:linear-gradient(135deg,#4a148c,#7b1fa2);color:white;">
+                <div class="lop-summary-card">
+                    <div class="lop-card-header">
                         <i class="fas fa-flask"></i> Order Summary
                     </div>
-                    <div class="pay-card-body">
-                        <div class="pay-row">
-                            <span style="color:#888;">Order No.</span>
-                            <strong>{{ $order->order_number }}</strong>
-                        </div>
-                        <div class="pay-row">
-                            <span style="color:#888;">Laboratory</span>
-                            <span>{{ $order->laboratory->name ?? 'N/A' }}</span>
-                        </div>
-                        <div class="pay-row">
-                            <span style="color:#888;">Tests</span>
-                            <span>{{ $order->items->count() }} item(s)</span>
-                        </div>
-                        @if($order->collection_date)
-                        <div class="pay-row">
-                            <span style="color:#888;">Date</span>
-                            <span>{{ \Carbon\Carbon::parse($order->collection_date)->format('d M Y') }}</span>
-                        </div>
-                        @endif
-                        <div class="pay-row">
-                            <span style="color:#888;">Collection</span>
-                            <span>{{ $order->home_collection ? 'Home Collection' : 'Lab Visit' }}</span>
+                    <div class="lop-card-body">
+
+                        {{-- Lab Info --}}
+                        <div style="display:flex;align-items:center;gap:0.9rem;padding-bottom:1rem;
+                                    border-bottom:2px solid #f0f9ff;margin-bottom:1rem;">
+                            <div style="width:52px;height:52px;border-radius:12px;
+                                        background:linear-gradient(135deg,#0891b2,#0c4a6e);
+                                        display:flex;align-items:center;justify-content:center;
+                                        color:white;font-size:1.4rem;flex-shrink:0;">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:700;color:#0c4a6e;font-size:1rem;">
+                                    {{ $order->laboratory->name ?? 'Laboratory' }}
+                                </div>
+                                @if($order->laboratory->city)
+                                <div style="font-size:0.78rem;color:#888;">
+                                    <i class="fas fa-map-marker-alt me-1" style="color:#0891b2;"></i>
+                                    {{ $order->laboratory->city }}
+                                </div>
+                                @endif
+                            </div>
                         </div>
 
-                        <div class="fee-box">
-                            <div style="font-size:.82rem;color:#666;margin-bottom:.3rem;">Amount Due</div>
-                            <div class="fee-amount">Rs. {{ number_format($order->total_amount ?? 0, 2) }}</div>
-                            <div style="font-size:.72rem;color:#999;margin-top:.2rem;">Sri Lankan Rupees (LKR)</div>
+                        {{-- Order Details --}}
+                        <div class="lop-info-row">
+                            <span class="lop-info-label"><i class="fas fa-hashtag"></i> Reference</span>
+                            <span class="lop-info-value">{{ $order->reference_number }}</span>
                         </div>
+                        <div class="lop-info-row">
+                            <span class="lop-info-label"><i class="fas fa-calendar"></i> Order Date</span>
+                            <span class="lop-info-value">
+                                {{ \Carbon\Carbon::parse($order->order_date)->format('d M Y') }}
+                            </span>
+                        </div>
+                        @if($order->collection_date)
+                        <div class="lop-info-row">
+                            <span class="lop-info-label"><i class="fas fa-calendar-check"></i> Collection</span>
+                            <span class="lop-info-value">
+                                {{ \Carbon\Carbon::parse($order->collection_date)->format('d M Y') }}
+                            </span>
+                        </div>
+                        @endif
+                        <div class="lop-info-row">
+                            <span class="lop-info-label"><i class="fas fa-truck"></i> Type</span>
+                            <span class="lop-info-value">
+                                @if($order->home_collection)
+                                    <span style="background:#e0f2fe;color:#0369a1;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.78rem;font-weight:700;">
+                                        <i class="fas fa-home me-1"></i>Home Collection
+                                    </span>
+                                @else
+                                    <span style="background:#dcfce7;color:#166534;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.78rem;font-weight:700;">
+                                        <i class="fas fa-walking me-1"></i>Walk-In
+                                    </span>
+                                @endif
+                            </span>
+                        </div>
+
+                        {{-- Items --}}
+                        <div style="margin-top:1rem;">
+                            <div style="font-size:0.8rem;font-weight:700;color:#0891b2;margin-bottom:0.5rem;">
+                                <i class="fas fa-list-alt me-1"></i> Ordered Items
+                            </div>
+                            <div class="lop-items-list">
+                                @foreach($order->items as $item)
+                                <div class="lop-item-row">
+                                    <span class="lop-item-name">{{ $item->item_name }}</span>
+                                    <span class="lop-item-price">Rs. {{ number_format($item->price, 2) }}</span>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Total --}}
+                        <div class="lop-total-box">
+                            <div class="lop-total-label">Total Amount Due</div>
+                            <div class="lop-total-amount">
+                                Rs. {{ number_format($order->total_amount ?? 0, 2) }}
+                            </div>
+                            <div class="lop-total-sub">Sri Lankan Rupees (LKR)</div>
+                        </div>
+
                     </div>
                 </div>
             </div>
 
-            {{-- Payment Form --}}
+            {{-- ══ RIGHT: Stripe Payment Form ══ --}}
             <div class="col-lg-6">
-                <div class="pay-card">
-                    <div class="pay-card-hdr" style="background:linear-gradient(135deg,#7b1fa2,#4a148c);color:white;">
+                <div class="lop-form-card">
+                    <div class="lop-form-header">
                         <i class="fas fa-lock"></i> Secure Card Payment
                     </div>
-                    <div class="pay-card-body">
+                    <div class="lop-form-body">
 
-                        {{-- Test mode notice --}}
-                        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.8rem 1rem;margin-bottom:1.2rem;font-size:.82rem;color:#856404;">
-                            <strong><i class="fas fa-vial me-1"></i> Test Mode:</strong>
-                            Card: <code style="background:rgba(0,0,0,.07);padding:.1rem .4rem;border-radius:4px;">4242 4242 4242 4242</code>
-                            · Exp: <code style="background:rgba(0,0,0,.07);padding:.1rem .4rem;border-radius:4px;">12/26</code>
-                            · CVC: <code style="background:rgba(0,0,0,.07);padding:.1rem .4rem;border-radius:4px;">123</code>
+                        {{-- Test Mode Banner --}}
+                        <div class="test-banner">
+                            <strong><i class="fas fa-vial me-1"></i> Test Mode Active</strong><br>
+                            Use test card: <code>4242 4242 4242 4242</code><br>
+                            Expiry: <code>12/26</code> &nbsp; CVC: <code>123</code> &nbsp; ZIP: <code>12345</code>
                         </div>
 
-                        <form id="labPayForm"
+                        {{-- Payment Form --}}
+                        <form id="labPaymentForm"
                               action="{{ route('patient.lab-orders.pay', $order->id) }}"
                               method="POST">
                             @csrf
-                            <input type="hidden" name="payment_method_id" id="pm_id">
-                            <input type="hidden" name="cardholder_name"   id="ch_name">
+                            <input type="hidden" name="payment_method_id" id="payment_method_id">
+                            <input type="hidden" name="cardholder_name"   id="cardholder_name_hidden">
 
-                            <div style="margin-bottom:1.1rem;">
-                                <label class="f-lbl">Cardholder Name <span style="color:#dc3545;">*</span></label>
-                                <input type="text" id="cardholderName" class="f-in"
-                                       placeholder="Full name on card" autocomplete="cc-name">
-                                <div id="nameErr" style="color:#dc3545;font-size:.78rem;margin-top:.3rem;display:none;">
-                                    Please enter cardholder name.
+                            {{-- Cardholder Name --}}
+                            <div style="margin-bottom:1.2rem;">
+                                <label class="lop-label">
+                                    Cardholder Name <span style="color:#dc2626;">*</span>
+                                </label>
+                                <input type="text"
+                                       id="cardholderName"
+                                       class="lop-input"
+                                       placeholder="Full name on card"
+                                       autocomplete="cc-name">
+                                <div id="name-error"
+                                     style="color:#dc2626;font-size:0.82rem;margin-top:0.3rem;display:none;">
+                                    Please enter the cardholder name.
                                 </div>
                             </div>
 
-                            <div style="margin-bottom:.5rem;">
-                                <label class="f-lbl">Card Details <span style="color:#dc3545;">*</span></label>
-                                <div id="card-element" class="stripe-wrap"></div>
+                            {{-- Stripe Card Element --}}
+                            <div style="margin-bottom:0.5rem;">
+                                <label class="lop-label">
+                                    Card Details <span style="color:#dc2626;">*</span>
+                                </label>
+                                <div id="card-element" class="stripe-card-wrap">
+                                    {{-- Stripe injects here --}}
+                                </div>
                             </div>
 
-                            <div id="card-errors" class="err-box" role="alert">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <span id="card-err-msg"></span>
+                            {{-- Card Error --}}
+                            <div id="card-errors" class="card-error-box" role="alert">
+                                <i class="fas fa-exclamation-circle" style="flex-shrink:0;"></i>
+                                <span id="card-errors-msg"></span>
                             </div>
 
-                            <button type="submit" id="payBtn" class="btn-pay">
+                            {{-- Divider --}}
+                            <div class="or-divider">
+                                <span>What happens next?</span>
+                            </div>
+
+                            {{-- Steps --}}
+                            <div style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1rem;">
+                                @foreach([
+                                    ['lock','Your payment is encrypted and secure'],
+                                    ['check-circle','Order confirmed immediately after payment'],
+                                    ['bell','You will receive a notification confirmation'],
+                                    ['file-medical-alt','Download your report once ready'],
+                                ] as [$ic, $txt])
+                                <div style="display:flex;align-items:center;gap:0.7rem;font-size:0.82rem;color:#555;">
+                                    <div style="width:28px;height:28px;border-radius:50%;
+                                                background:linear-gradient(135deg,#0891b2,#0c4a6e);
+                                                display:flex;align-items:center;justify-content:center;
+                                                color:white;font-size:0.7rem;flex-shrink:0;">
+                                        <i class="fas fa-{{ $ic }}"></i>
+                                    </div>
+                                    {{ $txt }}
+                                </div>
+                                @endforeach
+                            </div>
+
+                            {{-- Submit --}}
+                            <button type="submit" id="payBtn" class="lop-pay-btn" disabled>
                                 <div class="pay-spinner" id="paySpinner"></div>
                                 <i class="fas fa-lock" id="payIcon"></i>
                                 <span id="payBtnText">
@@ -147,179 +437,185 @@
                             </button>
                         </form>
 
-                        <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:1.2rem;flex-wrap:wrap;">
-                            <span style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#aaa;">
-                                <i class="fas fa-shield-alt" style="color:#43a047;"></i> SSL Secured
-                            </span>
-                            <span style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#aaa;">
-                                <i class="fab fa-stripe" style="color:#635bff;"></i> Stripe
-                            </span>
-                            <span style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:#aaa;">
-                                <i class="fas fa-lock" style="color:#7b1fa2;"></i> PCI Compliant
-                            </span>
+                        {{-- Security Badges --}}
+                        <div class="security-row">
+                            <div class="security-badge"><i class="fas fa-shield-alt"></i> SSL Secured</div>
+                            <div class="security-badge"><i class="fab fa-stripe"></i> Powered by Stripe</div>
+                            <div class="security-badge"><i class="fas fa-lock"></i> PCI Compliant</div>
                         </div>
 
+                        {{-- Pay Later --}}
                         <div style="text-align:center;margin-top:1rem;">
                             <a href="{{ route('patient.lab-orders.show', $order->id) }}"
-                               style="color:#aaa;font-size:.78rem;text-decoration:none;">
-                                <i class="fas fa-clock me-1"></i> Pay later
+                               style="color:#aaa;font-size:0.83rem;text-decoration:none;
+                                      display:inline-flex;align-items:center;gap:0.4rem;">
+                                <i class="fas fa-clock"></i> Pay later
                             </a>
                         </div>
+
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
 
 @include('partials.footer')
 
+{{-- ═══════════════════════════
+     STRIPE JS
+═══════════════════════════ --}}
 <script src="https://js.stripe.com/v3/"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const stripeKey = '{{ $stripeKey ?? "" }}';
+
+    var stripeKey = '{{ $stripeKey ?? "" }}';
 
     if (!stripeKey) {
-        const eb = document.getElementById('card-errors');
-        const em = document.getElementById('card-err-msg');
-        eb.classList.add('show');
-        em.textContent = 'Stripe configuration error. Please contact support.';
+        document.getElementById('card-errors').classList.add('show');
+        document.getElementById('card-errors-msg').textContent =
+            'Stripe configuration error. Please contact support.';
         document.getElementById('payBtn').disabled = true;
         return;
     }
 
-    const stripe      = Stripe(stripeKey);
-    const elements    = stripe.elements();
-    const cardElement = elements.create('card', {
+    // ── Init Stripe ──
+    var stripe   = Stripe(stripeKey);
+    var elements = stripe.elements();
+
+    var cardElement = elements.create('card', {
         hidePostalCode: false,
         style: {
             base: {
-                fontSize: '15px', color: '#333',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                fontSize:       '15px',
+                color:          '#333333',
+                fontFamily:     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontSmoothing:  'antialiased',
                 '::placeholder': { color: '#aab7c4' },
             },
-            invalid: { color: '#dc3545', iconColor: '#dc3545' },
+            invalid: {
+                color:     '#dc2626',
+                iconColor: '#dc2626',
+            },
         },
     });
 
     cardElement.mount('#card-element');
 
-    cardElement.on('focus', () => {
-        document.getElementById('card-element').classList.add('focused');
-    });
-    cardElement.on('blur', () => {
-        document.getElementById('card-element').classList.remove('focused');
-    });
-    cardElement.on('change', (event) => {
-        const eb = document.getElementById('card-errors');
-        const em = document.getElementById('card-err-msg');
+    // ── Enable Pay button once card is complete ──
+    cardElement.on('change', function (event) {
+        var errDiv = document.getElementById('card-errors');
+        var errMsg = document.getElementById('card-errors-msg');
+        var payBtn = document.getElementById('payBtn');
+
         if (event.error) {
-            eb.classList.add('show');
-            em.textContent = event.error.message;
+            errMsg.textContent = event.error.message;
+            errDiv.classList.add('show');
         } else {
-            eb.classList.remove('show');
-            em.textContent = '';
+            errDiv.classList.remove('show');
+            errMsg.textContent = '';
+        }
+
+        // Enable button only when card is complete
+        if (event.complete) {
+            payBtn.disabled = false;
+            payBtn.style.opacity = '1';
+        } else {
+            payBtn.disabled = true;
+            payBtn.style.opacity = '0.75';
         }
     });
 
-    document.getElementById('labPayForm').addEventListener('submit', async function
+    // ── Focus / Blur ──
+    cardElement.on('focus', function () {
+        document.getElementById('card-element').classList.add('focused');
+    });
+    cardElement.on('blur', function () {
+        document.getElementById('card-element').classList.remove('focused');
+    });
 
----
+    // ── Form Submit ──
+    var form    = document.getElementById('labPaymentForm');
+    var payBtn  = document.getElementById('payBtn');
+    var spinner = document.getElementById('paySpinner');
+    var payIcon = document.getElementById('payIcon');
+    var btnText = document.getElementById('payBtnText');
+    var amount  = 'Rs. {{ number_format($order->total_amount ?? 0, 2) }}';
 
-## File 6: `app/Models/LabOrder.php`
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-```php
-<?php
+        var name      = document.getElementById('cardholderName').value.trim();
+        var nameError = document.getElementById('name-error');
 
-namespace App\Models;
+        if (!name) {
+            nameError.style.display = 'block';
+            document.getElementById('cardholderName').focus();
+            return;
+        }
+        nameError.style.display = 'none';
 
-use Illuminate\Database\Eloquent\Model;
+        // ── Show loading ──
+        payBtn.disabled       = true;
+        spinner.style.display = 'block';
+        payIcon.style.display = 'none';
+        btnText.textContent   = 'Processing...';
 
-class LabOrder extends Model
-{
-    protected $fillable = [
-        'order_number',
-        'reference_number',
-        'patient_id',
-        'laboratory_id',
-        'doctor_id',
-        'prescription_file',
-        'status',
-        'total_amount',
-        'payment_status',
-        'payment_method',
-        'home_collection',
-        'collection_address',
-        'collection_date',
-        'collection_time',
-        'report_file',
-        'report_uploaded_at',
-    ];
+        try {
+            var result = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: { name: name },
+            });
 
-    protected $casts = [
-        'home_collection'    => 'boolean',
-        'collection_date'    => 'date',
-        'report_uploaded_at' => 'datetime',
-        'order_date'         => 'datetime',
-    ];
+            if (result.error) {
+                var errDiv = document.getElementById('card-errors');
+                var errMsg = document.getElementById('card-errors-msg');
+                errMsg.textContent = result.error.message;
+                errDiv.classList.add('show');
 
-    // ══════════════════════════════════
-    // Relationships
-    // ══════════════════════════════════
+                payBtn.disabled       = false;
+                spinner.style.display = 'none';
+                payIcon.style.display = 'inline';
+                btnText.textContent   = 'Pay ' + amount;
+                return;
+            }
 
-    public function patient()
-    {
-        return $this->belongsTo(Patient::class);
-    }
+            // ── Set hidden fields ──
+            document.getElementById('payment_method_id').value    = result.paymentMethod.id;
+            document.getElementById('cardholder_name_hidden').value = name;
 
-    public function laboratory()
-    {
-        return $this->belongsTo(Laboratory::class);
-    }
+            // ── Submit to server ──
+            form.submit();
 
-    public function doctor()
-    {
-        return $this->belongsTo(Doctor::class)->withDefault();
-    }
+        } catch (err) {
+            console.error('Stripe JS error:', err);
+            payBtn.disabled       = false;
+            spinner.style.display = 'none';
+            payIcon.style.display = 'inline';
+            btnText.textContent   = 'Pay ' + amount;
 
-    public function items()
-    {
-        return $this->hasMany(LabOrderItem::class, 'order_id');
-    }
+            var errDiv = document.getElementById('card-errors');
+            var errMsg = document.getElementById('card-errors-msg');
+            errMsg.textContent = 'An unexpected error occurred. Please try again.';
+            errDiv.classList.add('show');
+        }
+    });
 
-    // ══════════════════════════════════
-    // Helpers
-    // ══════════════════════════════════
+    // ── Name input — clear error on type ──
+    document.getElementById('cardholderName').addEventListener('input', function () {
+        document.getElementById('name-error').style.display = 'none';
+    });
 
-    public function isCompleted(): bool
-    {
-        return $this->status === 'completed';
-    }
+    // ── Auto dismiss alerts ──
+    setTimeout(() => {
+        document.querySelectorAll('.lop-alert').forEach(el => {
+            el.style.transition = 'opacity 0.5s';
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 6000);
 
-    public function isPaid(): bool
-    {
-        return $this->payment_status === 'paid';
-    }
-
-    public function hasReport(): bool
-    {
-        return !empty($this->report_file);
-    }
-
-    public function canDownloadReport(): bool
-    {
-        return $this->isCompleted() && $this->isPaid() && $this->hasReport();
-    }
-
-    public function getStatusBadgeAttribute(): string
-    {
-        return match($this->status) {
-            'pending'          => '<span class="badge" style="background:#fff3e0;color:#e65100;">⏳ Pending</span>',
-            'sample_collected' => '<span class="badge" style="background:#e3f2fd;color:#0d47a1;">🧫 Sample Collected</span>',
-            'processing'       => '<span class="badge" style="background:#e8eaf6;color:#283593;">🔬 Processing</span>',
-            'completed'        => '<span class="badge" style="background:#e8f5e9;color:#1b5e20;">✅ Completed</span>',
-            'cancelled'        => '<span class="badge" style="background:#fce4ec;color:#880e4f;">❌ Cancelled</span>',
-            default            => '<span class="badge bg-secondary">' . ucfirst($this->status) . '</span>',
-        };
-    }
-}
+});
+</script>

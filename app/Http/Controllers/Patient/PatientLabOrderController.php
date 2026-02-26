@@ -8,12 +8,18 @@ use App\Models\LabOrder;
 use App\Models\LabOrderItem;
 use App\Models\LabTest;
 use App\Models\LabPackage;
+use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+use Stripe\Exception\CardException;
+use Stripe\Exception\InvalidRequestException;
+use Stripe\Exception\AuthenticationException;
 
 class PatientLabOrderController extends Controller
 {
@@ -23,7 +29,7 @@ class PatientLabOrderController extends Controller
         return Auth::user()->patient;
     }
 
-    // ─── Helper: send notification to patient ────────────────────────
+    // ─── Helper: send in-app notification ────────────────────────────
     private function notify(int $userId, string $title, string $message, int $orderId): void
     {
         try {
@@ -42,6 +48,72 @@ class PatientLabOrderController extends Controller
         } catch (\Exception $e) {
             // Silently fail — notification is non-critical
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  PRIVATE HELPER — Mark Lab Order Paid (Stripe)
+    // ══════════════════════════════════════════════════════════════════
+    private function markLabOrderPaid(LabOrder $order, string $transactionId, int $patientId, ?string $cardholderName): void
+    {
+        DB::transaction(function () use ($order, $transactionId, $patientId, $cardholderName) {
+
+            // 1. Update order
+            $order->update([
+                'payment_status' => 'paid',
+                'payment_method' => 'card',
+                'paid_at'        => now(),
+            ]);
+
+            // 2. Payment record
+            $paymentNumber = 'PAY-LAB-' . strtoupper(Str::random(8));
+            DB::table('payments')->insert([
+                'payment_number'  => $paymentNumber,
+                'payer_id'        => $patientId,
+                'payee_type'      => 'laboratory',
+                'payee_id'        => $order->laboratory_id,
+                'related_type'    => 'lab_order',
+                'related_id'      => $order->id,
+                'amount'          => $order->total_amount ?? 0,
+                'payment_method'  => 'card',
+                'payment_status'  => 'completed',
+                'transaction_id'  => $transactionId,
+                'payment_date'    => now()->toDateString(),
+                'notes'           => $cardholderName
+                                        ? 'Cardholder: ' . $cardholderName . ' — Online card payment via Stripe'
+                                        : 'Online card payment via Stripe',
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+
+            // 3. Patient notification
+            try {
+                $this->notify(
+                    Auth::id(),
+                    '💳 Payment Confirmed',
+                    'Payment of Rs. ' . number_format($order->total_amount, 2) .
+                    ' confirmed for Lab Order #' . $order->order_number .
+                    ' at ' . ($order->laboratory->name ?? 'Laboratory') . '.',
+                    $order->id
+                );
+            } catch (\Exception $e) {
+                Log::warning('Lab Stripe payment — patient notification error: ' . $e->getMessage());
+            }
+
+            // 4. Laboratory notification
+            try {
+                if ($order->laboratory && $order->laboratory->user_id) {
+                    $this->notify(
+                        $order->laboratory->user_id,
+                        '💰 Payment Received',
+                        'Payment of Rs. ' . number_format($order->total_amount, 2) .
+                        ' received via Stripe for Order #' . $order->order_number . '.',
+                        $order->id
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::warning('Lab Stripe payment — lab notification error: ' . $e->getMessage());
+            }
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -87,32 +159,30 @@ class PatientLabOrderController extends Controller
     //  Route: patient.lab-orders.create
     //  View:  patient.lab-orders.create
     // ══════════════════════════════════════════════════════════════════
-   public function create($labId)
-{
-    // ✅ status = 'approved'
-    $laboratory = Laboratory::where('status', 'approved')->findOrFail($labId);
+    public function create($labId)
+    {
+        $laboratory = Laboratory::where('status', 'approved')->findOrFail($labId);
 
-    $labTests = LabTest::where('laboratory_id', $labId)
-        ->where('is_active', true)
-        ->orderBy('test_category')
-        ->orderBy('test_name')
-        ->get();
+        $labTests = LabTest::where('laboratory_id', $labId)
+            ->where('is_active', true)
+            ->orderBy('test_category')
+            ->orderBy('test_name')
+            ->get();
 
-    $labPackages = LabPackage::with('tests')
-        ->where('laboratory_id', $labId)
-        ->where('is_active', true)
-        ->get();
+        $labPackages = LabPackage::with('tests')
+            ->where('laboratory_id', $labId)
+            ->where('is_active', true)
+            ->get();
 
-    $referralNote = session('referral_note');
+        $referralNote = session('referral_note');
 
-    return view('patient.lab-orders.create', compact(
-        'laboratory',
-        'labTests',
-        'labPackages',
-        'referralNote'
-    ));
-}
-
+        return view('patient.lab-orders.create', compact(
+            'laboratory',
+            'labTests',
+            'labPackages',
+            'referralNote'
+        ));
+    }
 
     // ══════════════════════════════════════════════════════════════════
     //  POST /patient/lab-orders/store/{labId}
@@ -126,7 +196,6 @@ class PatientLabOrderController extends Controller
             'collection_type'    => 'required|in:walk_in,appointment,home',
             'collection_address' => 'required_if:collection_type,home|nullable|string|max:500',
             'prescription_file'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'notes'              => 'nullable|string|max:1000',
             'selected_items'     => 'nullable|array',
         ]);
 
@@ -143,7 +212,6 @@ class PatientLabOrderController extends Controller
         $parsedItems   = [];
 
         foreach ($selectedItems as $itemValue) {
-            // Format: "test_{id}" | "package_{id}" | "service_{idx}_{slug}"
             if (Str::startsWith($itemValue, 'test_')) {
                 $testId = (int) Str::after($itemValue, 'test_');
                 $test   = LabTest::where('id', $testId)
@@ -180,10 +248,10 @@ class PatientLabOrderController extends Controller
                 }
 
             } elseif (Str::startsWith($itemValue, 'service_')) {
-                // e.g. "service_0_blood-test"
-                $parts      = explode('_', $itemValue, 3);
-                $svcSlug    = $parts[2] ?? $itemValue;
-                $svcName    = ucwords(str_replace('-', ' ', $svcSlug));
+                // Format: "service_{idx}_{slug}"
+                $parts   = explode('_', $itemValue, 3);
+                $svcSlug = $parts[2] ?? $itemValue;
+                $svcName = ucwords(str_replace('-', ' ', $svcSlug));
                 $parsedItems[] = [
                     'type'      => 'service',
                     'id'        => null,
@@ -200,14 +268,10 @@ class PatientLabOrderController extends Controller
                 ->store('prescriptions/' . $patient->id, 'public');
         }
 
-        // ── Generate unique reference number ─────────────────────────
-        $reference = 'LO-' . strtoupper(Str::random(3)) . '-' . now()->format('ymd') . '-' . rand(100, 999);
-
         // ── Create LabOrder ───────────────────────────────────────────
         $order = LabOrder::create([
             'patient_id'         => $patient->id,
             'laboratory_id'      => $labId,
-            'reference_number'   => $reference,
             'order_date'         => now(),
             'status'             => 'pending',
             'payment_status'     => 'unpaid',
@@ -219,17 +283,16 @@ class PatientLabOrderController extends Controller
                 ? $request->collection_address
                 : null,
             'prescription_file'  => $prescriptionPath,
-            'notes'              => $request->notes,
         ]);
 
         // ── Create LabOrderItems ──────────────────────────────────────
         foreach ($parsedItems as $item) {
             LabOrderItem::create([
-                'lab_order_id' => $order->id,
-                'test_id'      => $item['type'] === 'test'    ? $item['id'] : null,
-                'package_id'   => $item['type'] === 'package' ? $item['id'] : null,
-                'item_name'    => $item['item_name'],
-                'price'        => $item['price'],
+                'order_id'   => $order->id,
+                'test_id'    => $item['type'] === 'test'    ? $item['id'] : null,
+                'package_id' => $item['type'] === 'package' ? $item['id'] : null,
+                'item_name'  => $item['item_name'],
+                'price'      => $item['price'],
             ]);
         }
 
@@ -239,14 +302,23 @@ class PatientLabOrderController extends Controller
         // ── Notify patient ────────────────────────────────────────────
         $this->notify(
             Auth::id(),
-            'Lab Order Submitted',
-            '✅ Your lab order #' . $reference . ' at ' . $laboratory->name . ' has been submitted.',
+            '✅ Lab Order Submitted',
+            'Your lab order #' . $order->order_number . ' at ' . $laboratory->name . ' has been submitted successfully.',
+            $order->id
+        );
+
+        // ── Notify laboratory ─────────────────────────────────────────
+        $this->notify(
+            $laboratory->user_id,
+            '🔬 New Lab Order Received',
+            'A new lab order #' . $order->order_number . ' has been placed by ' .
+                $patient->first_name . ' ' . $patient->last_name . '.',
             $order->id
         );
 
         return redirect()
             ->route('patient.lab-orders.show', $order->id)
-            ->with('success', 'Lab order submitted successfully! Reference: ' . $reference);
+            ->with('success', 'Lab order submitted successfully! Reference: ' . $order->reference_number);
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -257,6 +329,11 @@ class PatientLabOrderController extends Controller
     public function show($id)
     {
         $patient = $this->getPatient();
+
+        if (!$patient) {
+            return redirect()->route('patient.dashboard')
+                ->with('error', 'Patient profile not found.');
+        }
 
         $order = LabOrder::with(['laboratory', 'items.test', 'items.package'])
             ->where('patient_id', $patient->id)
@@ -270,9 +347,9 @@ class PatientLabOrderController extends Controller
             'completed'        => ['label' => 'Report Ready',     'icon' => 'fa-check-circle'],
         ];
 
-        $statusOrder  = array_keys($statusSteps);
-        $currentIdx   = array_search($order->status, $statusOrder);
-        $currentIdx   = $currentIdx === false ? 0 : $currentIdx;
+        $statusOrder = array_keys($statusSteps);
+        $currentIdx  = array_search($order->status, $statusOrder);
+        $currentIdx  = ($currentIdx === false) ? 0 : $currentIdx;
 
         return view('patient.lab-orders.show', compact(
             'order',
@@ -291,34 +368,52 @@ class PatientLabOrderController extends Controller
     {
         $patient = $this->getPatient();
 
+        if (!$patient) {
+            return redirect()->route('patient.dashboard')
+                ->with('error', 'Patient profile not found.');
+        }
+
         $order = LabOrder::with(['laboratory', 'items'])
             ->where('patient_id', $patient->id)
             ->findOrFail($id);
 
-        // If cancelled, block payment
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('patient.lab-orders.show', $id)
+                ->with('info', 'This order is already paid.');
+        }
+
         if ($order->status === 'cancelled') {
-            return redirect()
-                ->route('patient.lab-orders.show', $id)
+            return redirect()->route('patient.lab-orders.show', $id)
                 ->with('error', 'Cancelled orders cannot be paid.');
         }
 
-        return view('patient.lab-orders.payment', compact('order'));
+        $stripeKey = config('services.stripe.key');
+
+        return view('patient.lab-orders.payment', compact('order', 'stripeKey'));
     }
 
     // ══════════════════════════════════════════════════════════════════
     //  POST /patient/lab-orders/{id}/pay
     //  Route: patient.lab-orders.pay
+    //  (Stripe PaymentIntent flow)
     // ══════════════════════════════════════════════════════════════════
     public function pay(Request $request, $id)
     {
         $request->validate([
-            'payment_method' => 'required|in:cash,card,online',
-            'transaction_id' => 'required_if:payment_method,online|nullable|string|max:100',
+            'payment_method_id' => 'required|string',
+            'cardholder_name'   => 'nullable|string|max:100',
         ]);
 
         $patient = $this->getPatient();
 
-        $order = LabOrder::where('patient_id', $patient->id)->findOrFail($id);
+        if (!$patient) {
+            return redirect()->route('patient.lab-orders.index')
+                ->with('error', 'Patient profile not found.');
+        }
+
+        $order = LabOrder::with('laboratory')
+            ->where('patient_id', $patient->id)
+            ->findOrFail($id);
 
         if ($order->payment_status === 'paid') {
             return back()->with('error', 'This order is already paid.');
@@ -328,32 +423,153 @@ class PatientLabOrderController extends Controller
             return back()->with('error', 'Cannot pay for a cancelled order.');
         }
 
-        $order->update([
-            'payment_status' => 'paid',
-            'payment_method' => $request->payment_method,
-            'paid_at'        => now(),
-        ]);
+        try {
+            Stripe::setApiKey(config('services.stripe.secret'));
 
-        // Notify patient
-        $this->notify(
-            Auth::id(),
-            'Payment Confirmed',
-            '💳 Payment confirmed for order #' . $order->reference_number . ' via ' . ucfirst($request->payment_method) . '.',
-            $order->id
-        );
+            $amount = (int) round(($order->total_amount ?? 0) * 100);
 
-        return redirect()
-            ->route('patient.lab-orders.show', $id)
-            ->with('success', 'Payment confirmed successfully!');
+            if ($amount < 100) {
+                return redirect()->route('patient.lab-orders.payment', $id)
+                    ->with('error', 'Invalid amount. Minimum payment is Rs. 1.00');
+            }
+
+            $paymentIntent = PaymentIntent::create([
+                'amount'              => $amount,
+                'currency'            => 'lkr',
+                'payment_method'      => $request->payment_method_id,
+                'confirmation_method' => 'automatic',
+                'confirm'             => true,
+                'return_url'          => route('patient.lab-orders.payment.callback', $id),
+                'description'         => 'HealthNet Lab Order #' . $order->reference_number,
+                'metadata'            => [
+                    'order_id'   => $order->id,
+                    'patient_id' => $patient->id,
+                    'reference'  => $order->reference_number,
+                ],
+            ]);
+
+            // ── Payment succeeded immediately ─────────────────────────
+            if ($paymentIntent->status === 'succeeded') {
+                $this->markLabOrderPaid(
+                    $order,
+                    $paymentIntent->id,
+                    $patient->id,
+                    $request->cardholder_name ?? null
+                );
+
+                return redirect()->route('patient.lab-orders.show', $id)
+                    ->with('success', 'Payment successful! Your lab order is confirmed. Reference: ' . $order->reference_number);
+            }
+
+            // ── 3DS / redirect required ───────────────────────────────
+            if (
+                $paymentIntent->status === 'requires_action' &&
+                $paymentIntent->next_action &&
+                $paymentIntent->next_action->type === 'redirect_to_url'
+            ) {
+                session(['pending_lab_payment_intent' => $paymentIntent->id]);
+                session(['pending_lab_order_id'       => $id]);
+
+                return redirect()->away(
+                    $paymentIntent->next_action->redirect_to_url->url
+                );
+            }
+
+            // ── Card declined ─────────────────────────────────────────
+            if ($paymentIntent->status === 'requires_payment_method') {
+                return redirect()->route('patient.lab-orders.payment', $id)
+                    ->with('error', 'Card was declined. Please try a different card.');
+            }
+
+            return redirect()->route('patient.lab-orders.payment', $id)
+                ->with('error', 'Payment unsuccessful. Status: ' . $paymentIntent->status);
+
+        } catch (CardException $e) {
+            Log::warning('Stripe Card Declined (Lab): ' . $e->getMessage());
+            return redirect()->route('patient.lab-orders.payment', $id)
+                ->with('error', $e->getUserMessage());
+
+        } catch (InvalidRequestException $e) {
+            Log::error('Stripe Invalid Request (Lab): ' . $e->getMessage());
+            if (str_contains($e->getMessage(), 'currency')) {
+                return redirect()->route('patient.lab-orders.payment', $id)
+                    ->with('error', 'LKR currency issue. Please contact support.');
+            }
+            return redirect()->route('patient.lab-orders.payment', $id)
+                ->with('error', 'Invalid payment request: ' . $e->getMessage());
+
+        } catch (AuthenticationException $e) {
+            Log::error('Stripe Auth Error (Lab): ' . $e->getMessage());
+            return redirect()->route('patient.lab-orders.payment', $id)
+                ->with('error', 'Payment service error. Please check API keys.');
+
+        } catch (\Exception $e) {
+            Log::error('Lab Payment Error: ' . $e->getMessage());
+            return redirect()->route('patient.lab-orders.payment', $id)
+                ->with('error', 'Payment failed: ' . $e->getMessage());
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  GET /patient/lab-orders/{id}/report
+    //  GET /patient/lab-orders/{id}/payment/callback
+    //  Route: patient.lab-orders.payment.callback
+    //  (Stripe 3DS redirect return)
+    // ══════════════════════════════════════════════════════════════════
+    public function paymentCallback(Request $request, $id)
+    {
+        $orderId  = session('pending_lab_order_id');
+        $intentId = session('pending_lab_payment_intent');
+
+        if (!$orderId || !$intentId) {
+            return redirect()->route('patient.lab-orders.index')
+                ->with('error', 'Payment session expired. Please try again.');
+        }
+
+        try {
+            Stripe::setApiKey(config('services.stripe.secret'));
+            $paymentIntent = PaymentIntent::retrieve($intentId);
+
+            $patient = $this->getPatient();
+
+            if (!$patient) {
+                return redirect()->route('patient.dashboard')
+                    ->with('error', 'Patient profile not found.');
+            }
+
+            $order = LabOrder::with('laboratory')
+                ->where('patient_id', $patient->id)
+                ->findOrFail($orderId);
+
+            if ($paymentIntent->status === 'succeeded') {
+                $this->markLabOrderPaid($order, $intentId, $patient->id, null);
+                session()->forget(['pending_lab_payment_intent', 'pending_lab_order_id']);
+
+                return redirect()->route('patient.lab-orders.show', $orderId)
+                    ->with('success', 'Payment successful! Your lab order is confirmed.');
+            }
+
+            return redirect()->route('patient.lab-orders.payment', $orderId)
+                ->with('error', 'Payment authentication failed. Please try again.');
+
+        } catch (\Exception $e) {
+            Log::error('Lab Payment Callback Error: ' . $e->getMessage());
+            return redirect()->route('patient.lab-orders.index')
+                ->with('error', 'Payment verification failed.');
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  GET /patient/lab-orders/{id}/report/download
     //  Route: patient.lab-orders.report
     // ══════════════════════════════════════════════════════════════════
     public function downloadReport($id)
     {
         $patient = $this->getPatient();
+
+        if (!$patient) {
+            return redirect()->route('patient.dashboard')
+                ->with('error', 'Patient profile not found.');
+        }
 
         $order = LabOrder::where('patient_id', $patient->id)
             ->where('status', 'completed')
@@ -375,47 +591,6 @@ class PatientLabOrderController extends Controller
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  GET /patient/lab-orders/{id}/payment/callback
-    //  Route: patient.lab-orders.payment.callback
-    //  (For online payment gateway callback)
-    // ══════════════════════════════════════════════════════════════════
-    public function paymentCallback(Request $request, $id)
-    {
-        $patient = $this->getPatient();
-
-        $order = LabOrder::where('patient_id', $patient->id)->findOrFail($id);
-
-        // Basic gateway callback handling
-        // Adjust this based on your payment gateway (PayHere, Stripe, etc.)
-        $status        = $request->input('status_code');       // PayHere: 2=Success
-        $paymentId     = $request->input('payment_id');
-        $merchantOrder = $request->input('order_id');
-
-        if ($status == 2 || $request->input('status') === 'success') {
-            $order->update([
-                'payment_status' => 'paid',
-                'payment_method' => 'online',
-                'paid_at'        => now(),
-            ]);
-
-            $this->notify(
-                Auth::id(),
-                'Online Payment Confirmed',
-                '✅ Online payment confirmed for Order #' . $order->reference_number,
-                $order->id
-            );
-
-            return redirect()
-                ->route('patient.lab-orders.show', $id)
-                ->with('success', 'Payment successful!');
-        }
-
-        return redirect()
-            ->route('patient.lab-orders.payment', $id)
-            ->with('error', 'Payment was not completed. Please try again.');
-    }
-
-    // ══════════════════════════════════════════════════════════════════
     //  POST /patient/lab-orders/{id}/cancel
     //  Route: patient.lab-orders.cancel
     // ══════════════════════════════════════════════════════════════════
@@ -423,21 +598,110 @@ class PatientLabOrderController extends Controller
     {
         $patient = $this->getPatient();
 
+        if (!$patient) {
+            return redirect()->route('patient.dashboard')
+                ->with('error', 'Patient profile not found.');
+        }
+
         $order = LabOrder::where('patient_id', $patient->id)
             ->where('status', 'pending')   // Only pending orders can be cancelled
             ->findOrFail($id);
 
         $order->update(['status' => 'cancelled']);
 
+        // Notify patient
         $this->notify(
             Auth::id(),
-            'Order Cancelled',
-            '❌ Your lab order #' . $order->reference_number . ' has been cancelled.',
+            '❌ Order Cancelled',
+            'Your lab order #' . $order->order_number . ' has been cancelled.',
+            $order->id
+        );
+
+        // Notify laboratory
+        $order->load('laboratory');
+        $this->notify(
+            $order->laboratory->user_id,
+            '❌ Order Cancelled by Patient',
+            'Lab order #' . $order->order_number . ' has been cancelled by the patient.',
             $order->id
         );
 
         return redirect()
             ->route('patient.lab-orders.index')
             ->with('success', 'Order cancelled successfully.');
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  POST /patient/lab-orders/{id}/review
+    //  Route: patient.lab-orders.review.store
+    // ══════════════════════════════════════════════════════════════════
+    public function storeReview(Request $request, $id)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:1000',
+        ]);
+
+        $patient = $this->getPatient();
+
+        if (!$patient) {
+            return back()->with('error', 'Patient profile not found.');
+        }
+
+        // Only completed orders can be reviewed
+        $order = LabOrder::with('laboratory')
+            ->where('patient_id', $patient->id)
+            ->where('status', 'completed')
+            ->findOrFail($id);
+
+        // Duplicate review check
+        $existing = DB::table('ratings')
+            ->where('patient_id',   $patient->id)
+            ->where('ratable_type', 'laboratory')
+            ->where('ratable_id',   $order->laboratory_id)
+            ->where('related_type', 'lab_order')
+            ->where('related_id',   $order->id)
+            ->exists();
+
+        if ($existing) {
+            return back()->with('error', 'You have already reviewed this order.');
+        }
+
+        // Insert rating
+        DB::table('ratings')->insert([
+            'patient_id'   => $patient->id,
+            'ratable_type' => 'laboratory',
+            'ratable_id'   => $order->laboratory_id,
+            'rating'       => $request->rating,
+            'review'       => $request->review ?? null,
+            'related_type' => 'lab_order',
+            'related_id'   => $order->id,
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+
+        // Recalculate laboratory rating
+        $stats = DB::table('ratings')
+            ->where('ratable_type', 'laboratory')
+            ->where('ratable_id',   $order->laboratory_id)
+            ->selectRaw('AVG(rating) as avg_rating, COUNT(*) as total')
+            ->first();
+
+        DB::table('laboratories')
+            ->where('id', $order->laboratory_id)
+            ->update([
+                'rating'        => round($stats->avg_rating, 2),
+                'total_ratings' => $stats->total,
+            ]);
+
+        // Notify patient
+        $this->notify(
+            Auth::id(),
+            '⭐ Review Submitted',
+            'Your review for ' . $order->laboratory->name . ' has been submitted. Thank you!',
+            $order->id
+        );
+
+        return back()->with('success', 'Your review has been submitted successfully!');
     }
 }

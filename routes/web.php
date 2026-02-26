@@ -454,6 +454,8 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     Route::post('/lab-orders/{id}/pay', [PatientLabOrderController::class, 'pay'])->name('lab-orders.pay');
     Route::get('/lab-orders/{id}/report', [PatientLabOrderController::class, 'downloadReport'])->name('lab-orders.report');
     Route::get('/lab-orders/{id}/payment/callback', [PatientLabOrderController::class, 'paymentCallback'])->name('lab-orders.payment.callback');
+    Route::post('/lab-orders/{id}/review', [PatientLabOrderController::class, 'storeReview'])->name('lab-orders.review.store');
+    Route::post('/lab-orders/{id}/cancel', [PatientLabOrderController::class, 'cancel'])->name('lab-orders.cancel');
 
     // Patient Pharmacy Routes
     Route::get('/pharmacies', [PatientPharmacyController::class, 'index'])->name('pharmacies');
