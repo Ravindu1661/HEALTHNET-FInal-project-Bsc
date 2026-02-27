@@ -24,9 +24,9 @@ class Rating extends Model
         'rating' => 'integer',
     ];
 
-    protected $attributes = [
-        'status' => 'pending',
-    ];
+    // protected $attributes = [
+    //     'status' => 'pending',
+    // ];
 
     // ============================================
     // Relationships

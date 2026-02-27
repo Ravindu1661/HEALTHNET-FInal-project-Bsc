@@ -412,10 +412,11 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     // Find Doctors Routes
     Route::get('/doctors', [FindDoctorsController::class, 'index'])->name('doctors');
     Route::get('/doctors/{id}', [FindDoctorsController::class, 'show'])->name('doctors.show');
-
+    Route::post('/doctors/{id}/review', [FindDoctorsController::class, 'storeReview'])->name('patient.doctors.review.store');
     // Hospitals Routes (Patient facing)
     Route::get('/hospitals', [PatientHospitalController::class, 'index'])->name('hospitals');
     Route::get('/hospitals/{id}', [PatientHospitalController::class, 'show'])->name('hospitals.show');
+    Route::post('/hospitals/{id}/review', [PatientHospitalController::class, 'storeReview'])->name('hospitals.review');
 
     // Medical Centres Routes (Patient facing)
     Route::get('/medical-centres', [PatientMedicalCentreController::class, 'index'])->name('medical-centres');
@@ -460,7 +461,9 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     // Patient Pharmacy Routes
     Route::get('/pharmacies', [PatientPharmacyController::class, 'index'])->name('pharmacies');
     Route::get('/pharmacies/{id}', [PatientPharmacyController::class, 'show'])->name('pharmacies.show');
-
+Route::post('/pharmacies/{id}/order',  [PatientPharmacyController::class, 'placeOrder'])->name('pharmacies.order');
+Route::post('/pharmacies/{id}/track',  [PatientPharmacyController::class, 'trackOrder'])->name('pharmacies.track');
+Route::post('/pharmacies/{id}/review', [PatientPharmacyController::class, 'storeReview'])->name('pharmacies.review');
 
 });
 

@@ -1,968 +1,814 @@
-{{-- Include Header --}}
 @include('partials.header')
 
 <style>
-/* ══════════════════════════════════════
-   CREATE APPOINTMENT — Doctor Profile Style Match
-══════════════════════════════════════ */
-
-/* Step Progress */
-.step-progress {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem 1rem;
-    background: white;
+/* ═══════════════════════════════════
+   STEP PROGRESS BAR
+═══════════════════════════════════ */
+.step-bar {
+    background: #fff;
     border-bottom: 1px solid rgba(0,0,0,0.06);
+    padding: 1.2rem 1rem;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-.step-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-}
+.step-bar .container { display: flex; align-items: center; justify-content: center; }
+.step-item { display: flex; flex-direction: column; align-items: center; }
 .step-circle {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     border: 2px solid #e0e0e0;
-    background: white;
-    color: #aaa;
-    font-size: 0.85rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    z-index: 1;
+    background: #fff; color: #aaa;
+    font-size: 0.85rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s; z-index: 1;
 }
 .step-circle.active {
-    background: var(--accent-color, #42a649);
-    border-color: var(--accent-color, #42a649);
-    color: white;
-    box-shadow: 0 4px 12px rgba(66,166,73,0.35);
+    background: #42a649; border-color: #42a649;
+    color: #fff; box-shadow: 0 4px 12px rgba(66,166,73,0.35);
 }
-.step-circle.completed {
-    background: var(--accent-color, #42a649);
-    border-color: var(--accent-color, #42a649);
-    color: white;
+.step-circle.done {
+    background: #42a649; border-color: #42a649; color: #fff;
 }
-.step-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    margin-top: 0.4rem;
-    color: #aaa;
-    white-space: nowrap;
-}
-.step-label.active {
-    color: var(--accent-color, #42a649);
-}
-.step-connector {
-    width: 50px;
-    height: 2px;
+.step-label { font-size: 0.7rem; font-weight: 600; margin-top: 0.4rem; color: #aaa; white-space: nowrap; }
+.step-label.active { color: #42a649; }
+.step-line {
+    width: 60px; height: 2px;
     background: #e0e0e0;
-    margin: 0 0.3rem;
-    margin-bottom: 22px;
-    transition: background 0.3s ease;
+    margin: 0 0.4rem 22px;
+    transition: background 0.3s;
 }
-.step-connector.completed {
-    background: var(--accent-color, #42a649);
-}
+.step-line.done { background: #42a649; }
 @media (max-width: 576px) {
-    .step-connector { width: 20px; }
+    .step-line { width: 25px; }
     .step-label { display: none; }
 }
 
-/* Page Header */
-.appt-page-header {
-    background: linear-gradient(135deg, var(--primary-color, #1a5276) 0%, var(--secondary-color, #2e86c1) 100%);
-    padding: 7rem 0 3.5rem;
-    color: white;
+/* ═══════════════════════════════════
+   PAGE HEADER
+═══════════════════════════════════ */
+.appt-hero {
+    background: linear-gradient(135deg, #1a5276 0%, #2e86c1 100%);
+    padding: 80px 0 3.5rem;
+    color: #fff;
     position: relative;
     overflow: hidden;
 }
-.appt-page-header::after {
+.appt-hero::after {
     content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    right: 0;
-    height: 40px;
+    position: absolute; bottom: -1px; left: 0; right: 0; height: 40px;
     background: #f4f6f9;
     clip-path: ellipse(55% 100% at 50% 100%);
 }
+.appt-hero .container { position: relative; z-index: 1; }
 
-/* Main Container */
-.appt-main {
-    background: #f4f6f9;
-    padding: 2rem 0 4rem;
-    min-height: 600px;
+.back-link {
+    color: rgba(255,255,255,0.8); text-decoration: none;
+    font-size: 0.85rem; display: inline-flex; align-items: center;
+    gap: 0.4rem; margin-bottom: 1rem; transition: color 0.2s;
 }
+.back-link:hover { color: #fff; }
 
-/* Form Card */
-.appt-form-card {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
+/* ═══════════════════════════════════
+   MAIN BODY
+═══════════════════════════════════ */
+.appt-body { background: #f4f6f9; padding: 2rem 0 4rem; min-height: 500px; }
+
+/* Card */
+.appt-card {
+    background: #fff; border-radius: 16px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-    margin-top: -1.5rem;
+    overflow: hidden; margin-bottom: 1.5rem;
 }
 
-/* Doctor Summary — matches profile page style */
-.doctor-summary-box {
-    background: linear-gradient(135deg, rgba(66,166,73,0.05) 0%, rgba(66,166,73,0.1) 100%);
-    border: 2px solid rgba(66,166,73,0.2);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 0;
-}
-.doctor-summary-inner {
-    display: flex;
-    gap: 1.2rem;
-    align-items: center;
-}
-.doctor-summary-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid var(--accent-color, #42a649);
-    flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-}
-.doctor-summary-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.doctor-summary-name {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary-color, #1a5276);
-    margin-bottom: 0.2rem;
-}
-.doctor-summary-spec {
-    color: var(--accent-color, #42a649);
-    font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 0.6rem;
-}
-.doctor-summary-meta {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    font-size: 0.82rem;
-    color: #666;
-}
-.doctor-summary-meta span {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-.doctor-summary-meta i {
-    color: var(--accent-color, #42a649);
-}
-
-/* Section Title — matches profile page */
-.form-section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--primary-color, #1a5276);
-    margin-bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding-bottom: 0.8rem;
+/* Section title inside card */
+.sec-title {
+    font-size: 1rem; font-weight: 700; color: #1a5276;
+    display: flex; align-items: center; gap: 0.5rem;
+    padding-bottom: 0.75rem;
     border-bottom: 2px solid rgba(66,166,73,0.2);
+    margin-bottom: 1.2rem;
 }
-.form-section-title i {
-    color: var(--accent-color, #42a649);
-}
+.sec-title i { color: #42a649; }
 
-/* Workplace Options — matches workplace-card style */
-.workplace-option-label {
-    display: block;
-    cursor: pointer;
+/* ── Doctor Summary ── */
+.doc-summary {
+    display: flex; gap: 1.2rem; align-items: center;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(66,166,73,0.06), rgba(66,166,73,0.12));
+    border-bottom: 2px solid rgba(66,166,73,0.15);
+    padding: 1.5rem 2rem;
 }
-.workplace-option-inner {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    padding: 1.1rem;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: start;
-    gap: 0.8rem;
+.doc-sum-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    overflow: hidden; border: 3px solid #42a649;
+    flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
 }
-.workplace-option-inner:hover {
-    background: white;
-    border-color: var(--accent-color, #42a649);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
+.doc-sum-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.doc-sum-name { font-size: 1.2rem; font-weight: 700; color: #1a5276; margin-bottom: 0.2rem; }
+.doc-sum-spec { color: #42a649; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.5rem; }
+.doc-sum-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
+.doc-sum-meta span { font-size: 0.8rem; color: #666; display: flex; align-items: center; gap: 0.3rem; }
+.doc-sum-meta i { color: #42a649; }
+.doc-sum-fee {
+    margin-left: auto; text-align: right;
+    background: #fff; border-radius: 12px;
+    padding: 0.8rem 1.2rem;
+    border: 2px solid rgba(66,166,73,0.2);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
 }
-.workplace-option-label input[type="radio"]:checked + .workplace-option-inner {
-    background: rgba(66,166,73,0.06);
-    border-color: var(--accent-color, #42a649);
-    box-shadow: 0 4px 12px rgba(66,166,73,0.15);
-}
-.workplace-option-label input[type="radio"] {
-    display: none;
-}
-.wp-radio-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 2px;
-    transition: all 0.2s ease;
-}
-.workplace-option-label input[type="radio"]:checked ~ * .wp-radio-dot,
-.workplace-option-label input[type="radio"]:checked + .workplace-option-inner .wp-radio-dot {
-    border-color: var(--accent-color, #42a649);
-    background: var(--accent-color, #42a649);
-}
-.wp-name {
-    font-weight: 700;
-    color: var(--primary-color, #1a5276);
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-}
-.wp-type-badge {
-    font-size: 0.72rem;
-    padding: 0.2rem 0.6rem;
-    background: var(--accent-color, #42a649);
-    color: white;
-    border-radius: 10px;
-    display: inline-block;
-    text-transform: capitalize;
-    margin-bottom: 0.4rem;
-}
-.wp-meta {
-    font-size: 0.82rem;
-    color: #666;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.2rem;
-}
-.wp-meta i {
-    color: var(--accent-color, #42a649);
-    width: 14px;
-}
+.fee-lbl { font-size: 0.7rem; color: #999; font-weight: 600; }
+.fee-amt { font-size: 1.6rem; font-weight: 800; color: #42a649; line-height: 1.1; }
+.fee-sub { font-size: 0.65rem; color: #bbb; }
 
-/* Form Controls */
-.appt-label {
-    display: block;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--primary-color, #1a5276);
+/* ── Form body ── */
+.card-body-pad { padding: 1.8rem 2rem; }
+
+/* Form label */
+.f-label {
+    display: block; font-size: 0.83rem;
+    font-weight: 700; color: #1a5276;
     margin-bottom: 0.45rem;
 }
-.appt-label .req {
-    color: #dc3545;
+.f-label span { color: #dc3545; }
+
+/* Form control */
+.f-control {
+    width: 100%; padding: 0.75rem 1rem;
+    border: 2px solid #e9ecef; border-radius: 10px;
+    font-size: 0.9rem; color: #333;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+    appearance: none; -webkit-appearance: none;
 }
-.appt-input,
-.appt-textarea {
-    width: 100%;
-    padding: 0.72rem 1rem;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    background: white;
-    color: #333;
-}
-.appt-input:focus,
-.appt-textarea:focus {
-    border-color: var(--accent-color, #42a649);
-    outline: none;
+.f-control:focus {
+    border-color: #42a649; outline: none;
     box-shadow: 0 0 0 3px rgba(66,166,73,0.1);
 }
-.appt-textarea {
-    resize: vertical;
-    min-height: 100px;
+.f-control:disabled { background: #f8f8f8; color: #999; cursor: not-allowed; }
+.f-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2342a649' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
 }
+.f-hint { font-size: 0.75rem; color: #aaa; margin-top: 0.3rem; }
+.f-err  { font-size: 0.78rem; color: #dc3545; margin-top: 0.3rem; display: none; }
+.f-err.show { display: block; }
 
-/* Appointment Summary Box */
-.appt-summary-box {
-    background: #f8f9fa;
-    border-radius: 12px;
-    border-left: 4px solid var(--accent-color, #42a649);
-    overflow: hidden;
+/* Workplace cards (select style) */
+.wp-options { display: flex; flex-direction: column; gap: 0.75rem; }
+.wp-option {
+    display: flex; align-items: center; gap: 0.9rem;
+    border: 2px solid #e9ecef; border-radius: 12px;
+    padding: 1rem 1.2rem; cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
 }
-.appt-summary-header {
-    background: var(--primary-color, #1a5276);
-    color: white;
-    padding: 0.8rem 1.2rem;
-    font-weight: 700;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.wp-option:hover { border-color: #42a649; background: rgba(66,166,73,0.03); }
+.wp-option input[type="radio"] { display: none; }
+.wp-option.selected { border-color: #42a649; background: rgba(66,166,73,0.06); }
+.wp-option-dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid #ccc; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
 }
-.appt-summary-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.65rem 1.2rem;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 0.88rem;
+.wp-option.selected .wp-option-dot {
+    background: #42a649; border-color: #42a649;
 }
-.appt-summary-item:last-child { border-bottom: none; }
-.appt-summary-label { color: #666; }
-.appt-summary-value { font-weight: 600; color: var(--primary-color, #1a5276); }
-.appt-summary-total {
-    background: rgba(66,166,73,0.08);
-    padding: 0.9rem 1.2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top: 2px solid var(--accent-color, #42a649);
+.wp-option.selected .wp-option-dot::after {
+    content: ''; width: 8px; height: 8px;
+    background: #fff; border-radius: 50%;
 }
-.appt-summary-total .label {
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--primary-color, #1a5276);
+.wp-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: linear-gradient(135deg, #1a5276, #2e86c1);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
 }
-.appt-summary-total .value {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--accent-color, #42a649);
+.wp-option.selected .wp-icon { background: linear-gradient(135deg, #42a649, #2d7a32); }
+.wp-name  { font-size: 0.92rem; font-weight: 700; color: #1a5276; }
+.wp-addr  { font-size: 0.78rem; color: #888; margin-top: 0.15rem; }
+.wp-badge {
+    margin-left: auto;
+    background: #e3f2fd; color: #0d47a1;
+    font-size: 0.68rem; font-weight: 700;
+    padding: 0.2rem 0.6rem; border-radius: 8px; white-space: nowrap;
 }
+.wp-option.selected .wp-badge { background: rgba(66,166,73,0.15); color: #2d7a32; }
 
-/* Buttons */
-.btn-appt-submit {
-    background: var(--accent-color, #42a649);
-    color: white;
-    border: none;
-    padding: 0.9rem 2.5rem;
-    border-radius: 25px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(66,166,73,0.3);
-    text-decoration: none;
-}
-.btn-appt-submit:hover {
-    background: var(--primary-color, #1a5276);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(66,166,73,0.4);
-}
-.btn-appt-cancel {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 0.9rem 2rem;
-    border-radius: 25px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.btn-appt-cancel:hover {
-    background: #5a6268;
-    color: white;
-    transform: translateY(-2px);
-}
-.btn-appt-nav {
-    background: white;
-    color: var(--primary-color, #1a5276);
-    border: 2px solid #e9ecef;
-    padding: 0.7rem 1.5rem;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.btn-appt-nav:hover {
-    border-color: var(--accent-color, #42a649);
-    color: var(--accent-color, #42a649);
-}
-.btn-appt-next {
-    background: var(--accent-color, #42a649);
-    color: white;
-    border: 2px solid var(--accent-color, #42a649);
-    padding: 0.7rem 1.8rem;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.btn-appt-next:hover {
-    background: var(--primary-color, #1a5276);
-    border-color: var(--primary-color, #1a5276);
-    transform: translateY(-2px);
-}
+/* Date + Time grid */
+.dt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+@media (max-width: 576px) { .dt-grid { grid-template-columns: 1fr; } }
 
-/* Form Step Sections */
-.form-step {
-    display: none;
-    animation: fadeInStep 0.3s ease;
+/* Textarea */
+.f-textarea {
+    width: 100%; padding: 0.8rem 1rem;
+    border: 2px solid #e9ecef; border-radius: 10px;
+    font-size: 0.9rem; resize: vertical; min-height: 100px;
+    font-family: inherit; color: #333;
+    transition: border-color 0.2s;
 }
-.form-step.active {
-    display: block;
+.f-textarea:focus { border-color: #42a649; outline: none; box-shadow: 0 0 0 3px rgba(66,166,73,0.1); }
+
+/* Summary sidebar */
+.summary-card {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    overflow: hidden; position: sticky; top: 90px;
 }
-@keyframes fadeInStep {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+.summary-header {
+    background: linear-gradient(135deg, #1a5276, #2e86c1);
+    color: #fff; padding: 1.1rem 1.4rem;
+    font-size: 0.95rem; font-weight: 700;
+    display: flex; align-items: center; gap: 0.5rem;
 }
+.summary-body { padding: 1.4rem; }
+.sum-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 0.6rem 0; border-bottom: 1px solid #f5f5f5;
+    font-size: 0.85rem; gap: 0.5rem;
+}
+.sum-row:last-child { border: none; }
+.sum-lbl { color: #888; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.sum-lbl i { color: #42a649; width: 14px; }
+.sum-val { color: #333; font-weight: 600; text-align: right; word-break: break-word; }
+.sum-fee-box {
+    background: linear-gradient(135deg, rgba(66,166,73,0.08), rgba(66,166,73,0.15));
+    border: 2px solid rgba(66,166,73,0.25);
+    border-radius: 12px; padding: 1rem; text-align: center; margin: 1rem 0;
+}
+.sum-fee-lbl  { font-size: 0.75rem; color: #777; font-weight: 600; margin-bottom: 0.2rem; }
+.sum-fee-amt  { font-size: 1.8rem; font-weight: 800; color: #42a649; line-height: 1; }
+.sum-fee-sub  { font-size: 0.65rem; color: #aaa; margin-top: 0.2rem; }
+
+/* Submit button */
+.btn-submit-appt {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: linear-gradient(135deg, #42a649, #2d7a32);
+    color: #fff; border: none; width: 100%;
+    padding: 1rem; border-radius: 25px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(66,166,73,0.35);
+    margin-top: 0.5rem;
+}
+.btn-submit-appt:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(66,166,73,0.45); }
+.btn-submit-appt:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
 /* Alert */
-.appt-alert-warning {
-    background: #fff3cd;
-    color: #856404;
-    border-left: 4px solid #ffc107;
-    padding: 1rem 1.2rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
+.f-alert {
+    border-radius: 10px; padding: 0.9rem 1.1rem;
+    margin-bottom: 1.3rem; display: flex;
+    align-items: flex-start; gap: 0.7rem; font-size: 0.88rem;
 }
-.appt-alert-info {
-    background: #d1ecf1;
-    color: #0c5460;
-    border-left: 4px solid #17a2b8;
-    padding: 0.9rem 1.2rem;
-    border-radius: 8px;
-    margin-bottom: 1.2rem;
-    font-size: 0.88rem;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
+.f-alert.error   { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+.f-alert.success { background: #d4edda; color: #155724; border-left: 4px solid #42a649; }
+.f-alert.info    { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
 
-/* Form actions */
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid #e9ecef;
-}
+/* Char counter */
+.char-count { font-size: 0.72rem; color: #aaa; text-align: right; margin-top: 0.25rem; }
 
-/* Responsive */
 @media (max-width: 768px) {
-    .doctor-summary-inner { flex-direction: column; align-items: center; text-align: center; }
-    .doctor-summary-meta { justify-content: center; }
-    .form-actions { flex-direction: column-reverse; }
-    .btn-appt-submit,
-    .btn-appt-cancel,
-    .btn-appt-nav,
-    .btn-appt-next { width: 100%; justify-content: center; }
-    .appt-page-header { padding: 5rem 0 2.5rem; }
+    .doc-summary  { flex-direction: column; }
+    .doc-sum-fee  { margin-left: 0; width: 100%; text-align: center; }
+    .card-body-pad { padding: 1.2rem; }
+    .summary-card { position: static; margin-top: 1.5rem; }
 }
 </style>
 
-{{-- ══════════ PAGE HEADER ══════════ --}}
-<section class="appt-page-header">
+{{-- ══ HERO ══ --}}
+<section class="appt-hero">
     <div class="container">
-        <a href="{{ url()->previous() }}" class="back-btn">
-            <i class="fas fa-arrow-left"></i> Back
+        <a href="{{ route('patient.doctors.show', $doctor->id) }}" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Doctor Profile
         </a>
-        <div class="row text-center">
-            <div class="col-lg-8 mx-auto">
-                <h1 style="font-size:2.2rem;font-weight:700;margin-bottom:0.5rem;">Book Appointment</h1>
-                <p style="opacity:0.9;font-size:1rem;">Schedule your consultation with our medical professionals</p>
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-7">
+                <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.4rem;">
+                    <i class="fas fa-calendar-plus me-2" style="opacity: 0.85;"></i>
+                    Book Appointment
+                </h1>
+                <p style="opacity: 0.9; font-size: 0.95rem; margin: 0;">
+                    Fill in the details below to schedule your consultation
+                </p>
             </div>
         </div>
     </div>
 </section>
 
-{{-- ══════════ MAIN CONTENT ══════════ --}}
-<section class="appt-main">
+{{-- ══ BODY ══ --}}
+<section class="appt-body">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-9">
 
-                {{-- Step Progress Bar --}}
-                <div class="step-progress mb-0" style="border-radius:15px 15px 0 0;margin-top:-1.5rem;position:relative;z-index:2;">
-                    {{-- Step 1 --}}
-                    <div class="step-item">
-                        <div class="step-circle active" id="circle-1">1</div>
-                        <div class="step-label active" id="label-1">Doctor</div>
-                    </div>
-                    <div class="step-connector" id="connector-1"></div>
-
-                    {{-- Step 2 --}}
-                    <div class="step-item">
-                        <div class="step-circle" id="circle-2">2</div>
-                        <div class="step-label" id="label-2">Location</div>
-                    </div>
-                    <div class="step-connector" id="connector-2"></div>
-
-                    {{-- Step 3 --}}
-                    <div class="step-item">
-                        <div class="step-circle" id="circle-3">3</div>
-                        <div class="step-label" id="label-3">Date & Time</div>
-                    </div>
-                    <div class="step-connector" id="connector-3"></div>
-
-                    {{-- Step 4 --}}
-                    <div class="step-item">
-                        <div class="step-circle" id="circle-4">4</div>
-                        <div class="step-label" id="label-4">Details</div>
-                    </div>
-                    <div class="step-connector" id="connector-4"></div>
-
-                    {{-- Step 5 --}}
-                    <div class="step-item">
-                        <div class="step-circle" id="circle-5">5</div>
-                        <div class="step-label" id="label-5">Review</div>
-                    </div>
+        {{-- Alerts --}}
+        @foreach(['error' => 'error', 'success' => 'success', 'info' => 'info'] as $skey => $stype)
+            @if(session($skey))
+                <div class="f-alert {{ $stype }}">
+                    <i class="fas fa-{{ $stype === 'error' ? 'times-circle' : ($stype === 'success' ? 'check-circle' : 'info-circle') }} fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+                    <span>{{ session($skey) }}</span>
                 </div>
+            @endif
+        @endforeach
 
-                {{-- Main Form Card --}}
-                <div class="appt-form-card" style="border-radius: 0 0 15px 15px; margin-top:0;">
+        {{-- Validation Errors --}}
+        @if($errors->any())
+            <div class="f-alert error">
+                <i class="fas fa-exclamation-circle fa-lg" style="flex-shrink:0;margin-top:2px;"></i>
+                <div>
+                    <strong>Please fix the following errors:</strong>
+                    <ul style="margin: 0.4rem 0 0; padding-left: 1.2rem; font-size: 0.85rem;">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        @endif
 
-                    {{-- Validation Errors --}}
-                    @if($errors->any())
-                    <div class="appt-alert-warning">
-                        <strong><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</strong>
-                        <ul style="margin:0.5rem 0 0 1.5rem;">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
+        <form action="{{ route('patient.appointments.store', $doctor->id) }}"
+              method="POST" id="appointmentForm">
+            @csrf
+
+            <div class="row g-4">
+
+                {{-- ══ LEFT ══ --}}
+                <div class="col-lg-8">
+
+                    {{-- Doctor Summary --}}
+                    <div class="appt-card">
+                        @php
+                            $docImg = $doctor->profile_image
+                                ? asset('storage/' . $doctor->profile_image)
+                                : asset('images/default-avatar.png');
+                        @endphp
+                        <div class="doc-summary">
+                            <div class="doc-sum-avatar">
+                                <img src="{{ $docImg }}"
+                                     alt="Dr. {{ $doctor->first_name }}"
+                                     onerror="this.src='{{ asset('images/default-avatar.png') }}'">
+                            </div>
+                            <div>
+                                <div class="doc-sum-name">
+                                    Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}
+                                </div>
+                                <div class="doc-sum-spec">
+                                    {{ $doctor->specialization ?? 'General Practitioner' }}
+                                </div>
+                                <div class="doc-sum-meta">
+                                    @if($doctor->experience_years)
+                                        <span>
+                                            <i class="fas fa-briefcase-medical"></i>
+                                            {{ $doctor->experience_years }} {{ Str::plural('yr', $doctor->experience_years) }} exp.
+                                        </span>
+                                    @endif
+                                    @if($doctor->slmc_number)
+                                        <span>
+                                            <i class="fas fa-id-badge"></i>
+                                            SLMC: {{ $doctor->slmc_number }}
+                                        </span>
+                                    @endif
+                                    @if($doctor->phone)
+                                        <span>
+                                            <i class="fas fa-phone"></i>
+                                            {{ $doctor->phone }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="doc-sum-fee">
+                                <div class="fee-lbl">Consultation Fee</div>
+                                <div class="fee-amt">Rs. {{ number_format($doctor->consultation_fee ?? 0, 2) }}</div>
+                                <div class="fee-sub">Sri Lankan Rupees</div>
+                            </div>
+                        </div>
                     </div>
-                    @endif
 
-                    <form method="POST"
-                          action="{{ route('patient.appointments.store', ['doctorId' => $doctor->id]) }}"
-                          id="appointmentForm">
-                        @csrf
+                    {{-- Step 1: Practice Location --}}
+                    <div class="appt-card">
+                        <div class="card-body-pad">
+                            <div class="sec-title">
+                                <i class="fas fa-hospital"></i>
+                                Select Practice Location
+                                <span style="font-size:0.72rem;color:#dc3545;font-weight:400;">* Required</span>
+                            </div>
 
-                        {{-- ═════ STEP 1 — Doctor Info ═════ --}}
-                        <div class="form-step active" id="step-1">
-
-                            <h3 class="form-section-title">
-                                <i class="fas fa-user-md"></i> Your Doctor
-                            </h3>
-
-                            @isset($doctor)
-                            <div class="doctor-summary-box">
-                                <div class="doctor-summary-inner">
-                                    <div class="doctor-summary-avatar">
+                            @if($workplaces->count() > 0)
+                                <div class="wp-options" id="workplaceOptions">
+                                    @foreach($workplaces as $wp)
                                         @php
-                                            $profileImage = $doctor->profile_image
-                                                ? asset('storage/' . $doctor->profile_image)
-                                                : asset('images/default-avatar.png');
+                                            $wpName  = 'Unknown';
+                                            $wpAddr  = '';
+                                            $wpCity  = '';
+                                            $wpType  = ucwords(str_replace('_', ' ', $wp->workplace_type));
+                                            $wpIcon  = $wp->workplace_type === 'hospital' ? 'fa-hospital' : 'fa-clinic-medical';
+
+                                            if ($wp->workplace_type === 'hospital' && $wp->hospital) {
+                                                $wpName = $wp->hospital->name;
+                                                $wpAddr = $wp->hospital->address ?? '';
+                                                $wpCity = $wp->hospital->city    ?? '';
+                                            } elseif ($wp->workplace_type === 'medical_centre' && $wp->medicalCentre) {
+                                                $wpName = $wp->medicalCentre->name;
+                                                $wpAddr = $wp->medicalCentre->address ?? '';
+                                                $wpCity = $wp->medicalCentre->city    ?? '';
+                                            }
+
+                                            $isSelected = old('workplace_id') == $wp->id || ($loop->first && !old('workplace_id'));
                                         @endphp
-                                        <img src="{{ $profileImage }}"
-                                             alt="Dr. {{ $doctor->first_name }}"
-                                             onerror="this.src='{{ asset('images/default-avatar.png') }}'">
-                                    </div>
-                                    <div style="flex:1;">
-                                        <div class="doctor-summary-name">
-                                            Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}
-                                        </div>
-                                        <div class="doctor-summary-spec">
-                                            {{ $doctor->specialization ?? 'General Practitioner' }}
-                                        </div>
-                                        <div class="doctor-summary-meta">
-                                            @if($doctor->experience_years)
-                                            <span>
-                                                <i class="fas fa-briefcase-medical"></i>
-                                                {{ $doctor->experience_years }} yrs experience
-                                            </span>
-                                            @endif
-                                            <span>
-                                                <i class="fas fa-money-bill-wave"></i>
-                                                Rs. {{ number_format($doctor->consultation_fee ?? 0, 2) }}
-                                            </span>
-                                            @if($doctor->status === 'approved')
-                                            <span>
-                                                <i class="fas fa-check-circle"></i>
-                                                Verified Doctor
-                                            </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            @endisset
-
-                            <div class="form-actions">
-                                <a href="{{ url()->previous() }}" class="btn-appt-cancel">
-                                    <i class="fas fa-times"></i> Cancel
-                                </a>
-                                <button type="button" class="btn-appt-next" onclick="goToStep(2)">
-                                    Next <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        {{-- ═════ STEP 2 — Location / Workplace ═════ --}}
-                        <div class="form-step" id="step-2">
-
-                            <h3 class="form-section-title">
-                                <i class="fas fa-hospital"></i> Select Location
-                            </h3>
-
-                            @if(isset($workplaces) && $workplaces->count() > 0)
-                            <div class="row g-3">
-                                @foreach($workplaces as $workplace)
-                                @php
-                                    $wpName    = 'Not Available';
-                                    $wpAddress = 'Address not available';
-                                    $wpCity    = 'N/A';
-                                    $wpType    = $workplace->workplace_type;
-
-                                    if ($workplace->workplace_type == 'hospital' && $workplace->hospital) {
-                                        $wpName    = $workplace->hospital->name;
-                                        $wpAddress = $workplace->hospital->address ?? 'N/A';
-                                        $wpCity    = $workplace->hospital->city ?? 'N/A';
-                                    } elseif ($workplace->workplace_type == 'medical_centre' && $workplace->medicalCentre) {
-                                        $wpName    = $workplace->medicalCentre->name;
-                                        $wpAddress = $workplace->medicalCentre->address ?? 'N/A';
-                                        $wpCity    = $workplace->medicalCentre->city ?? 'N/A';
-                                    }
-                                @endphp
-                                <div class="col-md-6">
-                                    <label class="workplace-option-label w-100">
-                                        <input type="radio"
-                                               name="workplace_id"
-                                               value="{{ $workplace->id }}"
-                                               required
-                                               {{ old('workplace_id') == $workplace->id ? 'checked' : '' }}>
-                                        <div class="workplace-option-inner">
-                                            <div class="wp-radio-dot" style="flex-shrink:0;margin-top:3px;"></div>
-                                            <div style="flex:1;">
-                                                <div class="wp-name">{{ $wpName }}</div>
-                                                <div>
-                                                    <span class="wp-type-badge">
-                                                        {{ str_replace('_', ' ', $wpType) }}
-                                                    </span>
-                                                </div>
-                                                <div class="wp-meta">
-                                                    <i class="fas fa-map-marker-alt"></i>
-                                                    {{ Str::limit($wpAddress, 50) }}
-                                                </div>
-                                                <div class="wp-meta">
-                                                    <i class="fas fa-city"></i>
-                                                    {{ $wpCity }}
-                                                </div>
+                                        <label class="wp-option {{ $isSelected ? 'selected' : '' }}"
+                                               for="wp_{{ $wp->id }}"
+                                               onclick="selectWorkplace(this, {{ $wp->id }}, '{{ addslashes($wpName) }}', '{{ addslashes($wpType) }}')">
+                                            <input type="radio"
+                                                   name="workplace_id"
+                                                   id="wp_{{ $wp->id }}"
+                                                   value="{{ $wp->id }}"
+                                                   {{ $isSelected ? 'checked' : '' }}>
+                                            <div class="wp-option-dot"></div>
+                                            <div class="wp-icon">
+                                                <i class="fas {{ $wpIcon }}"></i>
                                             </div>
-                                        </div>
-                                    </label>
+                                            <div style="flex:1;min-width:0;">
+                                                <div class="wp-name">{{ $wpName }}</div>
+                                                @if($wpAddr || $wpCity)
+                                                    <div class="wp-addr">
+                                                        <i class="fas fa-map-marker-alt" style="color:#42a649;font-size:0.7rem;"></i>
+                                                        {{ trim($wpAddr . ($wpCity ? ', ' . $wpCity : '')) }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <span class="wp-badge">{{ $wpType }}</span>
+                                        </label>
+                                    @endforeach
                                 </div>
-                                @endforeach
-                            </div>
+
+                                @error('workplace_id')
+                                    <div class="f-err show" style="margin-top:0.5rem;">{{ $message }}</div>
+                                @enderror
                             @else
-                            <div class="text-center py-4" style="color:#888;">
-                                <i class="fas fa-hospital fa-3x mb-3 d-block" style="color:#ddd;"></i>
-                                <p>No approved workplaces available for this doctor.</p>
-                            </div>
+                                <div style="text-align:center;padding:2rem;color:#aaa;">
+                                    <i class="fas fa-hospital-alt" style="font-size:2.5rem;display:block;margin-bottom:0.6rem;"></i>
+                                    <p style="font-size:0.88rem;margin:0;">No approved practice locations available for this doctor.</p>
+                                </div>
                             @endif
-
-                            @error('workplace_id')
-                            <p class="text-danger small mt-2">
-                                <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                            </p>
-                            @enderror
-
-                            <div class="form-actions">
-                                <button type="button" class="btn-appt-nav" onclick="goToStep(1)">
-                                    <i class="fas fa-arrow-left"></i> Back
-                                </button>
-                                <button type="button" class="btn-appt-next" onclick="validateStep2()">
-                                    Next <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
                         </div>
+                    </div>
 
-                        {{-- ═════ STEP 3 — Date & Time ═════ --}}
-                        <div class="form-step" id="step-3">
+                    {{-- Step 2: Date & Time --}}
+                    <div class="appt-card">
+                        <div class="card-body-pad">
+                            <div class="sec-title">
+                                <i class="fas fa-calendar-alt"></i>
+                                Preferred Date & Time
+                            </div>
 
-                            <h3 class="form-section-title">
-                                <i class="fas fa-calendar-alt"></i> Select Date & Time
-                            </h3>
-
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="appt-label">
-                                            Appointment Date <span class="req">*</span>
-                                        </label>
-                                        <input type="date"
-                                               class="appt-input @error('appointment_date') is-invalid @enderror"
-                                               name="appointment_date"
-                                               id="appt-date"
-                                               required
-                                               min="{{ date('Y-m-d') }}"
-                                               value="{{ old('appointment_date') }}">
-                                        @error('appointment_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                            <div class="dt-grid">
+                                {{-- Date --}}
+                                <div>
+                                    <label class="f-label" for="appointment_date">
+                                        Appointment Date <span>*</span>
+                                    </label>
+                                    <input type="date"
+                                           name="appointment_date"
+                                           id="appointment_date"
+                                           class="f-control"
+                                           value="{{ old('appointment_date') }}"
+                                           min="{{ date('Y-m-d') }}"
+                                           onchange="updateSummaryDate(this.value)"
+                                           required>
+                                    @error('appointment_date')
+                                        <div class="f-err show">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="appt-label">
-                                            Appointment Time <span class="req">*</span>
-                                        </label>
-                                        <input type="time"
-                                               class="appt-input @error('appointment_time') is-invalid @enderror"
-                                               name="appointment_time"
-                                               id="appt-time"
-                                               required
-                                               value="{{ old('appointment_time') }}">
-                                        @error('appointment_time')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+
+                                {{-- Time --}}
+                                <div>
+                                    <label class="f-label" for="appointment_time">
+                                        Preferred Time <span>*</span>
+                                    </label>
+                                    <input type="time"
+                                           name="appointment_time"
+                                           id="appointment_time"
+                                           class="f-control"
+                                           value="{{ old('appointment_time', '09:00') }}"
+                                           min="08:00"
+                                           max="18:00"
+                                           onchange="updateSummaryTime(this.value)"
+                                           required>
+                                    <div class="f-hint">
+                                        <i class="fas fa-clock" style="color:#42a649;"></i>
+                                        Available: 8:00 AM – 6:00 PM
                                     </div>
+                                    @error('appointment_time')
+                                        <div class="f-err show">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
-
-                            <div class="form-actions">
-                                <button type="button" class="btn-appt-nav" onclick="goToStep(2)">
-                                    <i class="fas fa-arrow-left"></i> Back
-                                </button>
-                                <button type="button" class="btn-appt-next" onclick="validateStep3()">
-                                    Next <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
                         </div>
+                    </div>
 
-                        {{-- ═════ STEP 4 — Details ═════ --}}
-                        <div class="form-step" id="step-4">
+                    {{-- Step 3: Reason & Notes --}}
+                    <div class="appt-card">
+                        <div class="card-body-pad">
+                            <div class="sec-title">
+                                <i class="fas fa-notes-medical"></i>
+                                Appointment Details
+                            </div>
 
-                            <h3 class="form-section-title">
-                                <i class="fas fa-file-medical"></i> Appointment Details
-                            </h3>
-
-                            <div class="mb-3">
-                                <label class="appt-label">
-                                    Reason for Visit <span class="req">*</span>
+                            {{-- Reason --}}
+                            <div style="margin-bottom: 1.2rem;">
+                                <label class="f-label" for="reason">
+                                    Reason for Visit <span>*</span>
                                 </label>
-                                <textarea class="appt-textarea @error('reason') is-invalid @enderror"
-                                          name="reason"
-                                          id="appt-reason"
-                                          rows="4"
-                                          required
-                                          placeholder="Please describe your symptoms or reason for consultation...">{{ old('reason') }}</textarea>
+                                <textarea name="reason"
+                                          id="reason"
+                                          class="f-textarea"
+                                          placeholder="Describe your symptoms or reason for this appointment (e.g., fever for 3 days, chest pain, routine check-up...)"
+                                          maxlength="1000"
+                                          oninput="countChars('reason', 'reasonCount', 1000)"
+                                          required>{{ old('reason') }}</textarea>
+                                <div class="char-count"><span id="reasonCount">0</span> / 1000</div>
                                 @error('reason')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                    <div class="f-err show">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            <div class="mb-3">
-                                <label class="appt-label">
+                            {{-- Notes --}}
+                            <div>
+                                <label class="f-label" for="notes">
                                     Additional Notes
-                                    <span style="font-weight:400;color:#888;">(Optional)</span>
+                                    <span style="color:#aaa;font-weight:400;">(optional)</span>
                                 </label>
-                                <textarea class="appt-textarea"
-                                          name="notes"
-                                          rows="3"
-                                          placeholder="Any additional information you'd like the doctor to know...">{{ old('notes') }}</textarea>
-                            </div>
-
-                            <div class="form-actions">
-                                <button type="button" class="btn-appt-nav" onclick="goToStep(3)">
-                                    <i class="fas fa-arrow-left"></i> Back
-                                </button>
-                                <button type="button" class="btn-appt-next" onclick="validateStep4()">
-                                    Review <i class="fas fa-arrow-right"></i>
-                                </button>
+                                <textarea name="notes"
+                                          id="notes"
+                                          class="f-textarea"
+                                          style="min-height:80px;"
+                                          placeholder="Any other information the doctor should know (e.g., allergies, current medications, past medical history...)"
+                                          maxlength="1000"
+                                          oninput="countChars('notes', 'notesCount', 1000)">{{ old('notes') }}</textarea>
+                                <div class="char-count"><span id="notesCount">0</span> / 1000</div>
+                                @error('notes')
+                                    <div class="f-err show">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
+                    </div>
 
-                        {{-- ═════ STEP 5 — Review & Confirm ═════ --}}
-                        <div class="form-step" id="step-5">
-
-                            <h3 class="form-section-title">
-                                <i class="fas fa-check-circle"></i> Review & Confirm
-                            </h3>
-
-                            {{-- Doctor Summary Repeat --}}
-                            @isset($doctor)
-                            <div class="doctor-summary-box mb-3">
-                                <div class="doctor-summary-inner">
-                                    <div class="doctor-summary-avatar">
-                                        <img src="{{ $profileImage ?? asset('images/default-avatar.png') }}"
-                                             alt="Dr."
-                                             onerror="this.src='{{ asset('images/default-avatar.png') }}'">
-                                    </div>
-                                    <div>
-                                        <div class="doctor-summary-name">
-                                            Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}
-                                        </div>
-                                        <div class="doctor-summary-spec">
-                                            {{ $doctor->specialization ?? 'General Practitioner' }}
-                                        </div>
-                                    </div>
-                                </div>
+                    {{-- Terms --}}
+                    <div class="appt-card">
+                        <div class="card-body-pad">
+                            <div class="sec-title">
+                                <i class="fas fa-shield-alt"></i>
+                                Terms & Conditions
                             </div>
-                            @endisset
-
-                            {{-- Summary Table --}}
-                            <div class="appt-summary-box mb-3">
-                                <div class="appt-summary-header">
-                                    <i class="fas fa-receipt"></i> Appointment Summary
-                                </div>
-                                <div class="appt-summary-item">
-                                    <span class="appt-summary-label">Date</span>
-                                    <span class="appt-summary-value" id="summary-date">—</span>
-                                </div>
-                                <div class="appt-summary-item">
-                                    <span class="appt-summary-label">Time</span>
-                                    <span class="appt-summary-value" id="summary-time">—</span>
-                                </div>
-                                <div class="appt-summary-item">
-                                    <span class="appt-summary-label">Reason</span>
-                                    <span class="appt-summary-value" id="summary-reason" style="max-width:65%;text-align:right;">—</span>
-                                </div>
-                                <div class="appt-summary-total">
-                                    <span class="label">Consultation Fee</span>
-                                    <span class="value">Rs. {{ number_format($doctor->consultation_fee ?? 0, 2) }}</span>
-                                </div>
+                            <div style="background:#f8f9fa;border-radius:10px;padding:1rem;font-size:0.83rem;color:#666;line-height:1.7;margin-bottom:1rem;">
+                                <ul style="margin:0;padding-left:1.2rem;">
+                                    <li>Appointments are subject to doctor availability and confirmation.</li>
+                                    <li>A {{ config('app.advance_payment_percent', 50) }}% advance payment is required to confirm your booking.</li>
+                                    <li>Cancellations made less than 24 hours before the appointment may not be eligible for a refund.</li>
+                                    <li>Please arrive 10 minutes before your scheduled time.</li>
+                                    <li>Bring any relevant medical records or prescriptions.</li>
+                                </ul>
                             </div>
-
-                            {{-- Payment Info --}}
-                            <div class="appt-alert-info">
-                                <i class="fas fa-credit-card"></i>
-                                <div>
-                                    <strong>Secure Online Payment</strong> — After confirming, you will be redirected to our secure Stripe payment page to complete the payment.
-                                </div>
-                            </div>
-
-                            <div class="form-actions">
-                                <button type="button" class="btn-appt-nav" onclick="goToStep(4)">
-                                    <i class="fas fa-arrow-left"></i> Back
-                                </button>
-                                <button type="submit" class="btn-appt-submit">
-                                    <i class="fas fa-lock"></i>
-                                    Confirm & Proceed to Payment
-                                </button>
-                            </div>
+                            <label style="display:flex;align-items:flex-start;gap:0.7rem;cursor:pointer;">
+                                <input type="checkbox" id="agreeTerms"
+                                       style="width:18px;height:18px;margin-top:1px;accent-color:#42a649;flex-shrink:0;"
+                                       required>
+                                <span style="font-size:0.85rem;color:#444;">
+                                    I understand and agree to the above terms and conditions.
+                                </span>
+                            </label>
+                            <div class="f-err" id="termsErr">You must agree to the terms before continuing.</div>
                         </div>
+                    </div>
 
-                    </form>
-                </div>{{-- end appt-form-card --}}
-            </div>
-        </div>
+                </div>{{-- /col-lg-8 --}}
+
+                {{-- ══ SIDEBAR SUMMARY ══ --}}
+                <div class="col-lg-4">
+                    <div class="summary-card">
+                        <div class="summary-header">
+                            <i class="fas fa-receipt"></i> Booking Summary
+                        </div>
+                        <div class="summary-body">
+
+                            {{-- Doctor --}}
+                            <div class="sum-row">
+                                <span class="sum-lbl"><i class="fas fa-user-md"></i> Doctor</span>
+                                <span class="sum-val">Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}</span>
+                            </div>
+                            <div class="sum-row">
+                                <span class="sum-lbl"><i class="fas fa-stethoscope"></i> Specialty</span>
+                                <span class="sum-val">{{ $doctor->specialization ?? 'General' }}</span>
+                            </div>
+
+                            {{-- Location (dynamic) --}}
+                            <div class="sum-row">
+                                <span class="sum-lbl"><i class="fas fa-hospital"></i> Location</span>
+                                <span class="sum-val" id="sumLocation">
+                                    @php
+                                        $firstWp = $workplaces->first();
+                                        if ($firstWp) {
+                                            if ($firstWp->workplace_type === 'hospital' && $firstWp->hospital) {
+                                                echo $firstWp->hospital->name;
+                                            } elseif ($firstWp->medicalCentre) {
+                                                echo $firstWp->medicalCentre->name;
+                                            } else {
+                                                echo '—';
+                                            }
+                                        } else { echo '—'; }
+                                    @endphp
+                                </span>
+                            </div>
+
+                            {{-- Date --}}
+                            <div class="sum-row">
+                                <span class="sum-lbl"><i class="fas fa-calendar"></i> Date</span>
+                                <span class="sum-val" id="sumDate">
+                                    {{ old('appointment_date') ? \Carbon\Carbon::parse(old('appointment_date'))->format('D, d M Y') : '—' }}
+                                </span>
+                            </div>
+
+                            {{-- Time --}}
+                            <div class="sum-row">
+                                <span class="sum-lbl"><i class="fas fa-clock"></i> Time</span>
+                                <span class="sum-val" id="sumTime">
+                                    {{ old('appointment_time') ? \Carbon\Carbon::parse(old('appointment_time'))->format('h:i A') : '9:00 AM' }}
+                                </span>
+                            </div>
+
+                            {{-- Fee --}}
+                            <div class="sum-fee-box">
+                                <div class="sum-fee-lbl">Consultation Fee</div>
+                                <div class="sum-fee-amt">
+                                    Rs. {{ number_format($doctor->consultation_fee ?? 0, 2) }}
+                                </div>
+                                <div class="sum-fee-sub">Sri Lankan Rupees</div>
+                            </div>
+
+                            {{-- Advance payment note --}}
+                            @if(($doctor->consultation_fee ?? 0) > 0)
+                                @php $advance = round(($doctor->consultation_fee ?? 0) * 0.5, 2); @endphp
+                                <div style="background:#fff3cd;border-radius:8px;padding:0.7rem 0.9rem;font-size:0.78rem;color:#856404;margin-bottom:1rem;display:flex;gap:0.5rem;align-items:flex-start;">
+                                    <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:1px;"></i>
+                                    <span>
+                                        An advance of <strong>Rs. {{ number_format($advance, 2) }}</strong>
+                                        (50%) is required to confirm this booking.
+                                    </span>
+                                </div>
+                            @endif
+
+                            <button type="submit" class="btn-submit-appt" id="submitBtn">
+                                <i class="fas fa-calendar-check"></i>
+                                Confirm Appointment
+                            </button>
+
+                            <div style="text-align:center;margin-top:0.8rem;">
+                                <a href="{{ route('patient.doctors.show', $doctor->id) }}"
+                                   style="font-size:0.8rem;color:#aaa;text-decoration:none;">
+                                    <i class="fas fa-arrow-left me-1"></i> Back to Profile
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>{{-- /col-lg-4 --}}
+
+            </div>{{-- /row --}}
+        </form>
     </div>
 </section>
 
-<script>
-    let currentStep = {{ $errors->any() ? 'old("reason") ? 4 : (old("appointment_date") ? 3 : 1)' : '1' }};
-
-    // ── Step Navigation ──
-    function goToStep(step) {
-        document.getElementById('step-' + currentStep).classList.remove('active');
-        document.getElementById('step-' + step).classList.add('active');
-
-        // Update circles and connectors
-        for (let i = 1; i <= 5; i++) {
-            const circle    = document.getElementById('circle-' + i);
-            const label     = document.getElementById('label-' + i);
-            const connector = document.getElementById('connector-' + i);
-
-            circle.classList.remove('active', 'completed');
-            label.classList.remove('active');
-
-            if (i < step) {
-                circle.classList.add('completed');
-                circle.innerHTML = '<i class="fas fa-check" style="font-size:0.75rem;"></i>';
-                if (connector) connector.classList.add('completed');
-            } else if (i === step) {
-                circle.classList.add('active');
-                circle.textContent = i;
-                label.classList.add('active');
-                if (connector) connector.classList.remove('completed');
-            } else {
-                circle.textContent = i;
-                if (connector) connector.classList.remove('completed');
-            }
-        }
-
-        currentStep = step;
-        updateSummary();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // ── Validations ──
-    function validateStep2() {
-        const wp = document.querySelector('input[name="workplace_id"]:checked');
-        if (!wp) {
-            showAlert('Please select a location to continue.');
-            return;
-        }
-        goToStep(3);
-    }
-
-    function validateStep3() {
-        const date = document.getElementById('appt-date').value;
-        const time = document.getElementById('appt-time').value;
-        if (!date) { showAlert('Please select an appointment date.'); return; }
-        if (!time) { showAlert('Please select an appointment time.'); return; }
-        goToStep(4);
-    }
-
-    function validateStep4() {
-        const reason = document.getElementById('appt-reason').value.trim();
-        if (!reason) { showAlert('Please enter the reason for your visit.'); return; }
-        goToStep(5);
-    }
-
-    function updateSummary() {
-        const date   = document.getElementById('appt-date')?.value   || '—';
-        const time   = document.getElementById('appt-time')?.value   || '—';
-        const reason = document.getElementById('appt-reason')?.value || '—';
-        document.getElementById('summary-date').textContent   = date;
-        document.getElementById('summary-time').textContent   = time;
-        document.getElementById('summary-reason').textContent = reason.length > 60 ? reason.substring(0, 60) + '...' : reason;
-    }
-
-    function showAlert(msg) {
-        // Use SweetAlert2 if available, else fallback
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({ icon: 'warning', title: 'Oops!', text: msg, confirmButtonColor: '#42a649' });
-        } else {
-            alert(msg);
-        }
-    }
-
-    // Workplace radio visual update
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('input[name="workplace_id"]').forEach(radio => {
-            radio.addEventListener('change', function () {
-                document.querySelectorAll('input[name="workplace_id"]').forEach(r => {
-                    const dot = r.closest('.workplace-option-label')
-                                 ?.querySelector('.wp-radio-dot');
-                    if (dot) {
-                        dot.style.background      = r.checked ? 'var(--accent-color, #42a649)' : '';
-                        dot.style.borderColor     = r.checked ? 'var(--accent-color, #42a649)' : '#ccc';
-                    }
-                });
-            });
-            // Init on load
-            if (radio.checked) radio.dispatchEvent(new Event('change'));
-        });
-
-        // Init step if errors came back
-        goToStep(currentStep);
-    });
-</script>
-
 @include('partials.footer')
+
+<script>
+/* ═══════════════════════════════════
+   WORKPLACE SELECT
+═══════════════════════════════════ */
+// Workplace name map for summary
+const wpNames = {
+    @foreach($workplaces as $wp)
+    @php
+        $n = '';
+        if ($wp->workplace_type === 'hospital' && $wp->hospital) $n = $wp->hospital->name;
+        elseif ($wp->medicalCentre) $n = $wp->medicalCentre->name;
+    @endphp
+    {{ $wp->id }}: "{{ addslashes($n) }}",
+    @endforeach
+};
+
+function selectWorkplace(el, id, name, type) {
+    document.querySelectorAll('.wp-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input[type="radio"]').checked = true;
+    document.getElementById('sumLocation').textContent = wpNames[id] || name;
+}
+
+/* ═══════════════════════════════════
+   DATE / TIME SUMMARY UPDATE
+═══════════════════════════════════ */
+function updateSummaryDate(val) {
+    if (!val) { document.getElementById('sumDate').textContent = '—'; return; }
+    const d = new Date(val + 'T00:00:00');
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('sumDate').textContent =
+        days[d.getDay()] + ', ' + String(d.getDate()).padStart(2,'0') +
+        ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function updateSummaryTime(val) {
+    if (!val) { document.getElementById('sumTime').textContent = '—'; return; }
+    const [h, m] = val.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h12  = hour % 12 || 12;
+    document.getElementById('sumTime').textContent =
+        String(h12).padStart(2,'0') + ':' + m + ' ' + ampm;
+}
+
+/* ═══════════════════════════════════
+   CHAR COUNTER
+═══════════════════════════════════ */
+function countChars(fieldId, countId, max) {
+    const len = document.getElementById(fieldId).value.length;
+    const el  = document.getElementById(countId);
+    el.textContent = len;
+    el.style.color = len > max * 0.9 ? '#dc3545' : '#aaa';
+}
+
+// Init on load
+window.addEventListener('DOMContentLoaded', () => {
+    countChars('reason', 'reasonCount', 1000);
+    countChars('notes',  'notesCount',  1000);
+
+    // Set initial time summary
+    const t = document.getElementById('appointment_time').value;
+    if (t) updateSummaryTime(t);
+
+    // Set initial date summary
+    const d = document.getElementById('appointment_date').value;
+    if (d) updateSummaryDate(d);
+});
+
+/* ═══════════════════════════════════
+   FORM VALIDATION + SUBMIT
+═══════════════════════════════════ */
+document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+    let valid = true;
+
+    // Terms check
+    const terms = document.getElementById('agreeTerms');
+    const termsErr = document.getElementById('termsErr');
+    if (!terms.checked) {
+        termsErr.classList.add('show');
+        valid = false;
+    } else {
+        termsErr.classList.remove('show');
+    }
+
+    // Date check
+    const dateVal = document.getElementById('appointment_date').value;
+    if (!dateVal) {
+        valid = false;
+    } else {
+        const sel = new Date(dateVal);
+        const today = new Date(); today.setHours(0,0,0,0);
+        if (sel < today) {
+            valid = false;
+            // Highlight
+            document.getElementById('appointment_date').style.borderColor = '#dc3545';
+        }
+    }
+
+    // Reason check
+    const reason = document.getElementById('reason').value.trim();
+    if (!reason) { valid = false; }
+
+    if (!valid) {
+        e.preventDefault();
+        window.scrollTo({ top: 200, behavior: 'smooth' });
+        return;
+    }
+
+    // Disable submit to prevent double submit
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+});
+
+/* Date input — remove red border on change */
+document.getElementById('appointment_date').addEventListener('change', function() {
+    this.style.borderColor = '';
+});
+
+/* ═══════════════════════════════════
+   AUTO-DISMISS ALERTS
+═══════════════════════════════════ */
+setTimeout(() => {
+    document.querySelectorAll('.f-alert').forEach(el => {
+        el.style.transition = 'opacity 0.5s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+    });
+}, 6000);
+</script>
