@@ -459,22 +459,17 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     Route::post('/lab-orders/{id}/cancel', [PatientLabOrderController::class, 'cancel'])->name('lab-orders.cancel');
 
     // Patient Pharmacy Routes
-  // Patient Pharmacy Routes - Updated
-Route::get('/pharmacies', [PatientPharmacyController::class, 'index'])->name('pharmacies');
-Route::get('/pharmacies/{id}', [PatientPharmacyController::class, 'show'])->name('pharmacies.show');
-Route::get('/pharmacies/{id}/medicines', [PatientPharmacyController::class, 'medicines'])->name('pharmacies.medicines');
-Route::get('/pharmacies/{id}/order', [PatientPharmacyController::class, 'orderForm'])->name('pharmacies.order.form');
-Route::post('/pharmacies/{id}/order', [PatientPharmacyController::class, 'placeOrder'])->name('pharmacies.order');
-Route::get('/pharmacies/orders/{orderId}/payment', [PatientPharmacyController::class, 'paymentPage'])->name('pharmacies.payment');
-Route::post('/pharmacies/orders/{orderId}/pay', [PatientPharmacyController::class, 'processPayment'])->name('pharmacies.pay');
-Route::get('/pharmacies/{id}/track', [PatientPharmacyController::class, 'trackOrder'])->name('pharmacies.track');
-Route::post('/pharmacies/{id}/review', [PatientPharmacyController::class, 'storeReview'])->name('pharmacies.review');
-Route::get('/pharmacies/orders/{orderId}/payment/callback',
-    [PatientPharmacyController::class, 'paymentCallback'])
-    ->name('pharmacies.payment.callback');
-    Route::post('/pharmacies/{id}/orders/{orderId}/cancel',
-    [PatientPharmacyController::class, 'cancelOrder'])
-    ->name('pharmacies.order.cancel');
+    Route::get('/pharmacies', [PatientPharmacyController::class, 'index'])->name('pharmacies');
+    Route::get('/pharmacies/{id}', [PatientPharmacyController::class, 'show'])->name('pharmacies.show');
+    Route::get('/pharmacies/{id}/medicines', [PatientPharmacyController::class, 'medicines'])->name('pharmacies.medicines');
+    Route::get('/pharmacies/{id}/order', [PatientPharmacyController::class, 'orderForm'])->name('pharmacies.order.form');
+    Route::post('/pharmacies/{id}/order', [PatientPharmacyController::class, 'placeOrder'])->name('pharmacies.order');
+    Route::get('/pharmacies/orders/{orderId}/payment', [PatientPharmacyController::class, 'paymentPage'])->name('pharmacies.payment');
+    Route::post('/pharmacies/orders/{orderId}/pay', [PatientPharmacyController::class, 'processPayment'])->name('pharmacies.pay');
+    Route::get('/pharmacies/{id}/track', [PatientPharmacyController::class, 'trackOrder'])->name('pharmacies.track');
+    Route::post('/pharmacies/{id}/review', [PatientPharmacyController::class, 'storeReview'])->name('pharmacies.review');
+    Route::get('/pharmacies/orders/{orderId}/payment/callback',[PatientPharmacyController::class, 'paymentCallback'])->name('pharmacies.payment.callback');
+    Route::post('/pharmacies/{id}/orders/{orderId}/cancel',[PatientPharmacyController::class, 'cancelOrder'])->name('pharmacies.order.cancel');
 
 });
 
