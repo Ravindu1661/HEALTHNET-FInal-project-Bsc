@@ -1,471 +1,341 @@
-{{-- Include Header --}}
 @include('partials.header')
-
 <style>
-/* Profile Page Styles - Pharmacy Theme */
-.profile-header {
-    background: linear-gradient(135deg, #00796b 0%, #00897b 100%);
-    padding: 7rem 0 3rem;
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
-
-.profile-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('https://images.unsplash.com/photo-1576602976047-174e57a47881?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover;
-    opacity: 0.1;
-    z-index: 0;
-}
-
-.profile-content {
-    position: relative;
-    z-index: 1;
-}
-
-.profile-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 5px solid white;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    object-fit: cover;
-    margin-bottom: 1rem;
-}
-
-.profile-name {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.profile-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
-}
-
-.info-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
-}
-
-.info-card:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
-}
-
-.info-card h5 {
-    color: #00796b;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e0f2f1;
-}
-
-.info-row {
-    display: flex;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f5f5f5;
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-label {
-    font-weight: 600;
-    color: #666;
-    min-width: 140px;
-    display: flex;
-    align-items: center;
-}
-
-.info-label i {
-    width: 20px;
-    margin-right: 0.5rem;
-    color: #00796b;
-}
-
-.info-value {
-    flex: 1;
-    color: #333;
-}
-
-.delivery-badge {
-    background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-
-.rating-section {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    border-radius: 10px;
-    margin-top: 1rem;
-}
-
-.rating-stars {
-    font-size: 1.5rem;
-    color: #ffc107;
-}
-
-.rating-info {
-    flex: 1;
-}
-
-.rating-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #00796b;
-}
-
-.rating-text {
-    color: #666;
-    font-size: 0.9rem;
-}
-
-.verified-badge {
-    background: #28a745;
-    color: white;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-left: 1rem;
-}
-
-.pharmacist-card {
-    background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
-    padding: 1.2rem;
-    border-radius: 10px;
-    margin-top: 1rem;
-}
-
-.pharmacist-card h6 {
-    color: #00796b;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-    flex-wrap: wrap;
-}
-
-.btn-action {
-    flex: 1;
-    min-width: 200px;
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    text-align: center;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.btn-primary-action {
-    background: #00796b;
-    color: white;
-}
-
-.btn-primary-action:hover {
-    background: #00695c;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 121, 107, 0.3);
-}
-
-.btn-secondary-action {
-    background: white;
-    color: #00796b;
-    border: 2px solid #00796b;
-}
-
-.btn-secondary-action:hover {
-    background: #00796b;
-    color: white;
-    transform: translateY(-2px);
-}
-
-.btn-back {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-back:hover {
-    background: #5a6268;
-    color: white;
-    transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-    .profile-name {
-        font-size: 1.5rem;
-    }
-
-    .action-buttons {
-        flex-direction: column;
-    }
-
-    .btn-action {
-        width: 100%;
-    }
-
-    .info-row {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .info-label {
-        min-width: auto;
-    }
-}
+/* ── HERO ── */
+.ph-hero{background:linear-gradient(135deg,#004d40 0%,#00796b 60%,#00897b 100%);padding:7rem 0 3rem;color:#fff;position:relative;overflow:hidden}
+.ph-hero::before{content:'';position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1576602976047-174e57a47881?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover;opacity:.08;z-index:0}
+.ph-hero::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:45px;background:#f4f6f9;clip-path:ellipse(55% 100% at 50% 100%)}
+.ph-hero .container{position:relative;z-index:1}
+.ph-avatar{width:110px;height:110px;border-radius:16px;object-fit:cover;border:4px solid #fff;box-shadow:0 8px 25px rgba(0,0,0,.25)}
+.ph-name{font-size:2rem;font-weight:700;margin-bottom:.3rem}
+.ph-reg{font-size:.85rem;opacity:.85;margin-bottom:.6rem}
+.ph-pill{background:rgba(255,255,255,.2);backdrop-filter:blur(6px);color:#fff;padding:.3rem .9rem;border-radius:20px;font-size:.8rem;font-weight:600;display:inline-flex;align-items:center;gap:.4rem;margin:.15rem}
+.ph-pill.green{background:rgba(76,175,80,.35)}
+.ph-pill.blue{background:rgba(2,136,209,.35)}
+.ph-rating-hero{display:inline-flex;align-items:center;gap:.8rem;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);padding:.6rem 1.4rem;border-radius:30px;margin-top:.8rem}
+.ph-rating-hero .stars{color:#fbbf24;font-size:1rem}
+/* ── TABS NAV ── */
+.ph-tabs-nav{background:#fff;border-bottom:2px solid #e0f2f1;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,121,107,.07)}
+.ph-tabs-nav .nav-link{color:#666;font-weight:600;font-size:.88rem;padding:.95rem 1.2rem;border:none;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:.4rem}
+.ph-tabs-nav .nav-link:hover,.ph-tabs-nav .nav-link.active{color:#00796b;border-bottom-color:#00796b}
+/* ── CARDS ── */
+.ph-card{background:#fff;border-radius:14px;padding:1.6rem;box-shadow:0 4px 18px rgba(0,0,0,.07);margin-bottom:1.5rem;border:1px solid #f0f4f0}
+.ph-card-title{font-size:1rem;font-weight:700;color:#00796b;padding-bottom:.7rem;border-bottom:2px solid #e0f2f1;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.info-row{display:flex;padding:.6rem 0;border-bottom:1px solid #f5f5f5;font-size:.9rem}
+.info-row:last-child{border-bottom:none}
+.info-lbl{font-weight:600;color:#666;min-width:140px;display:flex;align-items:center;gap:.4rem}
+.info-lbl i{color:#00796b;width:18px}
+.info-val{color:#333;flex:1}
+/* ── CONTACT BTNS ── */
+.btn-contact{display:flex;align-items:center;gap:.7rem;padding:.8rem 1.1rem;border-radius:10px;font-weight:600;text-decoration:none;transition:all .3s;font-size:.88rem;border:none;cursor:pointer;width:100%;margin-bottom:.6rem}
+.btn-call{background:#0288d1;color:#fff}.btn-call:hover{background:#01579b;color:#fff;transform:translateY(-2px)}
+.btn-whatsapp{background:#25D366;color:#fff}.btn-whatsapp:hover{background:#128C7E;color:#fff;transform:translateY(-2px)}
+.btn-email{background:#fff;color:#00796b;border:2px solid #00796b}.btn-email:hover{background:#00796b;color:#fff}
+/* ── QUICK-NAV PILLS ── */
+.quick-nav-row{display:flex;flex-wrap:wrap;gap:.6rem;margin:-1.5rem 0 2rem}
+.quick-nav-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;border-radius:20px;background:#e0f2f1;color:#00796b;font-weight:600;font-size:.82rem;text-decoration:none;transition:all .3s}
+.quick-nav-btn:hover,.quick-nav-btn.active{background:#00796b;color:#fff;transform:translateY(-1px)}
+/* ── RATING BARS ── */
+.rating-bar{height:8px;border-radius:4px;background:#e0f2f1;overflow:hidden}
+.rating-bar-fill{height:100%;background:linear-gradient(90deg,#00796b,#4db6ac);border-radius:4px;transition:width .8s}
+/* ── REVIEWS ── */
+.review-card{border:1px solid #e8f5e9;border-radius:10px;padding:1rem;margin-bottom:.9rem}
+.review-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover}
+/* ── ORDER PILLS ── */
+.o-pill{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .75rem;border-radius:14px;font-size:.72rem;font-weight:700}
+.o-pill.pending{background:#fef3c7;color:#92400e}
+.o-pill.verified{background:#e0f2fe;color:#0369a1}
+.o-pill.processing{background:#ede9fe;color:#4c1d95}
+.o-pill.ready{background:#dcfce7;color:#166534}
+.o-pill.dispatched{background:#e0f2f1;color:#004d40}
+.o-pill.delivered{background:#bbf7d0;color:#14532d}
+.o-pill.cancelled{background:#fee2e2;color:#991b1b}
+/* STAR RATING INPUT */
+.star-inp{display:flex;flex-direction:row-reverse;gap:.3rem}.star-inp input{display:none}
+.star-inp label{font-size:1.6rem;color:#d1d5db;cursor:pointer;transition:color .2s}
+.star-inp input:checked ~ label,.star-inp label:hover,.star-inp label:hover ~ label{color:#fbbf24}
+@media(max-width:768px){.ph-name{font-size:1.4rem}.ph-avatar{width:80px;height:80px}.ph-tabs-nav .nav-link{font-size:.75rem;padding:.7rem .6rem}}
 </style>
 
-{{-- Profile Header --}}
-<section class="profile-header">
-    <div class="container profile-content">
-        <div class="row justify-content-center text-center">
-            <div class="col-lg-8">
-                <img src="{{ $pharmacy->profile_image ? asset('storage/' . $pharmacy->profile_image) : asset('images/default-pharmacy.png') }}"
-                     alt="{{ $pharmacy->name }}"
-                     class="profile-avatar"
-                     onerror="this.src='{{ asset('images/default-pharmacy.png') }}'">
-
-                <h1 class="profile-name">
-                    {{ $pharmacy->name }}
-                    @if($pharmacy->status == 'approved')
-                        <span class="verified-badge">
-                            <i class="fas fa-check-circle"></i> Verified
-                        </span>
-                    @endif
-                </h1>
-
-                <p class="profile-subtitle">
-                    <i class="fas fa-map-marker-alt me-2"></i>{{ $pharmacy->city }}, {{ $pharmacy->province }}
-                </p>
-
-                @if($pharmacy->delivery_available)
-                    <div class="delivery-badge">
-                        <i class="fas fa-truck"></i> Home Delivery Available
-                    </div>
-                @endif
-
-                {{-- Rating Section --}}
-                <div class="rating-section">
-                    <div class="rating-stars">
-                        @php
-                            $rating = $pharmacy->rating ?? 0;
-                            $fullStars = floor($rating);
-                            $halfStar = ($rating - $fullStars) >= 0.5;
-                            $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
-                        @endphp
-
-                        @for($i = 0; $i < $fullStars; $i++)
-                            <i class="fas fa-star"></i>
-                        @endfor
-
-                        @if($halfStar)
-                            <i class="fas fa-star-half-alt"></i>
-                        @endif
-
-                        @for($i = 0; $i < $emptyStars; $i++)
-                            <i class="far fa-star"></i>
-                        @endfor
-                    </div>
-                    <div class="rating-info">
-                        <div class="rating-number">{{ number_format($rating, 1) }}</div>
-                        <div class="rating-text">Based on {{ $pharmacy->total_ratings ?? 0 }} reviews</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- Profile Details --}}
-<section class="py-5">
+{{-- HERO --}}
+<section class="ph-hero">
     <div class="container">
-        <div class="row">
-            {{-- Left Column --}}
-            <div class="col-lg-8">
-                {{-- Contact Information --}}
-                <div class="info-card">
-                    <h5><i class="fas fa-address-card me-2"></i>Contact Information</h5>
-
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-phone"></i> Phone
-                        </div>
-                        <div class="info-value">{{ $pharmacy->phone ?? 'Not Available' }}</div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-envelope"></i> Email
-                        </div>
-                        <div class="info-value">{{ $pharmacy->email ?? 'Not Available' }}</div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-map-marker-alt"></i> Address
-                        </div>
-                        <div class="info-value">
-                            {{ $pharmacy->address }}, {{ $pharmacy->city }}, {{ $pharmacy->province }}
-                            @if($pharmacy->postal_code)
-                                - {{ $pharmacy->postal_code }}
-                            @endif
-                        </div>
-                    </div>
-
-                    @if($pharmacy->operating_hours)
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-clock"></i> Operating Hours
-                        </div>
-                        <div class="info-value">{{ $pharmacy->operating_hours }}</div>
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Pharmacist Information --}}
-                @if($pharmacy->pharmacist_name)
-                <div class="info-card">
-                    <h5><i class="fas fa-user-md me-2"></i>Pharmacist Information</h5>
-                    <div class="pharmacist-card">
-                        <h6>{{ $pharmacy->pharmacist_name }}</h6>
-                        @if($pharmacy->pharmacist_license)
-                            <p class="mb-0">
-                                <i class="fas fa-id-badge me-2"></i>
-                                License No: <strong>{{ $pharmacy->pharmacist_license }}</strong>
-                            </p>
-                        @endif
-                    </div>
-                </div>
-                @endif
-
-                {{-- Description --}}
-                @if($pharmacy->description)
-                <div class="info-card">
-                    <h5><i class="fas fa-info-circle me-2"></i>About</h5>
-                    <p class="mb-0">{{ $pharmacy->description }}</p>
-                </div>
-                @endif
-            </div>
-
-            {{-- Right Column --}}
-            <div class="col-lg-4">
-                {{-- Registration Details --}}
-                <div class="info-card">
-                    <h5><i class="fas fa-certificate me-2"></i>Registration Details</h5>
-
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-id-card"></i> Reg. Number
-                        </div>
-                        <div class="info-value">
-                            <span class="badge bg-info">{{ $pharmacy->registration_number }}</span>
-                        </div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-check-circle"></i> Status
-                        </div>
-                        <div class="info-value">
-                            <span class="badge bg-success">{{ ucfirst($pharmacy->status) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="info-label">
-                            <i class="fas fa-truck"></i> Delivery
-                        </div>
-                        <div class="info-value">
+        <a href="{{ route('patient.pharmacies') }}" style="color:rgba(255,255,255,.85);font-size:.85rem;display:inline-flex;align-items:center;gap:.4rem;margin-bottom:.9rem;text-decoration:none">
+            <i class="fas fa-arrow-left"></i> Back to Pharmacies
+        </a>
+        <div class="row align-items-center">
+            <div class="col-lg-9">
+                <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                    <img src="{{ $pharmacy->profile_image ? asset('storage/'.$pharmacy->profile_image) : asset('images/default-pharmacy.png') }}"
+                         alt="{{ $pharmacy->name }}" class="ph-avatar"
+                         onerror="this.src='{{ asset('images/default-pharmacy.png') }}'">
+                    <div>
+                        <h1 class="ph-name">{{ $pharmacy->name }}</h1>
+                        <div class="ph-reg"><i class="fas fa-id-badge me-1"></i> Reg: {{ $pharmacy->registration_number ?? 'N/A' }}</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="ph-pill"><i class="fas fa-check-circle"></i> Verified Pharmacy</span>
                             @if($pharmacy->delivery_available)
-                                <span class="badge bg-success">Available</span>
-                            @else
-                                <span class="badge bg-secondary">Not Available</span>
+                                <span class="ph-pill blue"><i class="fas fa-truck"></i> Home Delivery</span>
+                            @endif
+                            @if($pharmacy->operating_hours)
+                                <span class="ph-pill green"><i class="fas fa-clock"></i> {{ Str::limit($pharmacy->operating_hours, 28) }}</span>
                             @endif
                         </div>
+                        <div class="ph-rating-hero">
+                            <span class="stars">
+                                @for($i=1;$i<=5;$i++)<i class="fas fa-star{{ $i<=round($pharmacy->rating??0)?'':' opacity-25' }}"></i>@endfor
+                            </span>
+                            <strong style="font-size:1.3rem;font-weight:700">{{ number_format($pharmacy->rating??0,1) }}</strong>
+                            <span style="font-size:.82rem;opacity:.85">({{ $pharmacy->total_ratings??0 }} reviews)</span>
+                        </div>
                     </div>
-                </div>
-
-                {{-- Action Buttons --}}
-                <div class="action-buttons">
-                    @auth
-                        @if(auth()->user()->usertype == 'patient')
-                            <button class="btn-action btn-primary-action" onclick="orderMedicine()">
-                                <i class="fas fa-pills me-2"></i>Order Medicine
-                            </button>
-
-                            <button class="btn-action btn-secondary-action" onclick="uploadPrescription()">
-                                <i class="fas fa-prescription me-2"></i>Upload Prescription
-                            </button>
-                        @endif
-                    @else
-                        <a href="{{ route('login') }}" class="btn-action btn-primary-action">
-                            <i class="fas fa-sign-in-alt me-2"></i>Login to Order
-                        </a>
-                    @endauth
-
-                    <a href="{{ route('patient.pharmacies') }}" class="btn-action btn-back">
-                        <i class="fas fa-arrow-left me-2"></i>Back to List
-                    </a>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<script>
-function orderMedicine() {
-    Swal.fire({
-        title: 'Order Medicine',
-        text: 'Medicine ordering feature coming soon!',
-        icon: 'info',
-        confirmButtonColor: '#00796b',
-        confirmButtonText: 'OK'
-    });
-}
+{{-- STICKY TABS --}}
+<nav class="ph-tabs-nav">
+    <div class="container">
+        <ul class="nav">
+            <li class="nav-item"><a class="nav-link active" href="#overview"><i class="fas fa-info-circle"></i>Overview</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('patient.pharmacies.medicines', $pharmacy->id) }}"><i class="fas fa-pills"></i>Medicines</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('patient.pharmacies.order.form', $pharmacy->id) }}"><i class="fas fa-prescription"></i>Place Order</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('patient.pharmacies.track', $pharmacy->id) }}"><i class="fas fa-map-marker-alt"></i>Track Orders</a></li>
+            <li class="nav-item"><a class="nav-link" href="#reviews"><i class="fas fa-star"></i>Reviews</a></li>
+        </ul>
+    </div>
+</nav>
 
-function uploadPrescription() {
-    Swal.fire({
-        title: 'Upload Prescription',
-        text: 'Prescription upload feature coming soon!',
-        icon: 'info',
-        confirmButtonColor: '#00796b',
-        confirmButtonText: 'OK'
-    });
-}
-</script>
+<div class="container" style="padding:2rem 0 3rem">
+    {{-- ALERTS --}}
+    @foreach(['success','error','info'] as $t)
+        @if(session($t))
+            <div class="ph-card" style="background:{{ $t==='success'?'#dcfce7':($t==='error'?'#fee2e2':'#e0f2fe') }};border-left:5px solid {{ $t==='success'?'#059669':($t==='error'?'#dc2626':'#0891b2') }};padding:1rem 1.3rem;display:flex;align-items:center;gap:.8rem;font-weight:500">
+                <i class="fas fa-{{ $t==='success'?'check-circle':($t==='error'?'exclamation-circle':'info-circle') }}" style="font-size:1.2rem;flex-shrink:0"></i>
+                {{ session($t) }}
+            </div>
+        @endif
+    @endforeach
 
-{{-- Include Footer --}}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            {{-- OVERVIEW --}}
+            <div id="overview" class="ph-card">
+                <div class="ph-card-title"><i class="fas fa-info-circle"></i> Pharmacy Information</div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-user-md"></i>Pharmacist</span><span class="info-val">{{ $pharmacy->pharmacist_name??'N/A' }}</span></div>
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-certificate"></i>License</span><span class="info-val">{{ $pharmacy->pharmacist_license??'N/A' }}</span></div>
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-clock"></i>Hours</span><span class="info-val">{{ $pharmacy->operating_hours??'N/A' }}</span></div>
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-truck"></i>Delivery</span><span class="info-val">
+                            @if($pharmacy->delivery_available) <span class="badge bg-success">Available</span>
+                            @else <span class="badge bg-secondary">Pickup Only</span> @endif
+                        </span></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-phone"></i>Phone</span><span class="info-val"><a href="tel:{{ $pharmacy->phone }}" style="color:#00796b;font-weight:600;text-decoration:none">{{ $pharmacy->phone??'N/A' }}</a></span></div>
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-envelope"></i>Email</span><span class="info-val"><a href="mailto:{{ $pharmacy->email }}" style="color:#00796b;text-decoration:none">{{ $pharmacy->email??'N/A' }}</a></span></div>
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-map-pin"></i>City</span><span class="info-val">{{ $pharmacy->city??'N/A' }}{{ $pharmacy->province?', '.$pharmacy->province:'' }}</span></div>
+                        <div class="info-row"><span class="info-lbl"><i class="fas fa-map-marker-alt"></i>Address</span><span class="info-val" style="font-size:.85rem">{{ $pharmacy->address??'N/A' }}</span></div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a href="{{ route('patient.pharmacies.medicines', $pharmacy->id) }}" class="quick-nav-btn"><i class="fas fa-pills"></i>Browse Medicines</a>
+                    <a href="{{ route('patient.pharmacies.order.form', $pharmacy->id) }}" class="quick-nav-btn"><i class="fas fa-prescription"></i>Place Order</a>
+                    <a href="{{ route('patient.pharmacies.track', $pharmacy->id) }}" class="quick-nav-btn"><i class="fas fa-map-marker-alt"></i>Track Orders</a>
+                </div>
+            </div>
+
+            {{-- RECENT ORDERS (mini) --}}
+            @if($previousOrders->count())
+            <div class="ph-card">
+                <div class="ph-card-title"><i class="fas fa-history"></i> Your Recent Orders</div>
+                @foreach($previousOrders as $o)
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom" style="border-color:#f0f4f0!important">
+                    <div>
+                        <div style="font-weight:700;font-size:.88rem">{{ $o->order_number }}</div>
+                        <div style="font-size:.76rem;color:#888">{{ optional($o->created_at)->format('d M Y') }}</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="o-pill {{ $o->status }}">{{ ucfirst($o->status) }}</span>
+                        <a href="{{ route('patient.pharmacies.track', ['id'=>$pharmacy->id,'order'=>$o->id]) }}" style="font-size:.78rem;color:#00796b;text-decoration:none;font-weight:600"><i class="fas fa-eye me-1"></i>Track</a>
+                    </div>
+                </div>
+                @endforeach
+                <a href="{{ route('patient.pharmacies.track', $pharmacy->id) }}" style="display:block;text-align:center;color:#00796b;font-weight:600;font-size:.85rem;margin-top:.8rem;text-decoration:none">View All Orders →</a>
+            </div>
+            @endif
+
+            {{-- REVIEWS --}}
+            <div id="reviews" class="ph-card">
+                <div class="ph-card-title"><i class="fas fa-star"></i> Customer Reviews</div>
+                <div class="row align-items-center mb-4">
+                    <div class="col-auto text-center">
+                        <div style="font-size:3.5rem;font-weight:800;color:#00796b;line-height:1">{{ number_format($pharmacy->rating??0,1) }}</div>
+                        <div style="color:#fbbf24">@for($i=1;$i<=5;$i++)<i class="fas fa-star{{ $i<=round($pharmacy->rating??0)?'':' text-muted' }}"></i>@endfor</div>
+                        <div style="font-size:.78rem;color:#888">{{ $pharmacy->total_ratings??0 }} reviews</div>
+                    </div>
+                    <div class="col">
+                        @foreach($ratingBreakdown as $star => $data)
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span style="width:20px;font-size:.78rem;color:#888">{{ $star }}★</span>
+                            <div class="rating-bar flex-grow-1"><div class="rating-bar-fill" style="width:{{ $data['percentage'] }}%"></div></div>
+                            <span style="width:24px;font-size:.76rem;color:#888">{{ $data['count'] }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                {{-- Review Form --}}
+                @auth
+                @if($canReview)
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1.2rem;margin-bottom:1.2rem">
+                    <div style="font-weight:700;color:#00796b;margin-bottom:.8rem;font-size:.95rem"><i class="fas fa-pen me-1"></i> Write Your Review</div>
+                    <form action="{{ route('patient.pharmacies.review', $pharmacy->id) }}" method="POST">
+                        @csrf
+                        @if($reviewableOrder) <input type="hidden" name="related_order_id" value="{{ $reviewableOrder->id }}"> @endif
+                        <label style="font-size:.82rem;font-weight:600;color:#555;display:block;margin-bottom:.4rem">Your Rating</label>
+                        <div class="star-inp mb-2">
+                            @for($i=5;$i>=1;$i--)
+                                <input type="radio" id="s{{ $i }}" name="rating" value="{{ $i }}" {{ old('rating')==$i?'checked':'' }}>
+                                <label for="s{{ $i }}">★</label>
+                            @endfor
+                        </div>
+                        <textarea name="review" style="width:100%;border:1.5px solid #e0f2f1;border-radius:8px;padding:.7rem;font-size:.88rem;resize:vertical" rows="2" placeholder="Share your experience...">{{ old('review') }}</textarea>
+                        <button type="submit" style="background:linear-gradient(135deg,#00796b,#004d40);color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-weight:700;font-size:.88rem;margin-top:.6rem;cursor:pointer"><i class="fas fa-paper-plane me-1"></i>Submit Review</button>
+                    </form>
+                </div>
+                @endif
+                @endauth
+                @forelse($ratings as $rating)
+                <div class="review-card">
+                    <div class="d-flex gap-2">
+                        <img src="{{ $rating->patient?->profile_image ? asset('storage/'.$rating->patient->profile_image) : asset('images/default-avatar.png') }}"
+                             class="review-avatar" onerror="this.src='{{ asset('images/default-avatar.png') }}'">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <strong style="font-size:.88rem">{{ $rating->patient?->firstname??'Patient' }} {{ $rating->patient?->lastname??'' }}</strong>
+                                <small style="color:#aaa">{{ optional($rating->created_at)->format('d M Y') }}</small>
+                            </div>
+                            <div style="color:#fbbf24;font-size:.8rem;margin:.2rem 0">
+                                @for($i=1;$i<=5;$i++)<i class="fas fa-star{{ $i<=$rating->rating?'':' text-muted' }}"></i>@endfor
+                            </div>
+                            @if($rating->review)<p style="font-size:.85rem;color:#666;margin:0">{{ $rating->review }}</p>@endif
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div style="text-align:center;padding:2rem;color:#aaa"><i class="fas fa-star fa-2x d-block mb-2"></i>No reviews yet.</div>
+                @endforelse
+                @if($ratings->hasPages()) <div class="mt-3">{{ $ratings->links() }}</div> @endif
+            </div>
+        </div>
+
+       {{-- SIDEBAR --}}
+<div class="col-lg-4">
+
+    {{-- Contact --}}
+    <div class="ph-card">
+        <div class="ph-card-title"><i class="fas fa-address-book"></i> Contact</div>
+        @if($pharmacy->phone)
+        <a href="tel:{{ $pharmacy->phone }}" class="btn-contact btn-call">
+            <i class="fas fa-phone-alt fa-lg"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">Call Us</div>
+                <div style="font-size:.78rem">{{ $pharmacy->phone }}</div>
+            </div>
+        </a>
+        <button class="btn-contact btn-whatsapp"
+            onclick="window.open('https://wa.me/94{{ ltrim($pharmacy->phone??'','0') }}?text=Hello+{{ urlencode($pharmacy->name) }}','_blank')">
+            <i class="fab fa-whatsapp fa-lg"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">WhatsApp</div>
+                <div style="font-size:.78rem">Chat with pharmacy</div>
+            </div>
+        </button>
+        @endif
+        @if($pharmacy->email)
+        <a href="mailto:{{ $pharmacy->email }}" class="btn-contact btn-email">
+            <i class="fas fa-envelope fa-lg"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">Email Us</div>
+                <div style="font-size:.78rem">{{ Str::limit($pharmacy->email, 28) }}</div>
+            </div>
+        </a>
+        @endif
+        @if($pharmacy->latitude && $pharmacy->longitude)
+        <a href="https://www.google.com/maps?q={{ $pharmacy->latitude }},{{ $pharmacy->longitude }}"
+           target="_blank" class="btn-contact" style="background:#34a853;color:#fff">
+            <i class="fas fa-directions fa-lg"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">Get Directions</div>
+                <div style="font-size:.78rem">Open in Google Maps</div>
+            </div>
+        </a>
+        @endif
+    </div>
+
+    {{-- Delivery Partners --}}
+    @if($pharmacy->delivery_available)
+    <div class="ph-card" style="background:linear-gradient(135deg,#e0f2f1,#b2dfdb)">
+        <div class="ph-card-title"><i class="fas fa-truck"></i> Delivery Partners</div>
+
+        {{-- PickMe --}}
+        <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2 mb-2">
+            <img src="{{ asset('images/pick_me.png') }}"
+                 alt="PickMe"
+                 style="width:55px;height:55px;object-fit:contain;flex-shrink:0"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'">
+            <i class="fas fa-motorcycle fa-lg" style="width:28px;color:#00796b;display:none"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">PickMe</div>
+                <small style="color:#888">Fast delivery</small>
+            </div>
+            <span class="badge bg-success ms-auto">Available</span>
+        </div>
+
+        {{-- Uber --}}
+        <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2 mb-2">
+            <img src="{{ asset('images/Uber.png') }}"
+                 alt="Uber"
+                 style="width:55px;height:55px;object-fit:contain;flex-shrink:0"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'">
+            <i class="fas fa-car fa-lg" style="width:28px;color:#000;display:none"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">Uber</div>
+                <small style="color:#888">Reliable</small>
+            </div>
+            <span class="badge bg-success ms-auto">Available</span>
+        </div>
+
+        {{-- Own Delivery --}}
+        <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2 mb-2">
+            <i class="fas fa-truck fa-lg" style="width:28px;color:#00796b;flex-shrink:0"></i>
+            <div>
+                <div style="font-weight:700;font-size:.85rem">Own Delivery</div>
+                <small style="color:#888">By pharmacy</small>
+            </div>
+            <span class="badge bg-success ms-auto">Available</span>
+        </div>
+
+    </div>
+    @endif
+
+    {{-- Pharmacist --}}
+    <div class="ph-card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9)">
+        <div class="ph-card-title"><i class="fas fa-user-md"></i> Pharmacist</div>
+        <div class="d-flex align-items-center gap-3">
+            <div style="width:55px;height:55px;border-radius:50%;background:#00796b;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.4rem;flex-shrink:0">
+                <i class="fas fa-user-md"></i>
+            </div>
+            <div>
+                <div style="font-weight:700">{{ $pharmacy->pharmacist_name ?? 'N/A' }}</div>
+                <div style="font-size:.8rem;color:#666">Reg. Pharmacist</div>
+                <div style="font-size:.78rem;color:#888">Lic: {{ $pharmacy->pharmacist_license ?? 'N/A' }}</div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+</div>
 @include('partials.footer')
