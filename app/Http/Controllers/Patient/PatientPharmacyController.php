@@ -486,5 +486,32 @@ private function markPharmacyOrderPaid(
             return back()->withError('Failed to submit review.');
         }
     }
+/**
+ * Redirect to latest pharmacy order track page
+ */
+    public function myOrdersRedirect()
+    {
+        $patient = Auth::user()->patient;
+
+        if (!$patient) {
+            return redirect()->route('patient.dashboard')
+                ->with('error', 'Patient profile not found.');
+        }
+
+        // Get latest order with pharmacy
+        $latestOrder = PharmacyOrder::with('pharmacy')
+            ->where('patient_id', $patient->id)
+            ->latest()
+            ->first();
+
+        if (!$latestOrder) {
+            // No orders yet → go to find pharmacies page
+            return redirect()->route('patient.pharmacies')
+                ->with('info', 'You have no pharmacy orders yet. Browse pharmacies to place an order.');
+        }
+
+        // Redirect to track page with pharmacy id
+        return redirect()->route('patient.pharmacies.track', $latestOrder->pharmacy_id);
+    }
 
 }

@@ -47,7 +47,9 @@ use App\Models\Doctor;
 use App\Models\Hospital;
 use App\Models\MedicalCentre;
 use App\Http\Controllers\Patient\PatientLabOrderController;
-
+use App\Http\Controllers\Patient\PatientProfileController;
+use App\Http\Controllers\Patient\HealthPortfolioController;
+use App\Http\Controllers\Patient\MedicineReminderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -408,6 +410,23 @@ Route::middleware(['auth'])->group(function () {
 // PATIENT ROUTES - Updated
 // ============================================
 Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function() {
+
+    // Patient Profile
+    Route::get('/profile',          [PatientProfileController::class, 'show'])->name('profile');
+    Route::put('/profile/update',   [PatientProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [PatientProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::get('/my-pharmacy-orders', [PatientPharmacyController::class, 'myOrdersRedirect'])->name('pharmacy-orders.index');
+    Route::get('/health-portfolio', [App\Http\Controllers\Patient\HealthPortfolioController::class, 'index'])->name('health-portfolio');
+    Route::post('/health-data/save', [App\Http\Controllers\Patient\HealthPortfolioController::class, 'saveHealthData'])->name('health-data.save');
+    Route::get('/doctor/{id}/profile', [FindDoctorsController::class, 'show']) ->name('doctor.profile');
+
+    // Medicine Reminders
+    Route::get('/medicine-reminders',[MedicineReminderController::class, 'index'])->name('medicine-reminders.index');
+    Route::post('/medicine-reminders',[MedicineReminderController::class, 'store'])->name('medicine-reminders.store');
+    Route::put('/medicine-reminders/{reminder}',[MedicineReminderController::class, 'update']) ->name('medicine-reminders.update');
+    Route::patch('/medicine-reminders/{reminder}/toggle', [MedicineReminderController::class, 'toggle'])->name('medicine-reminders.toggle');
+    Route::delete('/medicine-reminders/{reminder}', [MedicineReminderController::class, 'destroy'])->name('medicine-reminders.destroy');
+    Route::get('/medicine-reminders/due-now', [MedicineReminderController::class, 'getDueNow'])->name('medicine-reminders.due-now');
 
     // Find Doctors Routes
     Route::get('/doctors', [FindDoctorsController::class, 'index'])->name('doctors');
