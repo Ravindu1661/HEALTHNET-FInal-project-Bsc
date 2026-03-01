@@ -200,8 +200,9 @@
                                      style="object-fit:cover"
                                      onerror="this.src='{{ asset('images/default-avatar.png') }}'">
                                 <span style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    {{ $displayName }}
+                                    {{ Auth::user()->patient->first_name ?? strtok(Auth::user()->email, '@') }}
                                 </span>
+
                             </button>
 
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown"
@@ -210,9 +211,9 @@
                                 {{-- Header Info --}}
                                 <li>
                                     <div style="padding:.6rem .85rem .5rem;border-bottom:1px solid #f0f4f8;margin-bottom:.3rem">
-                                        <div style="font-weight:700;font-size:.88rem;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                                            {{ $displayName }}
-                                        </div>
+                                    <div style="font-weight:700;font-size:.88rem;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                        {{ trim((Auth::user()->patient->first_name ?? '') . ' ' . (Auth::user()->patient->last_name ?? '')) ?: strtok(Auth::user()->email, '@') }}
+                                    </div>
                                         <div style="font-size:.75rem;color:#888;margin-top:.1rem">{{ $authUser->email }}</div>
                                         @if($authPatient?->nic)
                                         <div style="font-size:.72rem;color:#00796b;margin-top:.15rem">

@@ -21,8 +21,8 @@ class PatientProfileController extends Controller
         $patient = $user->patient;
 
         $request->validate([
-            'firstname'               => 'required|string|max:100',
-            'lastname'                => 'nullable|string|max:100',
+            'first_name'              => 'required|string|max:100',  // ✅
+            'last_name'               => 'nullable|string|max:100',  // ✅
             'nic'                     => 'required|string|max:20|unique:patients,nic,' . $patient->id,
             'phone'                   => 'required|string|max:20',
             'date_of_birth'           => 'nullable|date',
@@ -42,13 +42,13 @@ class PatientProfileController extends Controller
             if ($patient->profile_image) {
                 Storage::disk('public')->delete($patient->profile_image);
             }
-            $path = $request->file('profile_image')->store('patients/profiles', 'public');
-            $patient->profile_image = $path;
+            $patient->profile_image = $request->file('profile_image')
+                ->store('patients/profiles', 'public');
         }
 
         $patient->update([
-            'firstname'               => $request->firstname,
-            'lastname'                => $request->lastname,
+            'first_name'              => $request->first_name,   // ✅
+            'last_name'               => $request->last_name,    // ✅
             'nic'                     => $request->nic,
             'phone'                   => $request->phone,
             'date_of_birth'           => $request->date_of_birth,

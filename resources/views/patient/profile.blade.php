@@ -1,4 +1,5 @@
 @include('partials.header')
+
 <style>
 /* ══ HERO ══ */
 .pp-hero{background:linear-gradient(135deg,#004d40 0%,#00796b 100%);padding:5.5rem 0 0;color:#fff;position:relative;overflow:hidden}
@@ -110,8 +111,10 @@
             </div>
 
             {{-- Info --}}
-            <div class="flex-grow-1 pb-1">
-                <h1 style="font-size:1.6rem;font-weight:800;margin:0">{{ $fullName }}</h1>
+           <div class="flex-grow-1 pb-1">
+                <h1 style="font-size:1.6rem;font-weight:800;margin:0">
+                    {{ trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '')) ?: strtok($user->email, '@') }}
+                </h1>
                 <div style="opacity:.82;font-size:.85rem;margin:.3rem 0">
                     <i class="fas fa-envelope me-1"></i>{{ $user->email }}
                     @if($patient?->phone)
@@ -192,13 +195,17 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="pp-label">First Name <span style="color:#dc2626">*</span></label>
-                                <input type="text" name="firstname" class="pp-input {{ $errors->has('firstname')?'error':'' }}"
-                                       value="{{ old('firstname', $patient->firstname ?? '') }}" placeholder="First name">
+                               <input type="text" name="first_name"
+                                value="{{ old('first_name', $patient->first_name ?? '') }}"
+                                class="pp-input {{ $errors->has('first_name') ? 'error' : '' }}"
+                                placeholder="First name">
                             </div>
                             <div class="col-md-6">
                                 <label class="pp-label">Last Name</label>
-                                <input type="text" name="lastname" class="pp-input"
-                                       value="{{ old('lastname', $patient->lastname ?? '') }}" placeholder="Last name">
+                                <input type="text" name="last_name"
+                                value="{{ old('last_name', $patient->last_name ?? '') }}"
+                                class="pp-input"
+                                placeholder="Last name">
                             </div>
                         </div>
 
@@ -347,7 +354,10 @@
                     <img src="{{ $profileImg }}" id="sideAvatarPreview"
                          style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #e0f2f1;margin-bottom:.7rem"
                          onerror="this.src='{{ asset('images/default-avatar.png') }}'">
-                    <div style="font-weight:800;font-size:1rem;color:#1a1a1a">{{ $fullName }}</div>
+                    <div style="font-weight:800;font-size:1rem;color:#1a1a1a">
+                        {{ trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '')) ?: strtok($user->email, '@') }}
+                    </div>
+
                     <div style="font-size:.78rem;color:#888;margin:.2rem 0">{{ $user->email }}</div>
                     <span class="status-badge status-{{ $user->status ?? 'active' }} mt-1">
                         <i class="fas fa-circle" style="font-size:.4rem"></i>
