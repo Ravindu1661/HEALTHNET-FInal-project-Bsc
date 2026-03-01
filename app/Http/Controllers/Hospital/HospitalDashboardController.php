@@ -1,785 +1,955 @@
 <?php
 
 namespace App\Http\Controllers\Hospital;
-use App\Models\Notification;
-use App\Models\User;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
-use App\Models\Hospital;
 
 class HospitalDashboardController extends Controller
 {
+    // ════════════════════════════════════════════════
+    // HELPER — Get current hospital record
+    // ════════════════════════════════════════════════
     private function getHospital()
     {
-        return Hospital::where('user_id', Auth::id())->firstOrFail();
+        return DB::table('hospitals')
+            ->where('user_id', Auth::id())
+            ->first();
     }
 
-    // ─── Dashboard ───────────────────────────────────────────
-    public function index()
+    // ════════════════════════════════════════════════
+    // HELPER — Notification query base
+    // ════════════════════════════════════════════════
+    private function notifQuery()
     {
-        $hospital = $this->getHospital();
-        return view('hospital.dashboard', compact('hospital'));
+        return DB::table('notifications')
+            ->where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', Auth::id());
     }
 
-   public function getStats()
-{
-    try {
-        $hospital = $this->getHospital();
-        $today    = Carbon::today();
-        $som      = Carbon::now()->startOfMonth();
-        $eom      = Carbon::now()->endOfMonth();
 
-        // appointments table → camelCase columns
-        $todayApts = DB::table('appointments')
-            ->where('hospitalid', $hospital->id)
-            ->whereDate('appointmentdate', $today)
-            ->whereIn('status', ['pending', 'confirmed'])
+    // ════════════════════════════════════════════════
+    // DASHBOARD
+    // ════════════════════════════════════════════════
+
+  public function index()
+{
+    $hospital = $this->getHospital();
+
+    $todayAppointments = 0;
+    $totalDoctors      = 0;
+    $avgRating         = 0;
+    $appointmentStats  = ['total'=>0,'pending'=>0,'confirmed'=>0,'completed'=>0,'cancelled'=>0];
+    $todayAptList      = collect();
+    $recentReviews     = collect();
+
+    if ($hospital) {
+
+        // Today count
+        $todayAppointments = DB::table('appointments')
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->whereDate('appointment_date', Carbon::today())
             ->count();
 
-        // doctor_workplaces table → snake_case columns ✅
+        // Active doctors
         $totalDoctors = DB::table('doctor_workplaces')
             ->where('workplace_type', 'hospital')
             ->where('workplace_id', $hospital->id)
             ->where('status', 'approved')
             ->count();
 
-        $totalPatients = DB::table('appointments')
-            ->where('hospitalid', $hospital->id)
-            ->distinct('patientid')
-            ->count('patientid');
+        // Monthly stats
+        $statsRaw = DB::table('appointments')
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->whereMonth('appointment_date', Carbon::now()->month)
+            ->whereYear('appointment_date',  Carbon::now()->year)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
 
-        $monthlyRevenue = DB::table('appointments')
-            ->where('hospitalid', $hospital->id)
-            ->where('status', 'completed')
-            ->whereBetween('appointmentdate', [$som, $eom])
-            ->sum('consultationfee');
-
-        $avgRating = DB::table('reviews')
-            ->where('hospitalid', $hospital->id)
-            ->where('status', 'approved')
-            ->avg('rating');
-
-        $aptStats = [
-            'pending'   => DB::table('appointments')->where('hospitalid', $hospital->id)->where('status', 'pending')->count(),
-            'confirmed' => DB::table('appointments')->where('hospitalid', $hospital->id)->where('status', 'confirmed')->count(),
-            'completed' => DB::table('appointments')->where('hospitalid', $hospital->id)->where('status', 'completed')->count(),
-            'cancelled' => DB::table('appointments')->where('hospitalid', $hospital->id)->where('status', 'cancelled')->count(),
+        $appointmentStats = [
+            'total'     => array_sum($statsRaw),
+            'pending'   => $statsRaw['pending']   ?? 0,
+            'confirmed' => $statsRaw['confirmed'] ?? 0,
+            'completed' => $statsRaw['completed'] ?? 0,
+            'cancelled' => $statsRaw['cancelled'] ?? 0,
         ];
-        $aptStats['total'] = array_sum($aptStats);
 
-        // Monthly trend (last 6 months)
-        $trend = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $m       = Carbon::now()->subMonths($i);
-            $trend[] = [
-                'month' => $m->format('M'),
-                'count' => DB::table('appointments')
-                    ->where('hospitalid', $hospital->id)
-                    ->whereYear('appointmentdate', $m->year)
-                    ->whereMonth('appointmentdate', $m->month)
-                    ->count(),
-            ];
-        }
+        // Avg rating
+        $avgRating = round(
+            DB::table('ratings')
+                ->where('ratable_type', 'hospital')
+                ->where('ratable_id', $hospital->id)
+                ->avg('rating') ?? 0,
+            1
+        );
 
-        return response()->json([
-            'success'         => true,
-            'today_apt'       => $todayApts,
-            'total_doctors'   => $totalDoctors,
-            'total_patients'  => $totalPatients,
-            'monthly_revenue' => number_format($monthlyRevenue, 2, '.', ''),
-            'avg_rating'      => round($avgRating ?? 0, 1),
-            'apt_stats'       => $aptStats,
-            'trend'           => $trend,
-        ]);
+        // Today appointment list
+        $todayAptList = DB::table('appointments as a')
+            ->join('patients as p', 'a.patient_id', '=', 'p.id')
+            ->join('doctors as d',  'a.doctor_id',  '=', 'd.id')
+            ->where('a.workplace_type', 'hospital')
+            ->where('a.workplace_id',  $hospital->id)
+            ->whereDate('a.appointment_date', Carbon::today())
+            ->select(
+                'a.id',
+                'a.status',
+                'a.appointment_number',
+                DB::raw("CONCAT(p.first_name,' ',p.last_name) as patient_name"),
+                'p.phone',
+                DB::raw("CONCAT('Dr. ',d.first_name,' ',d.last_name) as doctor_name"),
+                'd.specialization',
+                DB::raw("DATE_FORMAT(a.appointment_time,'%h:%i %p') as apt_time")
+            )
+            ->orderBy('a.appointment_time')
+            ->limit(10)
+            ->get();
 
-    } catch (\Exception $e) {
-        \Log::error('Hospital Dashboard Stats: ' . $e->getMessage());
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        // Recent reviews
+        $recentReviews = DB::table('ratings as r')
+            ->join('patients as p', 'r.patient_id', '=', 'p.id')
+            ->where('r.ratable_type', 'hospital')
+            ->where('r.ratable_id',   $hospital->id)
+            ->select(
+                'r.rating',
+                'r.review as comment',
+                'r.created_at',
+                DB::raw("CONCAT(p.first_name,' ',p.last_name) as patient_name")
+            )
+            ->orderByDesc('r.created_at')
+            ->limit(5)
+            ->get();
     }
+
+    // Specializations safe parse
+    $specializations = [];
+    if ($hospital && $hospital->specializations) {
+        $raw = $hospital->specializations;
+        if (is_array($raw)) {
+            $specializations = $raw;
+        } else {
+            $decoded = json_decode($raw, true);
+            $specializations = is_array($decoded)
+                ? $decoded
+                : array_map('trim', explode(',', $raw));
+        }
+    }
+
+    // Facilities safe parse
+    $facilities = [];
+    if ($hospital && $hospital->facilities) {
+        $raw = $hospital->facilities;
+        if (is_array($raw)) {
+            $facilities = $raw;
+        } else {
+            $decoded = json_decode($raw, true);
+            $facilities = is_array($decoded)
+                ? $decoded
+                : array_map('trim', explode(',', $raw));
+        }
+    }
+
+    return view('hospital.dashboard', compact(
+        'hospital',
+        'todayAppointments',
+        'totalDoctors',
+        'avgRating',
+        'appointmentStats',
+        'todayAptList',
+        'recentReviews',
+        'specializations',
+        'facilities'
+    ));
 }
+
 
     public function getTodayAppointments()
     {
-        try {
-            $hospital = $this->getHospital();
-            $apts = DB::table('appointments')
-                ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                ->join('users as pu', 'patients.user_id', '=', 'pu.id')
-                ->leftJoin('doctors', 'appointments.doctor_id', '=', 'doctors.id')
-                ->leftJoin('users as du', 'doctors.user_id', '=', 'du.id')
-                ->where('appointments.hospital_id', $hospital->id)
-                ->whereDate('appointments.appointment_date', Carbon::today())
-                ->select(
-                    'appointments.id',
-                    'appointments.appointment_number',
-                    'appointments.appointment_time',
-                    'appointments.status',
-                    'appointments.consultation_fee',
-                    'appointments.appointment_type',
-                    'appointments.consultation_method',
-                    DB::raw("pu.full_name as patient_name"),
-                    DB::raw("CONCAT(COALESCE(doctors.first_name,''), ' ', COALESCE(doctors.last_name,'')) as doctor_name")
-                )
-                ->orderBy('appointments.appointment_time')
-                ->get();
-
-            return response()->json(['success' => true, 'appointments' => $apts]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        $hospital = $this->getHospital();
+        if (!$hospital) {
+            return response()->json(['appointments' => []]);
         }
+
+        $appointments = DB::table('appointments as a')
+            ->join('patients as p', 'a.patient_id', '=', 'p.id')
+            ->join('doctors as d', 'a.doctor_id', '=', 'd.id')
+            ->where('a.workplace_type', 'hospital')
+            ->where('a.workplace_id', $hospital->id)
+            ->whereDate('a.appointment_date', Carbon::today())
+            ->select(
+                'a.id',
+                'a.status',
+                'a.appointment_time',
+                'a.appointment_number',
+                DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_name"),
+                'p.phone',
+                DB::raw("CONCAT('Dr. ', d.first_name, ' ', d.last_name) as doctor_name"),
+                'd.specialization'
+            )
+            ->orderBy('a.appointment_time')
+            ->get()
+            ->map(fn($apt) => [
+                'id'           => $apt->id,
+                'patient_name' => $apt->patient_name,
+                'doctor_name'  => $apt->doctor_name,
+                'specialization' => $apt->specialization,
+                'phone'        => $apt->phone,
+                'time'         => Carbon::parse($apt->appointment_time)->format('h:i A'),
+                'status'       => $apt->status,
+                'apt_number'   => $apt->appointment_number,
+            ]);
+
+        return response()->json(['appointments' => $appointments]);
     }
 
     public function getRecentReviews()
     {
-        try {
-            $hospital = $this->getHospital();
-            $reviews = DB::table('reviews')
-                ->join('patients', 'reviews.reviewer_id', '=', 'patients.id')
-                ->join('users', 'patients.user_id', '=', 'users.id')
-                ->where('reviews.hospital_id', $hospital->id)
-                ->where('reviews.status', 'approved')
-                ->select(
-                    'reviews.id', 'reviews.rating', 'reviews.review_text',
-                    'reviews.review_title', 'reviews.created_at',
-                    'users.full_name as patient_name'
-                )
-                ->orderByDesc('reviews.created_at')
-                ->limit(5)
-                ->get();
-
-            return response()->json(['success' => true, 'reviews' => $reviews]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        $hospital = $this->getHospital();
+        if (!$hospital) {
+            return response()->json(['reviews' => []]);
         }
+
+        $reviews = DB::table('ratings as r')
+            ->join('patients as p', 'r.patient_id', '=', 'p.id')
+            ->where('r.ratable_type', 'hospital')
+            ->where('r.ratable_id', $hospital->id)
+            ->select(
+                'r.id',
+                'r.rating',
+                'r.review as comment',
+                'r.created_at',
+                DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_name")
+            )
+            ->orderByDesc('r.created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn($r) => [
+                'patient_name' => $r->patient_name,
+                'rating'       => $r->rating,
+                'comment'      => $r->comment,
+                'date'         => Carbon::parse($r->created_at)->diffForHumans(),
+            ]);
+
+        return response()->json(['reviews' => $reviews]);
     }
 
-    // ─── Appointments ─────────────────────────────────────────
-    public function appointments(Request $request)
+
+    // ════════════════════════════════════════════════
+    // APPOINTMENTS MANAGEMENT
+    // ════════════════════════════════════════════════
+
+    public function appointments()
     {
         $hospital = $this->getHospital();
-        return view('hospital.appointments.index', compact('hospital'));
+        return view('hospital.appointments', compact('hospital'));
     }
 
     public function appointmentsData(Request $request)
     {
-        try {
-            $hospital = $this->getHospital();
-            $query = DB::table('appointments')
-                ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                ->join('users as pu', 'patients.user_id', '=', 'pu.id')
-                ->leftJoin('doctors', 'appointments.doctor_id', '=', 'doctors.id')
-                ->where('appointments.hospital_id', $hospital->id)
-                ->select(
-                    'appointments.*',
-                    'pu.full_name as patient_name',
-                    DB::raw("CONCAT(COALESCE(doctors.first_name,''), ' ', COALESCE(doctors.last_name,'')) as doctor_name")
-                );
-
-            if ($request->filled('status') && $request->status !== 'all') {
-                $query->where('appointments.status', $request->status);
-            }
-            if ($request->filled('date')) {
-                $query->whereDate('appointments.appointment_date', $request->date);
-            }
-            if ($request->filled('search')) {
-                $s = '%' . $request->search . '%';
-                $query->where(function ($q) use ($s) {
-                    $q->where('pu.full_name', 'like', $s)
-                      ->orWhere('appointments.appointment_number', 'like', $s);
-                });
-            }
-
-            $data = $query->orderByDesc('appointments.appointment_date')
-                          ->orderByDesc('appointments.appointment_time')
-                          ->paginate(15);
-
-            return response()->json(['success' => true, 'appointments' => $data]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        $hospital = $this->getHospital();
+        if (!$hospital) {
+            return response()->json(['data' => [], 'total' => 0]);
         }
+
+        $query = DB::table('appointments as a')
+            ->join('patients as p', 'a.patient_id', '=', 'p.id')
+            ->join('doctors as d', 'a.doctor_id', '=', 'd.id')
+            ->where('a.workplace_type', 'hospital')
+            ->where('a.workplace_id', $hospital->id)
+            ->select(
+                'a.*',
+                DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_name"),
+                'p.phone as patient_phone',
+                DB::raw("CONCAT('Dr. ', d.first_name, ' ', d.last_name) as doctor_name"),
+                'd.specialization'
+            );
+
+        // Filters
+        if ($request->filled('status')) {
+            $query->where('a.status', $request->status);
+        }
+        if ($request->filled('date')) {
+            $query->whereDate('a.appointment_date', $request->date);
+        }
+        if ($request->filled('search')) {
+            $search = '%' . $request->search . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where(DB::raw("CONCAT(p.first_name,' ',p.last_name)"), 'like', $search)
+                  ->orWhere('a.appointment_number', 'like', $search)
+                  ->orWhere('p.phone', 'like', $search);
+            });
+        }
+        if ($request->filled('doctor_id')) {
+            $query->where('a.doctor_id', $request->doctor_id);
+        }
+
+        $total        = $query->count();
+        $perPage      = $request->per_page ?? 15;
+        $appointments = $query
+            ->orderByDesc('a.appointment_date')
+            ->orderBy('a.appointment_time')
+            ->paginate($perPage);
+
+        return response()->json($appointments);
     }
 
     public function confirmAppointment($id)
     {
-        DB::table('appointments')->where('id', $id)->update(['status' => 'confirmed']);
-        return response()->json(['success' => true, 'message' => 'Appointment confirmed!']);
+        $hospital = $this->getHospital();
+        $apt = DB::table('appointments')
+            ->where('id', $id)
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->first();
+
+        if (!$apt) {
+            return response()->json(['success' => false, 'message' => 'Appointment not found'], 404);
+        }
+        if ($apt->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'Only pending appointments can be confirmed']);
+        }
+
+        DB::table('appointments')
+            ->where('id', $id)
+            ->update(['status' => 'confirmed', 'updated_at' => now()]);
+
+        return response()->json(['success' => true, 'message' => 'Appointment confirmed']);
     }
 
     public function cancelAppointment(Request $request, $id)
     {
-        DB::table('appointments')->where('id', $id)->update([
-            'status' => 'cancelled',
-            'cancelled_by' => Auth::id(),
-            'cancellation_reason' => $request->reason,
-        ]);
-        return response()->json(['success' => true, 'message' => 'Appointment cancelled.']);
+        $hospital = $this->getHospital();
+        $apt = DB::table('appointments')
+            ->where('id', $id)
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->first();
+
+        if (!$apt) {
+            return response()->json(['success' => false, 'message' => 'Appointment not found'], 404);
+        }
+        if (in_array($apt->status, ['completed', 'cancelled'])) {
+            return response()->json(['success' => false, 'message' => 'Cannot cancel this appointment']);
+        }
+
+        DB::table('appointments')
+            ->where('id', $id)
+            ->update([
+                'status'              => 'cancelled',
+                'cancelled_by'        => Auth::id(),
+                'cancellation_reason' => $request->reason ?? 'Cancelled by hospital',
+                'updated_at'          => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Appointment cancelled']);
     }
 
     public function completeAppointment($id)
     {
-        DB::table('appointments')->where('id', $id)->update(['status' => 'completed']);
-        return response()->json(['success' => true, 'message' => 'Marked as completed!']);
-    }
-
-    // ─── Doctors ──────────────────────────────────────────────
-    public function doctors(Request $request)
-    {
         $hospital = $this->getHospital();
-        return view('hospital.doctors.index', compact('hospital'));
-    }
-public function doctorsData(Request $request)
-{
-    try {
-        $hospital = $this->getHospital();
+        $apt = DB::table('appointments')
+            ->where('id', $id)
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->first();
 
-        $query = DB::table('doctor_workplaces')
-            ->join('doctors', 'doctor_workplaces.doctor_id', '=', 'doctors.id')      // ✅ doctor_id
-            ->join('users',   'doctors.user_id',             '=', 'users.id')         // ✅ user_id
-            ->where('doctor_workplaces.workplace_type', 'hospital')                   // ✅ workplace_type
-            ->where('doctor_workplaces.workplace_id',   $hospital->id)               // ✅ workplace_id
-            ->select(
-                'doctors.id',
-                DB::raw("CONCAT(doctors.first_name, ' ', doctors.last_name) AS name"), // ✅
-                'doctors.specialization as specialty',                                  // ✅
-                'doctors.experience_years',                                             // ✅
-                'doctors.consultation_fee',                                             // ✅
-                'doctors.rating',
-                'doctors.total_ratings',
-                'doctors.profile_image',                                                // ✅
-                'doctors.bio',
-                'doctors.status as doctor_status',
-                'doctor_workplaces.employment_type',                                    // ✅
-                'doctor_workplaces.status as affiliation_status',
-                'users.email'
-            );
-
-        if ($request->filled('search')) {
-            $s = '%' . $request->search . '%';
-            $query->where(function ($q) use ($s) {
-                $q->where('doctors.first_name',    'like', $s)  // ✅
-                  ->orWhere('doctors.last_name',   'like', $s)  // ✅
-                  ->orWhere('doctors.specialization', 'like', $s);
-            });
+        if (!$apt) {
+            return response()->json(['success' => false, 'message' => 'Appointment not found'], 404);
+        }
+        if ($apt->status !== 'confirmed') {
+            return response()->json(['success' => false, 'message' => 'Only confirmed appointments can be completed']);
         }
 
+        DB::table('appointments')
+            ->where('id', $id)
+            ->update(['status' => 'completed', 'updated_at' => now()]);
+
+        return response()->json(['success' => true, 'message' => 'Appointment completed']);
+    }
+
+
+    // ════════════════════════════════════════════════
+    // DOCTORS MANAGEMENT
+    // ════════════════════════════════════════════════
+
+    public function doctors()
+    {
+        $hospital = $this->getHospital();
+        return view('hospital.doctors', compact('hospital'));
+    }
+
+    public function doctorsData(Request $request)
+    {
+        $hospital = $this->getHospital();
+        if (!$hospital) {
+            return response()->json(['data' => []]);
+        }
+
+        $query = DB::table('doctor_workplaces as dw')
+            ->join('doctors as d', 'dw.doctor_id', '=', 'd.id')
+            ->join('users as u', 'd.user_id', '=', 'u.id')
+            ->where('dw.workplace_type', 'hospital')
+            ->where('dw.workplace_id', $hospital->id)
+            ->select(
+                'd.id',
+                'd.first_name',
+                'd.last_name',
+                'd.specialization',
+                'd.phone',
+                'd.profile_image',
+                'd.slmc_number',
+                'd.experience_years',
+                'd.consultation_fee',
+                'd.rating',
+                'd.total_ratings',
+                'd.status as doctor_status',
+                'dw.id as workplace_id',
+                'dw.status as workplace_status',
+                'dw.employment_type',
+                'dw.created_at as joined_at',
+                'u.email'
+            );
+
+        // Filters
         if ($request->filled('status')) {
-            $query->where('doctor_workplaces.status', $request->status);
+            $query->where('dw.status', $request->status);
+        }
+        if ($request->filled('search')) {
+            $search = '%' . $request->search . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('d.first_name', 'like', $search)
+                  ->orWhere('d.last_name', 'like', $search)
+                  ->orWhere('d.specialization', 'like', $search)
+                  ->orWhere('d.slmc_number', 'like', $search);
+            });
         }
 
         $doctors = $query
-            ->orderBy('doctors.first_name')
-            ->paginate(15);
+            ->orderByDesc('dw.created_at')
+            ->paginate($request->per_page ?? 12);
 
-        return response()->json(['success' => true, 'doctors' => $doctors]);
-
-    } catch (\Exception $e) {
-        \Log::error('Hospital Doctors Data: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
+        return response()->json($doctors);
     }
-}
 
-
-
-
-    // ─── Profile ──────────────────────────────────────────────
-    public function profile()
+    public function searchDoctors(Request $request)
     {
         $hospital = $this->getHospital();
-        return view('hospital.profile.index', compact('hospital'));
-    }
 
-    public function updateProfile(Request $request)
-    {
-        $hospital = $this->getHospital();
-        $request->validate([
-            'name'        => 'required|string|max:255',
-            'phone'       => 'required|string|max:20',
-            'email'       => 'required|email|max:100',
-            'address'     => 'nullable|string',
-            'city'        => 'nullable|string|max:100',
-            'province'    => 'nullable|string|max:100',
-            'description' => 'nullable|string',
-            'website'     => 'nullable|url|max:255',
-        ]);
+        // Already added doctor IDs — exclude them
+        $existingIds = DB::table('doctor_workplaces')
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->pluck('doctor_id')
+            ->toArray();
 
-        $hospital->update($request->only([
-            'name','phone','email','address','city','province','description','website'
-        ]));
-
-        return back()->with('success', 'Profile updated successfully!');
-    }
-
-    public function updatePhoto(Request $request)
-    {
-        $request->validate(['profile_image' => 'required|image|max:5120']);
-        $hospital = $this->getHospital();
-        if ($hospital->profile_image) {
-            Storage::disk('public')->delete($hospital->profile_image);
-        }
-        $path = $request->file('profile_image')->store('hospitals/profiles', 'public');
-        $hospital->update(['profile_image' => $path]);
-        return back()->with('success', 'Photo updated!');
-    }
-
-    public function uploadDocument(Request $request)
-    {
-        $request->validate(['document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120']);
-        $hospital = $this->getHospital();
-        if ($hospital->document_path) {
-            Storage::disk('public')->delete($hospital->document_path);
-        }
-        $path = $request->file('document')->store('hospitals/documents', 'public');
-        $hospital->update(['document_path' => $path]);
-        return back()->with('success', 'Document uploaded!');
-    }
-
-    // ─── Notifications ────────────────────────────────────────
-   // ============================================
-// NOTIFICATIONS
-// ============================================
-public function notifications()
-{
-    return view('hospital.notifications.index');
-}
-
-public function notificationsData(Request $request)
-{
-    $user = Auth::user();
-    $filter = $request->input('filter', 'all');
-    $perPage = 15;
-
-    $query = Notification::where('notifiable_id', $user->id)
-        ->where('notifiable_type', User::class)
-        ->orderByDesc('created_at');
-
-    // Filter
-    if ($filter === 'unread') {
-        $query->where('is_read', false);
-    } elseif (!in_array($filter, ['all', ''])) {
-        $query->where('type', $filter);
-    }
-
-    $paginated = $query->paginate($perPage);
-
-    $notifications = $paginated->map(function ($n) {
-        return [
-            'id'         => $n->id,
-            'type'       => $n->type,
-            'title'      => $n->title,
-            'message'    => $n->message,
-            'is_read'    => (bool) $n->is_read,
-            'created_at' => $n->created_at->diffForHumans(),
-        ];
-    });
-
-    return response()->json([
-        'success'       => true,
-        'notifications' => $notifications,
-        'pagination'    => [
-            'current_page' => $paginated->currentPage(),
-            'last_page'    => $paginated->lastPage(),
-            'from'         => $paginated->firstItem() ?? 0,
-            'to'           => $paginated->lastItem() ?? 0,
-            'total'        => $paginated->total(),
-        ],
-    ]);
-}
-
-public function markNotificationRead(Request $request, $id)
-{
-    $user = Auth::user();
-
-    $notif = Notification::where('id', $id)
-        ->where('notifiable_id', $user->id)
-        ->where('notifiable_type', User::class)
-        ->first();
-
-    if (!$notif) {
-        return response()->json(['success' => false, 'message' => 'Not found'], 404);
-    }
-
-    $notif->update([
-        'is_read' => true,
-        'read_at' => now(),
-    ]);
-
-    return response()->json(['success' => true]);
-}
-
-public function markAllNotificationsRead(Request $request)
-{
-    $user = Auth::user();
-
-    Notification::where('notifiable_id', $user->id)
-        ->where('notifiable_type', User::class)
-        ->where('is_read', false)
-        ->update([
-            'is_read' => true,
-            'read_at' => now(),
-        ]);
-
-    return response()->json(['success' => true]);
-}
-
-
-    public function unreadNotifications()
-    {
-        try {
-            $notifs = DB::table('notifications')
-                ->where('user_id', Auth::id())
-                ->orderByDesc('created_at')
-                ->limit(10)
-                ->get()
-                ->map(fn($n) => [
-                    'id'         => $n->id,
-                    'title'      => $n->title,
-                    'message'    => $n->message,
-                    'is_read'    => (bool) $n->is_read,
-                    'created_at' => Carbon::parse($n->created_at)->diffForHumans(),
-                ]);
-
-            $unread = DB::table('notifications')
-                ->where('user_id', Auth::id())
-                ->where('is_read', false)->count();
-
-            $pendingApts = DB::table('appointments')
-                ->join('hospitals', 'appointments.hospital_id', '=', 'hospitals.id')
-                ->where('hospitals.user_id', Auth::id())
-                ->where('appointments.status', 'pending')
-                ->count();
-
-            return response()->json([
-                'count'               => $unread,
-                'pending_appointments'=> $pendingApts,
-                'notifications'       => $notifs,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['count' => 0, 'notifications' => []]);
-        }
-    }
-
-    // ─── Settings ─────────────────────────────────────────────
-    public function settings()
-    {
-        $hospital = $this->getHospital();
-        return view('hospital.settings.index', compact('hospital'));
-    }
-
-    public function updatePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'password'         => 'required|min:8|confirmed',
-        ]);
-
-        if (!Hash::check($request->current_password, Auth::user()->password)) {
-            return back()->withErrors(['current_password' => 'Current password is incorrect.']);
-        }
-
-        Auth::user()->update(['password' => Hash::make($request->password)]);
-        return back()->with('success', 'Password changed successfully!');
-    }
-
-    // ─── Reviews ──────────────────────────────────────────────
-    public function reviews()
-    {
-        $hospital = $this->getHospital();
-        return view('hospital.reviews.index', compact('hospital'));
-    }
-
-    public function reviewsData(Request $request)
-    {
-        try {
-            $hospital = $this->getHospital();
-            $reviews = DB::table('reviews')
-                ->join('patients', 'reviews.reviewer_id', '=', 'patients.id')
-                ->join('users', 'patients.user_id', '=', 'users.id')
-                ->where('reviews.hospital_id', $hospital->id)
-                ->select(
-                    'reviews.*', 'users.full_name as patient_name',
-                    DB::raw("DATE_FORMAT(reviews.created_at, '%d %b %Y') as date")
-                )
-                ->orderByDesc('reviews.created_at')
-                ->paginate(10);
-
-            return response()->json(['success' => true, 'reviews' => $reviews]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    // ─── Reports ──────────────────────────────────────────────
-    public function reports()
-    {
-        $hospital = $this->getHospital();
-        return view('hospital.reports.index', compact('hospital'));
-    }
-
-    public function reportsData()
-    {
-        try {
-            $hospital = $this->getHospital();
-            $months   = [];
-            for ($i = 5; $i >= 0; $i--) {
-                $m        = Carbon::now()->subMonths($i);
-                $months[] = [
-                    'month'    => $m->format('M Y'),
-                    'total'    => DB::table('appointments')->where('hospital_id', $hospital->id)->whereYear('appointment_date', $m->year)->whereMonth('appointment_date', $m->month)->count(),
-                    'completed'=> DB::table('appointments')->where('hospital_id', $hospital->id)->where('status','completed')->whereYear('appointment_date', $m->year)->whereMonth('appointment_date', $m->month)->count(),
-                    'revenue'  => DB::table('appointments')->where('hospital_id', $hospital->id)->where('status','completed')->whereYear('appointment_date', $m->year)->whereMonth('appointment_date', $m->month)->sum('consultation_fee'),
-                ];
-            }
-
-            $byType = DB::table('appointments')
-                ->where('hospital_id', $hospital->id)
-                ->select('appointment_type', DB::raw('count(*) as count'))
-                ->groupBy('appointment_type')
-                ->get();
-
-            $byMethod = DB::table('appointments')
-                ->where('hospital_id', $hospital->id)
-                ->select('consultation_method', DB::raw('count(*) as count'))
-                ->groupBy('consultation_method')
-                ->get();
-
-            return response()->json([
-                'success'  => true,
-                'monthly'  => $months,
-                'by_type'  => $byType,
-                'by_method'=> $byMethod,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-   // ─── Search Available Doctors to Add ──────────────────
-public function searchDoctors(Request $request)
-{
-    try {
-        $hospital = $this->getHospital();
-        $search   = trim($request->get('q', ''));
-
-        // ✅ Correct column names from DoctorWorkplace model
-        $affiliatedMap = DB::table('doctor_workplaces')
-            ->where('workplace_type', 'hospital')        // ✅ workplace_type (not workplacetype)
-            ->where('workplace_id', $hospital->id)       // ✅ workplace_id (not workplaceid)
-            ->pluck('status', 'doctor_id');              // ✅ doctor_id (not doctorid)
-        // Returns: [doctor_id => status] e.g. [1 => 'approved', 2 => 'pending']
-
-        // ✅ Correct column names from Doctor model + users table
-        $query = DB::table('doctors')
-            ->join('users', 'doctors.user_id', '=', 'users.id')  // ✅ user_id (not userid)
-            ->where('doctors.status', 'approved')                 // ✅ 'approved' is correct for Doctor
-            ->where('users.status', 'active')
+        $search  = $request->q ?? '';
+        $doctors = DB::table('doctors as d')
+            ->join('users as u', 'd.user_id', '=', 'u.id')
+            ->whereNotIn('d.id', $existingIds)
+            ->where('d.status', 'approved')
+            ->where('u.status', 'active')
+            ->where(function ($q) use ($search) {
+                $q->where('d.first_name', 'like', "%{$search}%")
+                  ->orWhere('d.last_name', 'like', "%{$search}%")
+                  ->orWhere('d.specialization', 'like', "%{$search}%")
+                  ->orWhere('d.slmc_number', 'like', "%{$search}%");
+            })
             ->select(
-                'doctors.id',
-                DB::raw("CONCAT(doctors.first_name, ' ', doctors.last_name) AS name"),  // ✅ first_name / last_name
-                'doctors.specialization',
-                'doctors.experience_years',              // ✅ experience_years
-                'doctors.consultation_fee',              // ✅ consultation_fee
-                'doctors.profile_image',                 // ✅ profile_image
-                'doctors.rating',
-                'doctors.total_ratings',
-                'users.email'
-            );
+                'd.id',
+                'd.first_name',
+                'd.last_name',
+                'd.specialization',
+                'd.slmc_number',
+                'd.profile_image',
+                'd.experience_years',
+                'd.consultation_fee',
+                'd.rating'
+            )
+            ->limit(10)
+            ->get();
 
-        // Search filter — only apply if search keyword provided
-        if ($search !== '') {
-            $like = '%' . $search . '%';
-            $query->where(function ($q) use ($like) {
-                $q->where('doctors.first_name',   'like', $like)  // ✅
-                  ->orWhere('doctors.last_name',  'like', $like)  // ✅
-                  ->orWhere(
-                      DB::raw("CONCAT(doctors.first_name,' ',doctors.last_name)"),
-                      'like', $like
-                  )
-                  ->orWhere('doctors.specialization', 'like', $like)
-                  ->orWhere('users.email',             'like', $like);
-            });
-        }
-
-        $doctors = $query
-            ->orderBy('doctors.first_name')
-            ->orderBy('doctors.last_name')
-            ->get()
-            ->map(function ($doc) use ($affiliatedMap) {
-                // ✅ Mark already affiliated doctors (pending/approved/rejected)
-                $affiliationStatus = $affiliatedMap->get($doc->id);
-                $doc->already_affiliated = $affiliationStatus !== null;
-                $doc->affiliation_status = $affiliationStatus ?? null;
-                return $doc;
-            });
-
-        return response()->json([
-            'success' => true,
-            'doctors' => $doctors,
-            'count'   => $doctors->count(),
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('searchDoctors Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to search doctors: ' . $e->getMessage(),
-        ], 500);
+        return response()->json(['doctors' => $doctors]);
     }
-}
 
-// ─── Add Doctor to Hospital ────────────────────────────
-public function addDoctor(Request $request)
-{
-    try {
-        $hospital = $this->getHospital();
-
+    public function addDoctor(Request $request)
+    {
         $request->validate([
             'doctor_id'       => 'required|integer|exists:doctors,id',
             'employment_type' => 'required|in:permanent,temporary,visiting',
         ]);
 
-        $doctorId = (int) $request->doctor_id;
+        $hospital = $this->getHospital();
 
-        // ✅ Correct column names for exists check
+        // Check duplicate
         $exists = DB::table('doctor_workplaces')
-            ->where('doctor_id',      $doctorId)          // ✅ doctor_id
-            ->where('workplace_type', 'hospital')         // ✅ workplace_type
-            ->where('workplace_id',   $hospital->id)      // ✅ workplace_id
+            ->where('doctor_id', $request->doctor_id)
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
             ->exists();
 
         if ($exists) {
             return response()->json([
                 'success' => false,
-                'message' => 'This doctor is already affiliated with your hospital.',
+                'message' => 'This doctor is already added to your hospital.',
             ], 422);
         }
 
-        // ✅ Correct column names for insert — matches DoctorWorkplace $fillable
         DB::table('doctor_workplaces')->insert([
-            'doctor_id'       => $doctorId,              // ✅
-            'workplace_type'  => 'hospital',             // ✅
-            'workplace_id'    => $hospital->id,          // ✅
-            'employment_type' => $request->employment_type, // ✅ employment_type
-            'status'          => 'pending',              // ✅ default 'pending' per model
-            'approved_by'     => null,
-            'approved_at'     => null,
+            'doctor_id'       => $request->doctor_id,
+            'workplace_type'  => 'hospital',
+            'workplace_id'    => $hospital->id,
+            'employment_type' => $request->employment_type,
+            'status'          => 'pending',
             'created_at'      => now(),
             'updated_at'      => now(),
         ]);
 
-        // ✅ Correct column names for doctor name fetch
-        $doctor = DB::table('doctors')
-            ->where('id', $doctorId)
-            ->select('first_name', 'last_name')          // ✅
-            ->first();
-
-        $name = $doctor
-            ? trim($doctor->first_name . ' ' . $doctor->last_name)
-            : 'Doctor';
-
         return response()->json([
             'success' => true,
-            'message' => "Dr. {$name} has been added successfully! Status: Pending approval.",
+            'message' => 'Doctor added successfully. Awaiting approval.',
+        ]);
+    }
+
+    public function updateDoctorStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,approved,rejected',
         ]);
 
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json(['success' => false, 'message' => $e->errors()], 422);
-    } catch (\Exception $e) {
-        \Log::error('addDoctor Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to add doctor: ' . $e->getMessage(),
-        ], 500);
-    }
-}
-// ─── Update Doctor Affiliation Status ─────────────────
-public function updateDoctorStatus(Request $request, $doctorId)
-{
-    try {
         $hospital = $this->getHospital();
 
-        $request->validate([
-            'status' => 'required|in:approved,rejected,pending',
-        ]);
-
-        // doctor_workplaces record exists check
         $workplace = DB::table('doctor_workplaces')
-            ->where('doctor_id',      $doctorId)
+            ->where('id', $id)
             ->where('workplace_type', 'hospital')
-            ->where('workplace_id',   $hospital->id)
+            ->where('workplace_id', $hospital->id)
             ->first();
 
         if (!$workplace) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Doctor affiliation not found.',
-            ], 404);
-        }
-
-        $updateData = [
-            'status'     => $request->status,
-            'updated_at' => now(),
-        ];
-
-        // approved නම් approved_by සහ approved_at set කරන්න
-        if ($request->status === 'approved') {
-            $updateData['approved_by'] = Auth::id();
-            $updateData['approved_at'] = now();
+            return response()->json(['success' => false, 'message' => 'Record not found'], 404);
         }
 
         DB::table('doctor_workplaces')
-            ->where('doctor_id',      $doctorId)
-            ->where('workplace_type', 'hospital')
-            ->where('workplace_id',   $hospital->id)
-            ->update($updateData);
-
-        $messages = [
-            'approved' => 'Doctor access approved successfully!',
-            'rejected' => 'Doctor access revoked.',
-            'pending'  => 'Doctor status set to pending.',
-        ];
+            ->where('id', $id)
+            ->update([
+                'status'      => $request->status,
+                'approved_by' => $request->status === 'approved' ? Auth::id() : null,
+                'approved_at' => $request->status === 'approved' ? now() : null,
+                'updated_at'  => now(),
+            ]);
 
         return response()->json([
             'success' => true,
-            'message' => $messages[$request->status] ?? 'Status updated.',
-        ]);
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json(['success' => false, 'message' => $e->errors()], 422);
-    } catch (\Exception $e) {
-        \Log::error('updateDoctorStatus Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to update status: ' . $e->getMessage(),
-        ], 500);
-    }
-}
-
-// ─── Resend Email Verification ────────────────────────
-public function resendVerification(Request $request)
-{
-    $user = Auth::user();
-
-    if ($user->hasVerifiedEmail()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Email is already verified.',
+            'message' => 'Doctor status updated to ' . $request->status,
         ]);
     }
 
-    $user->sendEmailVerificationNotification();
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Verification email sent to ' . $user->email,
-    ]);
-}
+    // ════════════════════════════════════════════════
+    // REVIEWS & RATINGS
+    // ════════════════════════════════════════════════
 
+    public function reviews()
+    {
+        $hospital = $this->getHospital();
+        return view('hospital.reviews', compact('hospital'));
+    }
+
+    public function reviewsData(Request $request)
+    {
+        $hospital = $this->getHospital();
+        if (!$hospital) {
+            return response()->json(['data' => []]);
+        }
+
+        $query = DB::table('ratings as r')
+            ->join('patients as p', 'r.patient_id', '=', 'p.id')
+            ->where('r.ratable_type', 'hospital')
+            ->where('r.ratable_id', $hospital->id)
+            ->select(
+                'r.id',
+                'r.rating',
+                'r.review as comment',
+                'r.related_type',
+                'r.related_id',
+                'r.created_at',
+                DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_name"),
+                'p.profile_image as patient_image'
+            );
+
+        // Filters
+        if ($request->filled('rating')) {
+            $query->where('r.rating', $request->rating);
+        }
+        if ($request->filled('search')) {
+            $search = '%' . $request->search . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where(DB::raw("CONCAT(p.first_name,' ',p.last_name)"), 'like', $search)
+                  ->orWhere('r.review', 'like', $search);
+            });
+        }
+
+        // Summary stats
+        $summary = DB::table('ratings')
+            ->where('ratable_type', 'hospital')
+            ->where('ratable_id', $hospital->id)
+            ->selectRaw('
+                COUNT(*) as total,
+                AVG(rating) as avg_rating,
+                SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) as five_star,
+                SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as four_star,
+                SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as three_star,
+                SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as two_star,
+                SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as one_star
+            ')
+            ->first();
+
+        $reviews = $query
+            ->orderByDesc('r.created_at')
+            ->paginate($request->per_page ?? 10);
+
+        return response()->json([
+            'reviews' => $reviews,
+            'summary' => $summary,
+        ]);
+    }
+
+
+    // ════════════════════════════════════════════════
+    // REPORTS & ANALYTICS
+    // ════════════════════════════════════════════════
+
+    public function reports()
+    {
+        $hospital = $this->getHospital();
+        return view('hospital.reports', compact('hospital'));
+    }
+
+    public function reportsData(Request $request)
+    {
+        $hospital = $this->getHospital();
+        if (!$hospital) {
+            return response()->json([]);
+        }
+
+        $period = $request->period ?? 'monthly';
+        $year   = $request->year   ?? Carbon::now()->year;
+
+        // ── Monthly appointment chart data ──
+        $monthlyData = DB::table('appointments')
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->whereYear('appointment_date', $year)
+            ->selectRaw('
+                MONTH(appointment_date) as month,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = "cancelled" THEN 1 ELSE 0 END) as cancelled,
+                SUM(CASE WHEN status = "pending"   THEN 1 ELSE 0 END) as pending
+            ')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // ── Revenue data (from payments) ──
+        $revenueData = DB::table('payments as pay')
+            ->join('appointments as a', function ($j) use ($hospital) {
+                $j->on('pay.related_id', '=', 'a.id')
+                  ->where('pay.related_type', 'appointment')
+                  ->where('a.workplace_type', 'hospital')
+                  ->where('a.workplace_id', $hospital->id);
+            })
+            ->whereYear('pay.payment_date', $year)
+            ->where('pay.payment_status', 'completed')
+            ->selectRaw('
+                MONTH(pay.payment_date) as month,
+                SUM(pay.amount) as revenue
+            ')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // ── Top doctors (by appointment count) ──
+        $topDoctors = DB::table('appointments as a')
+            ->join('doctors as d', 'a.doctor_id', '=', 'd.id')
+            ->where('a.workplace_type', 'hospital')
+            ->where('a.workplace_id', $hospital->id)
+            ->whereYear('a.appointment_date', $year)
+            ->selectRaw("
+                CONCAT(d.first_name, ' ', d.last_name) as doctor_name,
+                d.specialization,
+                d.profile_image,
+                COUNT(*) as total_appointments,
+                SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as completed
+            ")
+            ->groupBy('a.doctor_id', 'd.first_name', 'd.last_name', 'd.specialization', 'd.profile_image')
+            ->orderByDesc('total_appointments')
+            ->limit(5)
+            ->get();
+
+        // ── Overall summary ──
+        $summary = DB::table('appointments')
+            ->where('workplace_type', 'hospital')
+            ->where('workplace_id', $hospital->id)
+            ->whereYear('appointment_date', $year)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = "cancelled" THEN 1 ELSE 0 END) as cancelled,
+                SUM(CASE WHEN status = "pending"   THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = "confirmed" THEN 1 ELSE 0 END) as confirmed
+            ')
+            ->first();
+
+        return response()->json([
+            'monthly_data' => $monthlyData,
+            'revenue_data' => $revenueData,
+            'top_doctors'  => $topDoctors,
+            'summary'      => $summary,
+            'year'         => $year,
+        ]);
+    }
+
+
+    // ════════════════════════════════════════════════
+    // PROFILE MANAGEMENT
+    // ════════════════════════════════════════════════
+
+    public function profile()
+    {
+        $hospital = $this->getHospital();
+        return view('hospital.profile', compact('hospital'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $hospital = $this->getHospital();
+
+        $request->validate([
+            'name'                => 'required|string|max:255',
+            'phone'               => 'nullable|string|max:20',
+            'email'               => 'nullable|email|max:255',
+            'address'             => 'nullable|string',
+            'city'                => 'nullable|string|max:100',
+            'province'            => 'nullable|string|max:100',
+            'postal_code'         => 'nullable|string|max:10',
+            'type'                => 'nullable|in:government,private',
+            'description'         => 'nullable|string',
+            'website'             => 'nullable|url|max:255',
+            'operating_hours'     => 'nullable|string',
+            'specializations'     => 'nullable|array',
+            'facilities'          => 'nullable|array',
+            'latitude'            => 'nullable|numeric|between:-90,90',
+            'longitude'           => 'nullable|numeric|between:-180,180',
+        ]);
+
+        DB::table('hospitals')
+            ->where('id', $hospital->id)
+            ->update([
+                'name'             => $request->name,
+                'phone'            => $request->phone,
+                'email'            => $request->email,
+                'address'          => $request->address,
+                'city'             => $request->city,
+                'province'         => $request->province,
+                'postal_code'      => $request->postal_code,
+                'type'             => $request->type,
+                'description'      => $request->description,
+                'website'          => $request->website,
+                'operating_hours'  => $request->operating_hours,
+                'specializations'  => $request->specializations
+                    ? json_encode($request->specializations)
+                    : null,
+                'facilities'       => $request->facilities
+                    ? json_encode($request->facilities)
+                    : null,
+                'latitude'         => $request->latitude,
+                'longitude'        => $request->longitude,
+                'updated_at'       => now(),
+            ]);
+
+        return back()->with('success', 'Profile updated successfully.');
+    }
+
+    public function updatePhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        $hospital = $this->getHospital();
+
+        // Delete old photo
+        if ($hospital->profile_image && Storage::disk('public')->exists($hospital->profile_image)) {
+            Storage::disk('public')->delete($hospital->profile_image);
+        }
+
+        $path = $request->file('photo')->store('hospitals/photos', 'public');
+
+        DB::table('hospitals')
+            ->where('id', $hospital->id)
+            ->update(['profile_image' => $path, 'updated_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'path'    => asset('storage/' . $path),
+            'message' => 'Photo updated successfully.',
+        ]);
+    }
+
+    public function uploadDocument(Request $request)
+    {
+        $request->validate([
+            'document' => 'required|mimes:pdf,jpg,jpeg,png|max:5120',
+            'type'     => 'nullable|string|max:100',
+        ]);
+
+        $hospital = $this->getHospital();
+
+        // Delete old document
+        if ($hospital->document_path && Storage::disk('public')->exists($hospital->document_path)) {
+            Storage::disk('public')->delete($hospital->document_path);
+        }
+
+        $path = $request->file('document')->store('hospitals/documents', 'public');
+
+        DB::table('hospitals')
+            ->where('id', $hospital->id)
+            ->update(['document_path' => $path, 'updated_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'path'    => asset('storage/' . $path),
+            'message' => 'Document uploaded successfully.',
+        ]);
+    }
+
+
+    // ════════════════════════════════════════════════
+    // NOTIFICATIONS
+    // ════════════════════════════════════════════════
+
+    public function notifications()
+    {
+        $hospital = $this->getHospital();
+        return view('hospital.notifications-page', compact('hospital'));
+    }
+
+    public function notificationsData(Request $request)
+    {
+        $query = $this->notifQuery();
+
+        // Filter
+        if ($request->filled('type') && $request->type !== 'all') {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('is_read') && $request->is_read !== '') {
+            $query->where('is_read', (bool) $request->is_read);
+        }
+
+        $notifications = $query
+            ->orderByDesc('created_at')
+            ->paginate($request->per_page ?? 20);
+
+        $unreadCount = $this->notifQuery()->where('is_read', false)->count();
+
+        return response()->json([
+            'notifications' => $notifications,
+            'unread_count'  => $unreadCount,
+        ]);
+    }
+
+    public function markNotificationRead($id)
+    {
+        $updated = $this->notifQuery()
+            ->where('id', $id)
+            ->update([
+                'is_read'  => true,
+                'read_at'  => now(),
+            ]);
+
+        if (!$updated) {
+            return response()->json(['success' => false, 'message' => 'Notification not found'], 404);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function markAllNotificationsRead()
+    {
+        $this->notifQuery()
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'All notifications marked as read.']);
+    }
+
+
+    // ════════════════════════════════════════════════
+    // SETTINGS & ACCOUNT
+    // ════════════════════════════════════════════════
+
+    public function settings()
+    {
+        $hospital = $this->getHospital();
+        return view('hospital.settings', compact('hospital'));
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'password'         => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors([
+                'current_password' => 'The current password is incorrect.',
+            ])->withInput();
+        }
+
+        DB::table('users')
+            ->where('id', $user->id)
+            ->update([
+                'password'   => Hash::make($request->password),
+                'updated_at' => now(),
+            ]);
+
+        // Log activity
+        DB::table('activity_logs')->insert([
+            'user_id'     => $user->id,
+            'action'      => 'password_changed',
+            'description' => 'Hospital user changed password',
+            'ip_address'  => $request->ip(),
+            'user_agent'  => $request->userAgent(),
+            'created_at'  => now(),
+        ]);
+
+        return back()->with('success', 'Password updated successfully.');
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->email_verified_at) {
+            return back()->with('info', 'Your email is already verified.');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->with('success', 'Verification email sent. Please check your inbox.');
+    }
 }
