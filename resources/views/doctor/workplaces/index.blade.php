@@ -3,571 +3,654 @@
 @section('title', 'My Workplaces')
 @section('page-title', 'My Workplaces')
 
-@section('content')
-<div class="workplaces-container">
-    {{-- Success/Error Messages --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    {{-- Header with Add Button --}}
-    <div class="page-header-card">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="page-heading">
-                    <i class="fas fa-building me-2"></i>
-                    My Workplaces
-                </h4>
-                <p class="page-subheading">Manage your hospital and medical centre associations</p>
-            </div>
-            <a href="{{ route('doctor.workplaces.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Add Workplace
-            </a>
-        </div>
-    </div>
-
-    {{-- Statistics Cards --}}
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-lg-3 col-md-6">
-            <div class="stat-card stat-card-total">
-                <div class="stat-card-inner">
-                    <div class="stat-icon">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="stat-details">
-                        <div class="stat-label">Total Workplaces</div>
-                        <div class="stat-value">{{ $workplaces->count() }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-3 col-md-6">
-            <div class="stat-card stat-card-success">
-                <div class="stat-card-inner">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-details">
-                        <div class="stat-label">Approved</div>
-                        <div class="stat-value">{{ $approvedCount }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-3 col-md-6">
-            <div class="stat-card stat-card-warning">
-                <div class="stat-card-inner">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-details">
-                        <div class="stat-label">Pending</div>
-                        <div class="stat-value">{{ $pendingCount }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-3 col-md-6">
-            <div class="stat-card stat-card-danger">
-                <div class="stat-card-inner">
-                    <div class="stat-icon">
-                        <i class="fas fa-times-circle"></i>
-                    </div>
-                    <div class="stat-details">
-                        <div class="stat-label">Rejected</div>
-                        <div class="stat-value">{{ $rejectedCount }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Filter Tabs --}}
-    <div class="filter-tabs mb-3">
-        <button class="filter-tab active" data-filter="all">
-            All ({{ $workplaces->count() }})
-        </button>
-        <button class="filter-tab" data-filter="hospital">
-            Hospitals ({{ $hospitals->count() }})
-        </button>
-        <button class="filter-tab" data-filter="medical_centre">
-            Medical Centres ({{ $medicalCentres->count() }})
-        </button>
-        <button class="filter-tab" data-filter="approved">
-            Approved ({{ $approvedCount }})
-        </button>
-        <button class="filter-tab" data-filter="pending">
-            Pending ({{ $pendingCount }})
-        </button>
-    </div>
-
-    {{-- Workplaces Grid --}}
-    @if($workplaces->count() > 0)
-        <div class="workplaces-grid">
-            @foreach($workplaces as $workplace)
-                @php
-                    $workplaceData = null;
-                    $workplaceName = 'N/A';
-                    $workplaceAddress = 'N/A';
-                    $workplaceCity = 'N/A';
-                    $workplacePhone = 'N/A';
-                    $workplaceImage = asset('images/default-hospital.png');
-
-                    if ($workplace->workplace_type == 'hospital' && $workplace->hospital) {
-                        $workplaceData = $workplace->hospital;
-                        $workplaceName = $workplaceData->name;
-                        $workplaceAddress = $workplaceData->address;
-                        $workplaceCity = $workplaceData->city;
-                        $workplacePhone = $workplaceData->phone;
-                        $workplaceImage = $workplaceData->image_url;
-                    } elseif ($workplace->workplace_type == 'medical_centre' && $workplace->medicalCentre) {
-                        $workplaceData = $workplace->medicalCentre;
-                        $workplaceName = $workplaceData->name;
-                        $workplaceAddress = $workplaceData->address;
-                        $workplaceCity = $workplaceData->city;
-                        $workplacePhone = $workplaceData->phone;
-                        $workplaceImage = $workplaceData->image_url;
-                    }
-                @endphp
-
-                <div class="workplace-card"
-                     data-type="{{ $workplace->workplace_type }}"
-                     data-status="{{ $workplace->status }}">
-                    {{-- Status Badge --}}
-                    <div class="workplace-status-badge status-{{ $workplace->status }}">
-                        @if($workplace->status == 'approved')
-                            <i class="fas fa-check-circle"></i> Approved
-                        @elseif($workplace->status == 'pending')
-                            <i class="fas fa-clock"></i> Pending
-                        @else
-                            <i class="fas fa-times-circle"></i> Rejected
-                        @endif
-                    </div>
-
-                    {{-- Workplace Image --}}
-                    <div class="workplace-image">
-                        <img src="{{ $workplaceImage }}" alt="{{ $workplaceName }}">
-                        <div class="workplace-type-badge">
-                            @if($workplace->workplace_type == 'hospital')
-                                <i class="fas fa-hospital"></i> Hospital
-                            @else
-                                <i class="fas fa-clinic-medical"></i> Medical Centre
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Workplace Details --}}
-                    <div class="workplace-content">
-                        <h5 class="workplace-name">{{ $workplaceName }}</h5>
-
-                        <div class="workplace-info-item">
-                            <i class="fas fa-briefcase"></i>
-                            <span>{{ ucfirst(str_replace('_', ' ', $workplace->employment_type)) }}</span>
-                        </div>
-
-                        <div class="workplace-info-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>{{ $workplaceCity }}</span>
-                        </div>
-
-                        <div class="workplace-info-item">
-                            <i class="fas fa-map-signs"></i>
-                            <span>{{ Str::limit($workplaceAddress, 35) }}</span>
-                        </div>
-
-                        <div class="workplace-info-item">
-                            <i class="fas fa-phone"></i>
-                            <span>{{ $workplacePhone }}</span>
-                        </div>
-
-                        @if($workplace->approved_at)
-                            <div class="workplace-info-item">
-                                <i class="fas fa-calendar-check"></i>
-                                <span>Added: {{ $workplace->approved_at->format('M d, Y') }}</span>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="workplace-actions">
-                        @if($workplace->status == 'pending')
-                            <a href="{{ route('doctor.workplaces.edit', $workplace->id) }}"
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <form action="{{ route('doctor.workplaces.destroy', $workplace->id) }}"
-                                  method="POST"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Remove this workplace?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i> Remove
-                                </button>
-                            </form>
-                        @elseif($workplace->status == 'rejected')
-                            <form action="{{ route('doctor.workplaces.destroy', $workplace->id) }}"
-                                  method="POST"
-                                  onsubmit="return confirm('Delete this workplace?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </form>
-                        @else
-                            <button class="btn btn-sm btn-success" disabled>
-                                <i class="fas fa-check"></i> Active
-                            </button>
-                        @endif
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @else
-        <div class="empty-state">
-            <i class="fas fa-building"></i>
-            <h4>No Workplaces Added Yet</h4>
-            <p>Start by adding hospitals or medical centres where you practice</p>
-            <a href="{{ route('doctor.workplaces.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Add Your First Workplace
-            </a>
-        </div>
-    @endif
-</div>
-@endsection
-
 @push('styles')
 <style>
-.workplaces-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-}
+/* ══════════════════════════════════════
+   WORKPLACES INDEX
+══════════════════════════════════════ */
+.wp-page { max-width: 1300px; margin: 0 auto; padding: 1.5rem 1rem; }
 
-/* Page Header */
-.page-header-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.page-heading {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #2969bf;
-    margin-bottom: 0.3rem;
-}
-
-.page-subheading {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin: 0;
-}
-
-/* Stat Cards */
+/* ── Stat Cards ── */
 .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #fff;
+    border-radius: 16px;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    border: 1.5px solid #f0f3f8;
+    display: flex; align-items: center; gap: .9rem;
     height: 100%;
+    transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.09); }
+.stat-icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+}
+.stat-num { font-size: 1.35rem; font-weight: 800; line-height: 1; }
+.stat-lbl {
+    font-size: .68rem; color: #94a3b8; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .04em; margin-top: .18rem;
 }
 
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+/* ── Filter Bar ── */
+.filter-bar {
+    background: #fff;
+    border-radius: 14px;
+    padding: .85rem 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    border: 1.5px solid #f0f3f8;
+    display: flex; gap: .6rem; flex-wrap: wrap; align-items: center;
+    margin-bottom: 1.2rem;
 }
+.filter-search { position: relative; flex: 1; min-width: 180px; }
+.filter-search input  { padding-left: 2.2rem; }
+.filter-search .fs-ico {
+    position: absolute; left: .75rem; top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8; pointer-events: none; font-size: .82rem;
+}
+.tab-pill {
+    padding: .28rem .8rem;
+    border-radius: 20px; font-size: .72rem; font-weight: 600;
+    border: 1.5px solid #e2e8f0; background: #fff;
+    cursor: pointer; transition: all .15s; color: #64748b;
+    white-space: nowrap;
+}
+.tab-pill:hover  { border-color: #0d6efd; color: #0d6efd; }
+.tab-pill.active { background: #0d6efd; border-color: #0d6efd; color: #fff; }
 
-.stat-card-inner {
-    display: flex;
-    align-items: center;
+/* ── Grid ── */
+.wp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1rem;
 }
 
-.stat-icon {
-    width: 55px;
-    height: 55px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    flex-shrink: 0;
-}
-
-.stat-card-total .stat-icon {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-}
-
-.stat-card-success .stat-icon {
-    background: linear-gradient(135deg, #42a649, #2d7a32);
-}
-
-.stat-card-warning .stat-icon {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-}
-
-.stat-card-danger .stat-icon {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: #6c757d;
-    font-weight: 500;
-    margin-bottom: 0.3rem;
-    text-transform: uppercase;
-}
-
-.stat-value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #2969bf;
-}
-
-/* Filter Tabs */
-.filter-tabs {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.filter-tab {
-    background: white;
-    border: 2px solid #e9ecef;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #495057;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.filter-tab:hover {
-    border-color: #2969bf;
-    color: #2969bf;
-}
-
-.filter-tab.active {
-    background: #2969bf;
-    border-color: #2969bf;
-    color: white;
-}
-
-/* Workplaces Grid */
-.workplaces-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-}
-
+/* ── Workplace Card ── */
 .workplace-card {
-    background: white;
-    border-radius: 12px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    border: 1.5px solid #f0f3f8;
     overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.04);
-    position: relative;
-}
-
-.workplace-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-}
-
-.workplace-status-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 0.35rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.status-approved {
-    background: #d4edda;
-    color: #155724;
-}
-
-.status-pending {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.status-rejected {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.workplace-image {
-    height: 180px;
-    overflow: hidden;
-    position: relative;
-    background: #f0f0f0;
-}
-
-.workplace-image img {
-    width: 100%;
+    transition: transform .2s, box-shadow .2s;
+    display: flex; flex-direction: column;
     height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+}
+.workplace-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0,0,0,.1);
 }
 
-.workplace-card:hover .workplace-image img {
-    transform: scale(1.1);
+/* Cover */
+.wc-cover {
+    width: 100%; height: 88px;
+    background: linear-gradient(135deg,#e8f0fe,#f0e8fe);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; color: #0d6efd;
+}
+.wc-cover img { width:100%; height:100%; object-fit:cover; }
+.wc-cover-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,.3));
 }
 
-.workplace-type-badge {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(41, 105, 191, 0.9);
-    color: white;
-    padding: 0.35rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+/* Status Ribbon */
+.status-ribbon {
+    position: absolute; top: .5rem; right: .5rem;
+    display: inline-flex; align-items: center; gap: .22rem;
+    padding: .18rem .55rem; border-radius: 20px;
+    font-size: .65rem; font-weight: 700;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
 }
+.ribbon-approved { background: #d4edda; color: #155724; }
+.ribbon-pending  { background: #fff3cd; color: #856404; }
+.ribbon-rejected { background: #f8d7da; color: #721c24; }
 
-.workplace-content {
-    padding: 1.2rem;
+/* Header */
+.wc-header {
+    padding: 1rem 1.1rem .7rem;
+    display: flex; align-items: flex-start; gap: .85rem;
+    border-bottom: 1px solid #f5f7fa;
 }
-
-.workplace-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #2969bf;
-    margin-bottom: 0.8rem;
-    line-height: 1.3;
+.wc-logo {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: #e8f0fe;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; color: #0d6efd;
+    overflow: hidden; flex-shrink: 0;
+    border: 2px solid #e8f0fe;
 }
+.wc-logo img { width:100%; height:100%; object-fit:cover; border-radius:10px; }
+.wc-name { font-size: .88rem; font-weight: 700; color: #1a1a1a; line-height: 1.25; }
+.wc-city { font-size: .7rem; color: #94a3b8; margin-top: .15rem; }
 
-.workplace-info-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.6rem;
-    font-size: 0.85rem;
-    color: #555;
+/* Badges */
+.wp-badge {
+    display: inline-flex; align-items: center; gap: .2rem;
+    padding: .16rem .5rem; border-radius: 20px;
+    font-size: .64rem; font-weight: 700;
+    white-space: nowrap; margin: .1rem .04rem;
 }
+.badge-hospital        { background: #e8f4fd; color: #1a6fa8; }
+.badge-medical_centre  { background: #e8f8f0; color: #1a7a4a; }
+.badge-permanent  { background: #e8f0fe; color: #1a3fa8; }
+.badge-temporary  { background: #fef3e8; color: #a85a1a; }
+.badge-visiting   { background: #f3e8fe; color: #6a1aa8; }
 
-.workplace-info-item i {
-    width: 18px;
-    color: #2969bf;
-    font-size: 0.8rem;
+/* Body */
+.wc-body { padding: .8rem 1.1rem; flex: 1; }
+.wc-meta {
+    font-size: .73rem; color: #555;
+    display: flex; align-items: flex-start;
+    gap: .4rem; margin-top: .42rem; line-height: 1.4;
 }
+.wc-meta i { color: #94a3b8; width: 14px; flex-shrink: 0; margin-top: .1rem; }
 
-.workplace-actions {
-    padding: 0 1.2rem 1.2rem;
-    display: flex;
-    gap: 0.5rem;
+/* Notice Strip */
+.wc-notice {
+    border-radius: 9px; padding: .5rem .75rem;
+    font-size: .71rem; font-weight: 500;
+    display: flex; align-items: flex-start; gap: .4rem;
+    margin-top: .7rem; line-height: 1.4;
 }
+.notice-pending  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.notice-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.notice-approved { background: #f0fdf4; color: #14532d; border: 1px solid #bbf7d0; }
 
-.workplace-actions .btn {
-    flex: 1;
-    font-size: 0.8rem;
-    padding: 0.5rem;
+/* Footer */
+.wc-footer {
+    padding: .75rem 1.1rem;
+    border-top: 1px solid #f5f7fa;
+    display: flex; gap: .4rem;
+    justify-content: flex-end; flex-wrap: wrap;
 }
 
 /* Empty State */
 .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 12px;
+    text-align: center; padding: 4.5rem 1rem;
+    grid-column: 1 / -1;
+}
+.es-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #f0f5ff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem; color: #0d6efd;
+    margin: 0 auto .85rem;
+}
+.empty-state h6 { font-size: .9rem; font-weight: 700; color: #1a1a1a; margin-bottom: .3rem; }
+.empty-state p  { font-size: .78rem; color: #94a3b8; margin: 0; }
+
+/* Delete Modal */
+.del-modal-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: #fef2f2;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; color: #dc3545;
+    margin: 0 auto 1rem;
 }
 
-.empty-state i {
-    font-size: 4rem;
-    color: #dee2e6;
-    margin-bottom: 1rem;
-}
-
-.empty-state h4 {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #495057;
-    margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-    color: #6c757d;
-    margin-bottom: 1.5rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .workplaces-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .filter-tabs {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-    }
+@media (max-width: 576px) {
+    .wp-grid { grid-template-columns: 1fr; }
+    .stat-num { font-size: 1.1rem; }
 }
 </style>
 @endpush
 
+@section('content')
+<div class="wp-page">
+
+    {{-- ══ Alerts ══ --}}
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show"
+         style="border-radius:12px;font-size:.82rem" role="alert">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show"
+         style="border-radius:12px;font-size:.82rem" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
+    {{-- ══ Page Header ══ --}}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h5 class="mb-0" style="font-weight:800;color:#1a1a1a">
+                <i class="fas fa-hospital-alt me-2 text-primary"></i>My Workplaces
+            </h5>
+            <div style="font-size:.74rem;color:#94a3b8;margin-top:.15rem">
+                Hospitals &amp; Medical Centres you are affiliated with
+            </div>
+        </div>
+        <a href="{{ route('doctor.workplaces.create') }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i>Add Workplace
+        </a>
+    </div>
+
+    {{-- ══ Stats Row ══ --}}
+    <div class="row g-3 mb-3">
+        @foreach([
+            ['Total',        $total,          '#0d6efd', 'fa-building',       'linear-gradient(135deg,#0d6efd22,#0d6efd55)'],
+            ['Approved',     $approved,       '#198754', 'fa-check-circle',   'linear-gradient(135deg,#19875422,#19875455)'],
+            ['Pending',      $pending,        '#fd7e14', 'fa-clock',          'linear-gradient(135deg,#fd7e1422,#fd7e1455)'],
+            ['Rejected',     $rejected,       '#dc3545', 'fa-times-circle',   'linear-gradient(135deg,#dc354522,#dc354555)'],
+            ['Hospitals',    $hospitals,      '#1a6fa8', 'fa-hospital',       'linear-gradient(135deg,#1a6fa822,#1a6fa855)'],
+            ['Med. Centres', $medicalCentres, '#1a7a4a', 'fa-clinic-medical', 'linear-gradient(135deg,#1a7a4a22,#1a7a4a55)'],
+        ] as [$lbl, $val, $clr, $ico, $bg])
+        <div class="col-6 col-sm-4 col-md-2">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:{{ $bg }}">
+                    <i class="fas {{ $ico }}" style="color:{{ $clr }}"></i>
+                </div>
+                <div>
+                    <div class="stat-num" style="color:{{ $clr }}">{{ $val }}</div>
+                    <div class="stat-lbl">{{ $lbl }}</div>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+
+    {{-- ══ Filter Bar ══ --}}
+    <div class="filter-bar">
+
+        {{-- Search --}}
+        <div class="filter-search">
+            <i class="fas fa-search fs-ico"></i>
+            <input type="text" id="wpSearch"
+                   class="form-control form-control-sm"
+                   placeholder="Search by name or city…">
+        </div>
+
+        {{-- Status Pills --}}
+        <div class="d-flex gap-1 flex-wrap">
+            @foreach([
+                ['all',      'All'],
+                ['approved', 'Approved'],
+                ['pending',  'Pending'],
+                ['rejected', 'Rejected'],
+            ] as [$val, $lbl])
+            <button type="button"
+                    class="tab-pill {{ $val === 'all' ? 'active' : '' }}"
+                    data-filter="{{ $val }}">
+                {{ $lbl }}
+            </button>
+            @endforeach
+        </div>
+
+        {{-- Type Pills --}}
+        <div class="d-flex gap-1 flex-wrap">
+            @foreach([
+                ['all',            'All Types',    'fa-layer-group'],
+                ['hospital',       'Hospital',     'fa-hospital'],
+                ['medical_centre', 'Med. Centre',  'fa-clinic-medical'],
+            ] as [$val, $lbl, $ico])
+            <button type="button"
+                    class="tab-pill {{ $val === 'all' ? 'active' : '' }}"
+                    data-type="{{ $val }}">
+                <i class="fas {{ $ico }} me-1"></i>{{ $lbl }}
+            </button>
+            @endforeach
+        </div>
+
+        <div style="margin-left:auto;font-size:.72rem;color:#94a3b8;white-space:nowrap">
+            Showing
+            <strong id="visibleCount">{{ $workplaces->count() }}</strong>
+            of {{ $workplaces->count() }}
+        </div>
+
+    </div>
+
+    {{-- ══ Workplace Grid ══ --}}
+    <div class="wp-grid" id="wpGrid">
+
+        @forelse($workplaces as $wp)
+        @php
+            $place    = $wp->place;
+            $isHosp   = $wp->workplace_type === 'hospital';
+            $typeIcon = $isHosp ? 'fa-hospital' : 'fa-clinic-medical';
+            $typeLbl  = $isHosp ? 'Hospital'    : 'Medical Centre';
+        @endphp
+
+        <div class="workplace-card"
+             data-name="{{ strtolower($place->name ?? '') }}"
+             data-city="{{ strtolower($place->city ?? '') }}"
+             data-status="{{ $wp->status }}"
+             data-type="{{ $wp->workplace_type }}">
+
+            {{-- Cover --}}
+            <div class="wc-cover">
+                @if($place && $place->profile_image)
+                    <img src="{{ asset('storage/'.$place->profile_image) }}"
+                         alt="{{ $place->name ?? '' }}"
+                         onerror="this.style.display='none'">
+                    <div class="wc-cover-overlay"></div>
+                @else
+                    <i class="fas {{ $typeIcon }}"></i>
+                @endif
+
+                <span class="status-ribbon ribbon-{{ $wp->status }}">
+                    <i class="fas fa-{{
+                        $wp->status === 'approved' ? 'check-circle' :
+                        ($wp->status === 'pending'  ? 'clock'        : 'times-circle')
+                    }}"></i>
+                    {{ ucfirst($wp->status) }}
+                </span>
+            </div>
+
+            {{-- Header --}}
+            <div class="wc-header">
+                <div class="wc-logo">
+                    @if($place && $place->profile_image)
+                        <img src="{{ asset('storage/'.$place->profile_image) }}"
+                             alt="{{ $place->name ?? '' }}"
+                             onerror="this.parentElement.innerHTML=
+                                 '<i class=\'fas {{ $typeIcon }}\'></i>'">
+                    @else
+                        <i class="fas {{ $typeIcon }}"></i>
+                    @endif
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="wc-name">
+                        {{ $place->name ?? 'Workplace #'.$wp->workplace_id }}
+                    </div>
+                    @if($place && $place->city)
+                    <div class="wc-city">
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ $place->city }}
+                    </div>
+                    @endif
+                    <div class="mt-1">
+                        <span class="wp-badge badge-{{ $wp->workplace_type }}">
+                            <i class="fas {{ $typeIcon }}"></i>{{ $typeLbl }}
+                        </span>
+                        <span class="wp-badge badge-{{ $wp->employment_type }}">
+                            <i class="fas fa-briefcase"></i>{{ ucfirst($wp->employment_type) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Body --}}
+            <div class="wc-body">
+
+                @if($place && $place->address)
+                <div class="wc-meta">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ Str::limit($place->address, 55) }}</span>
+                </div>
+                @endif
+
+                @if($place && $place->phone)
+                <div class="wc-meta">
+                    <i class="fas fa-phone"></i>
+                    <span>{{ $place->phone }}</span>
+                </div>
+                @endif
+
+                <div class="wc-meta">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>
+                        Added {{ \Carbon\Carbon::parse($wp->created_at)->format('d M Y') }}
+                    </span>
+                </div>
+
+                @if($wp->approved_at)
+                <div class="wc-meta">
+                    <i class="fas fa-check-double"></i>
+                    <span>
+                        Approved {{ \Carbon\Carbon::parse($wp->approved_at)->format('d M Y') }}
+                    </span>
+                </div>
+                @endif
+
+                {{-- Notice --}}
+                @if($wp->status === 'pending')
+                <div class="wc-notice notice-pending">
+                    <i class="fas fa-hourglass-half mt-1 flex-shrink-0"></i>
+                    <span>
+                        Awaiting admin review. You can edit the employment type
+                        while the request is pending.
+                    </span>
+                </div>
+                @elseif($wp->status === 'rejected')
+                <div class="wc-notice notice-rejected">
+                    <i class="fas fa-times-circle mt-1 flex-shrink-0"></i>
+                    <span>
+                        This request was rejected by admin.
+                        Remove it and resubmit if needed.
+                    </span>
+                </div>
+                @elseif($wp->status === 'approved')
+                <div class="wc-notice notice-approved">
+                    <i class="fas fa-check-circle mt-1 flex-shrink-0"></i>
+                    <span>
+                        Active affiliation. You can now create
+                        schedules for this workplace.
+                    </span>
+                </div>
+                @endif
+
+            </div>
+
+            {{-- Footer ── Actions based on status ── --}}
+            <div class="wc-footer">
+
+                @if($wp->status === 'pending')
+                    {{-- Edit employment type --}}
+                    <a href="{{ route('doctor.workplaces.edit', $wp->id) }}"
+                       class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    {{-- Remove --}}
+                    <button type="button"
+                            class="btn btn-danger btn-sm btn-delete"
+                            data-id="{{ $wp->id }}"
+                            data-name="{{ $place->name ?? 'this workplace' }}">
+                        <i class="fas fa-trash me-1"></i>Remove
+                    </button>
+
+                @elseif($wp->status === 'rejected')
+                    {{-- Remove only --}}
+                    <button type="button"
+                            class="btn btn-danger btn-sm btn-delete"
+                            data-id="{{ $wp->id }}"
+                            data-name="{{ $place->name ?? 'this workplace' }}">
+                        <i class="fas fa-trash me-1"></i>Remove
+                    </button>
+
+                @elseif($wp->status === 'approved')
+                    {{-- Schedules shortcut --}}
+                    @if(\Illuminate\Support\Facades\Route::has('doctor.schedules.index'))
+                    <a href="{{ route('doctor.schedules.index', ['workplace_id' => $wp->id]) }}"
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-calendar-alt me-1"></i>Schedules
+                    </a>
+                    @endif
+                    {{-- Cannot delete approved --}}
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            disabled
+                            title="Contact admin to remove approved workplaces">
+                        <i class="fas fa-lock me-1"></i>Locked
+                    </button>
+                @endif
+
+            </div>
+
+        </div>{{-- /.workplace-card --}}
+        @empty
+
+        {{-- ── No workplaces at all ── --}}
+        <div class="empty-state">
+            <div class="es-icon">
+                <i class="fas fa-hospital-alt"></i>
+            </div>
+            <h6>No workplaces yet</h6>
+            <p>You haven't added any hospital or medical centre affiliation.</p>
+            <a href="{{ route('doctor.workplaces.create') }}"
+               class="btn btn-primary btn-sm mt-2">
+                <i class="fas fa-plus me-1"></i>Add Your First Workplace
+            </a>
+        </div>
+
+        @endforelse
+
+    </div>{{-- /#wpGrid --}}
+
+</div>{{-- /.wp-page --}}
+
+{{-- ══════════════════════════════════════
+     DELETE MODAL
+══════════════════════════════════════ --}}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content"
+             style="border-radius:18px;border:none;
+                    box-shadow:0 20px 60px rgba(0,0,0,.15)">
+            <div class="modal-body text-center p-4">
+                <div class="del-modal-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h6 class="fw-bold mb-1" style="font-size:.95rem">Remove Workplace?</h6>
+                <p class="text-muted mb-3" style="font-size:.78rem" id="deleteModalText">
+                    Are you sure?
+                </p>
+                <form id="deleteForm" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button"
+                                class="btn btn-secondary btn-sm"
+                                data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i>Remove
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Filter functionality
-    const filterTabs = document.querySelectorAll('.filter-tab');
-    const workplaceCards = document.querySelectorAll('.workplace-card');
+document.addEventListener('DOMContentLoaded', function () {
 
-    filterTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Remove active class from all tabs
-            filterTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
-            this.classList.add('active');
+    // ══════════════════════════════════════════════════
+    // DELETE MODAL
+    // ══════════════════════════════════════════════════
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const deleteForm  = document.getElementById('deleteForm');
+    const deleteText  = document.getElementById('deleteModalText');
 
-            const filter = this.dataset.filter;
-
-            workplaceCards.forEach(card => {
-                if (filter === 'all') {
-                    card.style.display = 'block';
-                } else {
-                    const type = card.dataset.type;
-                    const status = card.dataset.status;
-
-                    if (filter === type || filter === status) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                }
-            });
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id   = this.dataset.id;
+            const name = this.dataset.name;
+            deleteText.textContent =
+                'Are you sure you want to remove "' + name + '"?';
+            deleteForm.action = '/doctor/workplaces/' + id;
+            deleteModal.show();
         });
     });
+
+    // ══════════════════════════════════════════════════
+    // LIVE FILTER
+    // ══════════════════════════════════════════════════
+    const cards        = document.querySelectorAll('.workplace-card');
+    const searchInput  = document.getElementById('wpSearch');
+    const statusPills  = document.querySelectorAll('[data-filter]');
+    const typePills    = document.querySelectorAll('[data-type]');
+    const visibleCount = document.getElementById('visibleCount');
+    const wpGrid       = document.getElementById('wpGrid');
+
+    let activeStatus = 'all';
+    let activeType   = 'all';
+    let searchQuery  = '';
+
+    function applyFilters() {
+        let visible = 0;
+
+        cards.forEach(card => {
+            const name   = (card.dataset.name   || '');
+            const city   = (card.dataset.city   || '');
+            const status =  card.dataset.status  || '';
+            const type   =  card.dataset.type    || '';
+
+            const matchSearch =
+                !searchQuery ||
+                name.includes(searchQuery) ||
+                city.includes(searchQuery);
+
+            const matchStatus =
+                activeStatus === 'all' || status === activeStatus;
+
+            const matchType =
+                activeType === 'all' || type === activeType;
+
+            const show = matchSearch && matchStatus && matchType;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (visibleCount) visibleCount.textContent = visible;
+
+        // Dynamic empty state
+        let emptyEl = wpGrid.querySelector('.wp-filter-empty');
+        if (visible === 0 && cards.length > 0) {
+            if (!emptyEl) {
+                emptyEl = document.createElement('div');
+                emptyEl.className = 'empty-state wp-filter-empty';
+                emptyEl.innerHTML = `
+                    <div class="es-icon">
+                        <i class="fas fa-filter"></i>
+                    </div>
+                    <h6>No results</h6>
+                    <p>No workplaces match your current filter.</p>`;
+                wpGrid.appendChild(emptyEl);
+            }
+            emptyEl.style.display = '';
+        } else if (emptyEl) {
+            emptyEl.style.display = 'none';
+        }
+    }
+
+    // Status pills
+    statusPills.forEach(pill => {
+        pill.addEventListener('click', function () {
+            statusPills.forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            activeStatus = this.dataset.filter;
+            applyFilters();
+        });
+    });
+
+    // Type pills
+    typePills.forEach(pill => {
+        pill.addEventListener('click', function () {
+            typePills.forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            activeType = this.dataset.type;
+            applyFilters();
+        });
+    });
+
+    // Search
+    searchInput.addEventListener('input', function () {
+        searchQuery = this.value.trim().toLowerCase();
+        applyFilters();
+    });
+
 });
 </script>
 @endpush

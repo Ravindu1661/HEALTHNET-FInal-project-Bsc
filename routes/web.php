@@ -1004,114 +1004,120 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
 
 
 
-    /*
-|--------------------------------------------------------------------------
-| Doctor Routes (Require Authentication + Verified Email)
-|--------------------------------------------------------------------------
-*/
-    // Route::prefix('doctor')->name('doctor.')->middleware(['auth', 'verified', 'doctor.only'])->group(function () {
-        Route::prefix('doctor')->name('doctor.')->middleware(['auth'])->group(function () {
-        // Dashboard
-        Route::get('/dashboard', [DoctorDashboardController::class, 'index'])->name('dashboard');
+   Route::prefix('doctor')->name('doctor.')->middleware(['auth'])->group(function () {
 
-        // Dashboard Stats API
-        Route::get('/dashboard/stats', [DoctorDashboardController::class, 'getStats'])->name('dashboard.stats');
+    // ══════════════════════════════════════════
+    //  DASHBOARD
+    // ══════════════════════════════════════════
+    Route::get('dashboard', [DoctorDashboardController::class, 'index'])
+         ->name('dashboard');
 
-        // Today's Appointments API
-        Route::get('/appointments/today', [DoctorDashboardController::class, 'getTodayAppointments'])->name('appointments.today');
+    Route::get('dashboard/stats', [DoctorDashboardController::class, 'getStats'])
+         ->name('dashboard.stats');
 
-        // Recent Patients API
-        Route::get('/patients/recent', [DoctorDashboardController::class, 'getRecentPatients'])->name('patients.recent');
+    Route::get('appointments/today', [DoctorDashboardController::class, 'getTodayAppointments'])
+         ->name('appointments.today');
 
-        // Recent Reviews API
-        Route::get('/reviews/recent', [DoctorDashboardController::class, 'getRecentReviews'])->name('reviews.recent');
+    Route::get('patients/recent', [DoctorDashboardController::class, 'getRecentPatients'])
+         ->name('patients.recent');
 
-        // ============================================
-        // APPOINTMENTS MANAGEMENT
-        // ============================================
-        Route::prefix('appointments')->name('appointments.')->group(function () {
-            Route::get('/', [DoctorAppointmentController::class, 'index'])->name('index');
-            Route::get('/{id}', [DoctorAppointmentController::class, 'show'])->name('show');
-            Route::post('/{id}/confirm', [DoctorAppointmentController::class, 'confirm'])->name('confirm');
-            Route::post('/{id}/cancel', [DoctorAppointmentController::class, 'cancel'])->name('cancel');
-            Route::post('/{id}/complete', [DoctorAppointmentController::class, 'complete'])->name('complete');
-            Route::post('/{id}/reschedule', [DoctorAppointmentController::class, 'reschedule'])->name('reschedule');
-            Route::post('/{id}/add-notes', [DoctorAppointmentController::class, 'addNotes'])->name('add-notes');
-        });
+    Route::get('reviews/recent', [DoctorDashboardController::class, 'getRecentReviews'])
+         ->name('reviews.recent');
 
-        // ============================================
-        // SCHEDULE MANAGEMENT
-        // ============================================
-        Route::prefix('schedule')->name('schedule.')->group(function () {
-            Route::get('/', [DoctorScheduleController::class, 'index'])->name('index');
-            Route::get('/create', [DoctorScheduleController::class, 'create'])->name('create');
-            Route::post('/', [DoctorScheduleController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [DoctorScheduleController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [DoctorScheduleController::class, 'update'])->name('update');
-            Route::delete('/{id}', [DoctorScheduleController::class, 'destroy'])->name('destroy');
-            Route::post('/{id}/toggle-status', [DoctorScheduleController::class, 'toggleStatus'])->name('toggle-status');
-        });
-
-        // ============================================
-        // PATIENTS MANAGEMENT
-        // ============================================
-        Route::prefix('patients')->name('patients.')->group(function () {
-            Route::get('/', [DoctorPatientController::class, 'index'])->name('index');
-            Route::get('/{id}', [DoctorPatientController::class, 'show'])->name('show');
-            Route::get('/{id}/history', [DoctorPatientController::class, 'history'])->name('history');
-            Route::post('/{id}/add-prescription', [DoctorPatientController::class, 'addPrescription'])->name('add-prescription');
-            Route::post('/{id}/add-lab-request', [DoctorPatientController::class, 'addLabRequest'])->name('add-lab-request');
-        });
-
-        // ============================================
-        // WORKPLACES MANAGEMENT
-        // ============================================
-        Route::prefix('workplaces')->name('workplaces.')->group(function () {
-            Route::get('/', [DoctorWorkplaceController::class, 'index'])->name('index');
-            Route::get('/create', [DoctorWorkplaceController::class, 'create'])->name('create');
-            Route::post('/', [DoctorWorkplaceController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [DoctorWorkplaceController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [DoctorWorkplaceController::class, 'update'])->name('update');
-            Route::delete('/{id}', [DoctorWorkplaceController::class, 'destroy'])->name('destroy');
-        });
-
-        // ============================================
-        // EARNINGS & REPORTS
-        // ============================================
-        Route::prefix('earnings')->name('earnings.')->group(function () {
-            Route::get('/', [DoctorEarningsController::class, 'index'])->name('index');
-            Route::get('/export', [DoctorEarningsController::class, 'export'])->name('export');
-            Route::get('/statistics', [DoctorEarningsController::class, 'statistics'])->name('statistics');
-        });
-
-        // ============================================
-        // REVIEWS & RATINGS
-        // ============================================
-        Route::prefix('reviews')->name('reviews.')->group(function () {
-            Route::get('/', [DoctorReviewController::class, 'index'])->name('index');
-            Route::get('/{id}', [DoctorReviewController::class, 'show'])->name('show');
-            Route::post('/{id}/reply', [DoctorReviewController::class, 'reply'])->name('reply');
-        });
-
-        // ============================================
-        // NOTIFICATIONS
-        // ============================================
-        Route::get('/notifications', [DoctorNotificationController::class, 'index'])->name('notifications');
-        Route::post('/notifications/{id}/read', [DoctorNotificationController::class, 'markAsRead'])->name('notifications.read');
-        Route::post('/notifications/mark-all-read', [DoctorNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
-        Route::get('/notifications/count', [DoctorNotificationController::class, 'getUnreadCount'])->name('notifications.count');
-
-        // ============================================
-        // PROFILE & SETTINGS
-        // ============================================
-        Route::get('/profile/edit', [DoctorProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/profile/update', [DoctorProfileController::class, 'update'])->name('profile.update');
-        Route::post('/profile/update-image', [DoctorProfileController::class, 'updateImage'])->name('profile.update-image');
-        Route::post('/profile/update-password', [DoctorProfileController::class, 'updatePassword'])->name('profile.update-password');
-
-        Route::get('/settings', [DoctorSettingsController::class, 'index'])->name('settings');
-        Route::put('/settings/update', [DoctorSettingsController::class, 'update'])->name('settings.update');
+    // ══════════════════════════════════════════
+    //  APPOINTMENTS MANAGEMENT
+    // ══════════════════════════════════════════
+    Route::prefix('appointments')->name('appointments.')->group(function () {
+        Route::get('/',                       [DoctorAppointmentController::class, 'index'])      ->name('index');
+        Route::get('{id}',                    [DoctorAppointmentController::class, 'show'])       ->name('show');
+        Route::post('{id}/confirm',           [DoctorAppointmentController::class, 'confirm'])    ->name('confirm');
+        Route::post('{id}/cancel',            [DoctorAppointmentController::class, 'cancel'])     ->name('cancel');
+        Route::post('{id}/complete',          [DoctorAppointmentController::class, 'complete'])   ->name('complete');
+        Route::post('{id}/reschedule',        [DoctorAppointmentController::class, 'reschedule']) ->name('reschedule');
+        Route::post('{id}/add-notes',         [DoctorAppointmentController::class, 'addNotes'])   ->name('add-notes');
     });
+
+    // ══════════════════════════════════════════
+    //  SCHEDULE MANAGEMENT
+    // ══════════════════════════════════════════
+    Route::prefix('schedule')->name('schedule.')->group(function () {
+        Route::get('/',                       [DoctorScheduleController::class, 'index'])        ->name('index');
+        Route::get('create',                  [DoctorScheduleController::class, 'create'])       ->name('create');
+        Route::post('/',                      [DoctorScheduleController::class, 'store'])        ->name('store');
+        Route::get('{id}/edit',               [DoctorScheduleController::class, 'edit'])         ->name('edit');
+        Route::put('{id}',                    [DoctorScheduleController::class, 'update'])       ->name('update');
+        Route::delete('{id}',                 [DoctorScheduleController::class, 'destroy'])      ->name('destroy');
+        Route::post('{id}/toggle-status',     [DoctorScheduleController::class, 'toggleStatus'])->name('toggle-status');
+    });
+
+    // ══════════════════════════════════════════
+    //  PATIENTS MANAGEMENT
+    // ══════════════════════════════════════════
+    Route::prefix('patients')->name('patients.')->group(function () {
+        Route::get('/',                       [DoctorPatientController::class, 'index'])            ->name('index');
+        Route::get('{id}',                    [DoctorPatientController::class, 'show'])             ->name('show');
+        Route::get('{id}/history',            [DoctorPatientController::class, 'history'])          ->name('history');
+        Route::post('{id}/add-prescription',  [DoctorPatientController::class, 'addPrescription']) ->name('add-prescription');
+        Route::post('{id}/add-lab-request',   [DoctorPatientController::class, 'addLabRequest'])   ->name('add-lab-request');
+    });
+
+    // ══════════════════════════════════════════
+    //  WORKPLACES MANAGEMENT
+    // ══════════════════════════════════════════
+    Route::prefix('workplaces')->name('workplaces.')->group(function () {
+        Route::get('/',                       [DoctorWorkplaceController::class, 'index'])   ->name('index');
+        Route::get('create',                  [DoctorWorkplaceController::class, 'create'])  ->name('create');
+        Route::post('/',                      [DoctorWorkplaceController::class, 'store'])   ->name('store');
+        Route::get('{id}/edit',               [DoctorWorkplaceController::class, 'edit'])    ->name('edit');
+        Route::put('{id}',                    [DoctorWorkplaceController::class, 'update'])  ->name('update');
+        Route::delete('{id}',                 [DoctorWorkplaceController::class, 'destroy']) ->name('destroy');
+    });
+
+    // ══════════════════════════════════════════
+    //  EARNINGS & REPORTS
+    // ══════════════════════════════════════════
+    Route::prefix('earnings')->name('earnings.')->group(function () {
+        Route::get('/',                       [DoctorEarningsController::class, 'index'])      ->name('index');
+        Route::get('export',                  [DoctorEarningsController::class, 'export'])     ->name('export');
+        Route::get('statistics',              [DoctorEarningsController::class, 'statistics']) ->name('statistics');
+    });
+
+    // ══════════════════════════════════════════
+    //  REVIEWS & RATINGS
+    // ══════════════════════════════════════════
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/',                       [DoctorReviewController::class, 'index']) ->name('index');
+        Route::get('{id}',                    [DoctorReviewController::class, 'show'])  ->name('show');
+        Route::post('{id}/reply',             [DoctorReviewController::class, 'reply']) ->name('reply');
+    });
+
+    // ══════════════════════════════════════════
+    //  NOTIFICATIONS
+    // ══════════════════════════════════════════
+    Route::get('notifications',                      [DoctorNotificationController::class, 'index'])        ->name('notifications');
+    Route::post('notifications/{id}/read',           [DoctorNotificationController::class, 'markAsRead'])   ->name('notifications.read');
+    Route::post('notifications/mark-all-read',       [DoctorNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::get('notifications/count',                [DoctorNotificationController::class, 'getUnreadCount'])->name('notifications.count');
+    Route::post('notifications/resend-verification',[DoctorNotificationController::class, 'resendVerification'])->name('notifications.resend-verification');
+
+    // ══════════════════════════════════════════
+    //  PROFILE
+    // ══════════════════════════════════════════
+     Route::get ('profile',                  [DoctorProfileController::class, 'show'])            ->name('profile.show');
+    Route::get ('profile/edit',             [DoctorProfileController::class, 'edit'])            ->name('profile.edit');
+    Route::put ('profile/update',           [DoctorProfileController::class, 'update'])          ->name('profile.update');
+    Route::post('profile/document',         [DoctorProfileController::class, 'updateDocument'])  ->name('profile.document');
+    Route::post('profile/password',         [DoctorProfileController::class, 'changePassword'])  ->name('profile.password');
+    Route::delete('profile/image',          [DoctorProfileController::class, 'deleteProfileImage'])->name('profile.image.delete');
+    Route::get ('profile/overview',         [DoctorProfileController::class, 'accountOverview']) ->name('profile.overview');
+
+    // ══════════════════════════════════════════
+    //  SETTINGS
+    // ══════════════════════════════════════════
+    Route::get('settings',                           [DoctorSettingsController::class, 'index'])  ->name('settings');
+    Route::put('settings/update',                    [DoctorSettingsController::class, 'update']) ->name('settings.update');
+
+});
 
 
 

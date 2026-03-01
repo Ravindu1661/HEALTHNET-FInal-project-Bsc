@@ -3,453 +3,467 @@
 @section('title', 'Edit Workplace')
 @section('page-title', 'Edit Workplace')
 
+@push('styles')
+<style>
+/* ══════════════════════════════════════
+   EDIT WORKPLACE
+══════════════════════════════════════ */
+.edit-wrap { max-width: 700px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+/* ── Page Header ── */
+.page-header {
+    background: linear-gradient(135deg, #fd7e14, #e85d04);
+    border-radius: 16px; padding: 1.4rem 1.5rem;
+    color: #fff; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+}
+.ph-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: rgba(255,255,255,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+}
+.ph-title { font-size: 1.05rem; font-weight: 800; }
+.ph-sub   { font-size: .78rem; opacity: .82; margin-top: .18rem; }
+
+/* ── Form Card ── */
+.form-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    border: 1.5px solid #f0f3f8;
+    padding: 1.4rem;
+    margin-bottom: 1.2rem;
+}
+.form-sec-title {
+    font-size: .82rem; font-weight: 700; color: #1a1a1a;
+    padding-bottom: .65rem; border-bottom: 1px solid #f0f3f8;
+    margin-bottom: 1.1rem;
+    display: flex; align-items: center; gap: .4rem;
+}
+.form-sec-title i { color: #0d6efd; }
+
+/* ── Workplace Info Block (read-only) ── */
+.wp-info-block {
+    display: flex; align-items: flex-start; gap: 1rem;
+    background: #f8f9fb;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+}
+.wp-info-logo {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: #e8f0fe;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; color: #0d6efd;
+    overflow: hidden; flex-shrink: 0;
+    border: 2px solid #e8f0fe;
+}
+.wp-info-logo img {
+    width: 100%; height: 100%;
+    object-fit: cover; border-radius: 12px;
+}
+.wp-info-name { font-size: .92rem; font-weight: 700; color: #1a1a1a; }
+.wp-info-meta {
+    font-size: .73rem; color: #94a3b8;
+    display: flex; align-items: center; gap: .3rem;
+    margin-top: .25rem;
+}
+.wp-info-meta i { font-size: .68rem; }
+
+/* Badges */
+.wp-badge {
+    display: inline-flex; align-items: center; gap: .2rem;
+    padding: .17rem .55rem; border-radius: 20px;
+    font-size: .65rem; font-weight: 700;
+    white-space: nowrap; margin: .1rem .04rem;
+}
+.badge-hospital        { background: #e8f4fd; color: #1a6fa8; }
+.badge-medical_centre  { background: #e8f8f0; color: #1a7a4a; }
+.badge-pending         { background: #fff3cd; color: #856404; }
+
+/* Readonly Notice */
+.readonly-notice {
+    background: #f8f9fb;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .65rem .9rem;
+    font-size: .74rem; color: #64748b;
+    display: flex; align-items: flex-start; gap: .5rem;
+    margin-top: .8rem; line-height: 1.5;
+}
+.readonly-notice i { color: #94a3b8; flex-shrink: 0; margin-top: .1rem; }
+
+/* ── Employment Type Cards ── */
+.emp-cards { display: flex; gap: .7rem; flex-wrap: wrap; }
+.emp-card {
+    flex: 1; min-width: 130px;
+    border: 2px solid #e2e8f0; border-radius: 14px;
+    padding: 1rem .6rem; text-align: center;
+    cursor: pointer; transition: all .2s;
+    position: relative;
+}
+.emp-card:hover    { border-color: #0d6efd; background: #f8faff; }
+.emp-card.selected { border-color: #0d6efd; background: #f0f5ff; }
+.emp-check {
+    position: absolute; top: .5rem; right: .5rem;
+    color: #0d6efd; font-size: .82rem; display: none;
+}
+.emp-card.selected .emp-check { display: block; }
+.emp-ico { font-size: 1.4rem; margin-bottom: .3rem; }
+.emp-lbl { font-size: .78rem; font-weight: 700; color: #1a1a1a; }
+.emp-sub { font-size: .67rem; color: #94a3b8; margin-top: .15rem; }
+input.emp-radio { display: none; }
+
+/* ── Change Notice ── */
+.change-notice {
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    border-radius: 10px;
+    padding: .65rem .9rem;
+    font-size: .74rem; color: #92400e;
+    display: flex; align-items: flex-start; gap: .5rem;
+    margin-bottom: 1.2rem; line-height: 1.5;
+}
+.change-notice i { flex-shrink: 0; margin-top: .1rem; }
+
+/* ── Current Employment Display ── */
+.current-emp {
+    display: flex; align-items: center; gap: .6rem;
+    background: #f0f5ff;
+    border: 1.5px solid #0d6efd22;
+    border-radius: 10px;
+    padding: .6rem .85rem;
+    margin-bottom: .85rem;
+    font-size: .78rem; font-weight: 600; color: #1a3fa8;
+}
+.current-emp i { color: #0d6efd; }
+.current-emp span.lbl { color: #94a3b8; font-weight: 500; margin-right: .3rem; }
+
+@media (max-width: 576px) {
+    .emp-cards { gap: .4rem; }
+    .wp-info-block { flex-direction: column; }
+}
+</style>
+@endpush
+
 @section('content')
-<div class="edit-workplace-container">
-    {{-- Back Button --}}
-    <div class="mb-3">
-        <a href="{{ route('doctor.workplaces.index') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-2"></i>Back to Workplaces
+<div class="edit-wrap">
+
+    {{-- ══ Page Header ══ --}}
+    <div class="page-header">
+        <div class="ph-icon"><i class="fas fa-edit"></i></div>
+        <div>
+            <div class="ph-title">Edit Workplace</div>
+            <div class="ph-sub">
+                Only the employment type can be changed
+                while the request is still pending.
+            </div>
+        </div>
+        <a href="{{ route('doctor.workplaces.index') }}"
+           class="btn btn-sm ms-auto"
+           style="background:rgba(255,255,255,.2);color:#fff;
+                  border:1.5px solid rgba(255,255,255,.35)">
+            <i class="fas fa-arrow-left me-1"></i>Back
         </a>
     </div>
 
-    {{-- Page Header --}}
-    <div class="page-header-card mb-4">
-        <h4 class="page-heading">
-            <i class="fas fa-edit me-2"></i>
-            Edit Workplace
-        </h4>
-        <p class="page-subheading">Update your workplace association details</p>
+    {{-- ══ Alerts ══ --}}
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show"
+         style="border-radius:12px;font-size:.82rem" role="alert">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+    @if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show"
+         style="border-radius:12px;font-size:.8rem" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        @foreach($errors->all() as $err)<div>{{ $err }}</div>@endforeach
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
+    {{-- ══ Warning Notice ══ --}}
+    <div class="change-notice">
+        <i class="fas fa-info-circle"></i>
+        <span>
+            The <strong>workplace</strong> and its <strong>type</strong> cannot be changed
+            after submission. If you need a different workplace, please remove this request
+            from the list and submit a new one.
+        </span>
     </div>
 
-    {{-- Error Messages --}}
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show">
-            <strong><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</strong>
-            <ul class="mb-0 mt-2">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+    <form action="{{ route('doctor.workplaces.update', $workplace->id) }}"
+          method="POST" id="editForm">
+        @csrf
+        @method('PUT')
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+        {{-- ══════════════════════════════════════
+             WORKPLACE INFO (Read-only)
+        ══════════════════════════════════════ --}}
+        <div class="form-card">
+            <div class="form-sec-title">
+                <i class="fas fa-hospital-alt"></i>
+                Workplace
+                <span style="margin-left:auto;font-size:.68rem;
+                             color:#94a3b8;font-weight:400">
+                    Read-only
+                </span>
+            </div>
 
-    <div class="row">
-        {{-- Form Section --}}
-        <div class="col-lg-8">
-            <div class="form-card">
-                @php
-                    $workplaceData = null;
-                    $workplaceName = 'N/A';
-                    $workplaceAddress = 'N/A';
-                    $workplaceCity = 'N/A';
-                    $workplaceImage = asset('images/default-hospital.png');
+            @php
+                $isHosp   = $workplace->workplace_type === 'hospital';
+                $typeIcon = $isHosp ? 'fa-hospital' : 'fa-clinic-medical';
+                $typeLbl  = $isHosp ? 'Hospital' : 'Medical Centre';
+            @endphp
 
-                    if ($workplace->workplace_type == 'hospital' && $workplace->hospital) {
-                        $workplaceData = $workplace->hospital;
-                        $workplaceName = $workplaceData->name;
-                        $workplaceAddress = $workplaceData->address;
-                        $workplaceCity = $workplaceData->city;
-                        $workplaceImage = $workplaceData->image_url;
-                    } elseif ($workplace->workplace_type == 'medical_centre' && $workplace->medicalCentre) {
-                        $workplaceData = $workplace->medicalCentre;
-                        $workplaceName = $workplaceData->name;
-                        $workplaceAddress = $workplaceData->address;
-                        $workplaceCity = $workplaceData->city;
-                        $workplaceImage = $workplaceData->image_url;
-                    }
-                @endphp
+            <div class="wp-info-block">
 
-                {{-- Current Workplace Info --}}
-                <div class="current-workplace-card">
-                    <h5 class="mb-3">
-                        <i class="fas fa-building me-2 text-primary"></i>
-                        Current Workplace
-                    </h5>
-                    <div class="workplace-preview">
-                        <div class="workplace-preview-image">
-                            <img src="{{ $workplaceImage }}" alt="{{ $workplaceName }}">
-                        </div>
-                        <div class="workplace-preview-details">
-                            <h6>{{ $workplaceName }}</h6>
-                            <p>
-                                <span class="badge bg-info">
-                                    {{ ucfirst(str_replace('_', ' ', $workplace->workplace_type)) }}
-                                </span>
-                            </p>
-                            <p class="text-muted small mb-1">
-                                <i class="fas fa-map-marker-alt me-1"></i>
-                                {{ $workplaceCity }}
-                            </p>
-                            <p class="text-muted small mb-0">
-                                {{ $workplaceAddress }}
-                            </p>
-                        </div>
+                {{-- Logo --}}
+                <div class="wp-info-logo">
+                    @if($place && $place->profile_image)
+                        <img src="{{ asset('storage/'.$place->profile_image) }}"
+                             alt="{{ $place->name ?? '' }}"
+                             onerror="this.parentElement.innerHTML=
+                                 '<i class=\'fas {{ $typeIcon }}\'></i>'">
+                    @else
+                        <i class="fas {{ $typeIcon }}"></i>
+                    @endif
+                </div>
+
+                {{-- Info --}}
+                <div class="flex-grow-1">
+                    <div class="wp-info-name">
+                        {{ $place->name ?? 'Workplace #'.$workplace->workplace_id }}
+                    </div>
+
+                    @if($place && $place->city)
+                    <div class="wp-info-meta">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ $place->city }}
+                        @if($place->address)
+                            — {{ Str::limit($place->address, 45) }}
+                        @endif
+                    </div>
+                    @endif
+
+                    @if($place && $place->phone)
+                    <div class="wp-info-meta">
+                        <i class="fas fa-phone"></i>
+                        {{ $place->phone }}
+                    </div>
+                    @endif
+
+                    <div class="mt-2">
+                        {{-- Workplace Type --}}
+                        <span class="wp-badge badge-{{ $workplace->workplace_type }}">
+                            <i class="fas {{ $typeIcon }}"></i>
+                            {{ $typeLbl }}
+                        </span>
+                        {{-- Status --}}
+                        <span class="wp-badge badge-pending">
+                            <i class="fas fa-clock"></i>
+                            Pending Review
+                        </span>
                     </div>
                 </div>
 
-                {{-- Edit Form --}}
-                <form action="{{ route('doctor.workplaces.update', $workplace->id) }}" method="POST">
-                    @csrf
-                    @method('PUT')
+            </div>
 
-                    <div class="form-section">
-                        <h5 class="form-section-title">
-                            <i class="fas fa-briefcase me-2"></i>
-                            Update Employment Type
-                        </h5>
+            {{-- Readonly notice --}}
+            <div class="readonly-notice">
+                <i class="fas fa-lock"></i>
+                <span>
+                    Workplace details are locked after submission.
+                    Only the employment type below can be updated.
+                </span>
+            </div>
+        </div>
 
-                        <div class="employment-type-selector">
-                            <label class="employment-option" for="emp-permanent">
-                                <input type="radio"
-                                       name="employment_type"
-                                       id="emp-permanent"
-                                       value="permanent"
-                                       {{ $workplace->employment_type == 'permanent' ? 'checked' : '' }}
-                                       required>
-                                <div class="employment-option-content">
-                                    <i class="fas fa-user-tie"></i>
-                                    <span>Permanent</span>
-                                    <small class="text-muted">Full-time employment</small>
-                                </div>
-                            </label>
+        {{-- ══════════════════════════════════════
+             EMPLOYMENT TYPE
+        ══════════════════════════════════════ --}}
+        <div class="form-card">
+            <div class="form-sec-title">
+                <i class="fas fa-briefcase"></i>
+                Employment Type
+                <span style="margin-left:auto;font-size:.68rem;
+                             color:#94a3b8;font-weight:400">
+                    Select the appropriate type
+                </span>
+            </div>
 
-                            <label class="employment-option" for="emp-temporary">
-                                <input type="radio"
-                                       name="employment_type"
-                                       id="emp-temporary"
-                                       value="temporary"
-                                       {{ $workplace->employment_type == 'temporary' ? 'checked' : '' }}
-                                       required>
-                                <div class="employment-option-content">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span>Temporary</span>
-                                    <small class="text-muted">Fixed-term contract</small>
-                                </div>
-                            </label>
+            {{-- Current value display --}}
+            <div class="current-emp">
+                <i class="fas fa-briefcase"></i>
+                <span class="lbl">Current:</span>
+                {{ ucfirst($workplace->employment_type) }}
+                <i class="fas fa-arrow-right mx-1" style="font-size:.65rem;color:#94a3b8"></i>
+                <span style="color:#555;font-weight:500">Select new below</span>
+            </div>
 
-                            <label class="employment-option" for="emp-visiting">
-                                <input type="radio"
-                                       name="employment_type"
-                                       id="emp-visiting"
-                                       value="visiting"
-                                       {{ $workplace->employment_type == 'visiting' ? 'checked' : '' }}
-                                       required>
-                                <div class="employment-option-content">
-                                    <i class="fas fa-user-clock"></i>
-                                    <span>Visiting</span>
-                                    <small class="text-muted">Consultant/visiting doctor</small>
-                                </div>
-                            </label>
-                        </div>
+            <div class="emp-cards">
+                @foreach([
+                    ['permanent', 'fa-id-badge',       '#0d6efd', 'Permanent', 'Full-time employee'],
+                    ['temporary', 'fa-hourglass-half',  '#fd7e14', 'Temporary', 'Fixed-term contract'],
+                    ['visiting',  'fa-car-side',        '#6f42c1', 'Visiting',  'Regular visit basis'],
+                ] as [$val, $ico, $clr, $lbl, $sub])
+                @php
+                    $isSel = old('employment_type', $workplace->employment_type) === $val;
+                @endphp
+                <label class="emp-card {{ $isSel ? 'selected' : '' }}"
+                       id="empCard-{{ $val }}">
+                    <input type="radio"
+                           name="employment_type"
+                           value="{{ $val }}"
+                           class="emp-radio"
+                           {{ $isSel ? 'checked' : '' }}>
+                    <i class="fas fa-check-circle emp-check"></i>
+                    <div class="emp-ico" style="color:{{ $clr }}">
+                        <i class="fas {{ $ico }}"></i>
                     </div>
+                    <div class="emp-lbl">{{ $lbl }}</div>
+                    <div class="emp-sub">{{ $sub }}</div>
+                </label>
+                @endforeach
+            </div>
 
-                    {{-- Submit Buttons --}}
-                    <div class="form-actions">
-                        <a href="{{ route('doctor.workplaces.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-2"></i>Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Update Workplace
+            @error('employment_type')
+            <div class="text-danger mt-2" style="font-size:.75rem">
+                <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
+            </div>
+            @enderror
+        </div>
+
+        {{-- ══ Submission Info ══ --}}
+        <div class="form-card" style="padding:1rem 1.2rem">
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div style="font-size:.68rem;color:#94a3b8;font-weight:600;
+                                text-transform:uppercase;letter-spacing:.04em">
+                        Request ID
+                    </div>
+                    <div style="font-size:.82rem;font-weight:700;color:#1a1a1a;margin-top:.2rem">
+                        #{{ $workplace->id }}
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div style="font-size:.68rem;color:#94a3b8;font-weight:600;
+                                text-transform:uppercase;letter-spacing:.04em">
+                        Submitted
+                    </div>
+                    <div style="font-size:.82rem;font-weight:700;color:#1a1a1a;margin-top:.2rem">
+                        {{ \Carbon\Carbon::parse($workplace->created_at)->format('d M Y') }}
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div style="font-size:.68rem;color:#94a3b8;font-weight:600;
+                                text-transform:uppercase;letter-spacing:.04em">
+                        Last Updated
+                    </div>
+                    <div style="font-size:.82rem;font-weight:700;color:#1a1a1a;margin-top:.2rem">
+                        {{ \Carbon\Carbon::parse($workplace->updated_at)->format('d M Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ══ Actions ══ --}}
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+            {{-- Delete shortcut --}}
+            <button type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    id="btnDeleteShortcut">
+                <i class="fas fa-trash me-1"></i>Remove This Request
+            </button>
+
+            <div class="d-flex gap-2">
+                <a href="{{ route('doctor.workplaces.index') }}"
+                   class="btn btn-secondary btn-sm">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-warning btn-sm"
+                        id="submitBtn">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+            </div>
+
+        </div>
+
+    </form>
+</div>
+
+{{-- ══════════════════════════════════════
+     DELETE CONFIRM MODAL
+══════════════════════════════════════ --}}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content"
+             style="border-radius:18px;border:none;
+                    box-shadow:0 20px 60px rgba(0,0,0,.15)">
+            <div class="modal-body text-center p-4">
+                <div style="width:64px;height:64px;border-radius:50%;
+                            background:#fef2f2;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:1.8rem;color:#dc3545;margin:0 auto 1rem">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h6 class="fw-bold mb-1" style="font-size:.95rem">
+                    Remove This Request?
+                </h6>
+                <p class="text-muted mb-3" style="font-size:.78rem">
+                    Are you sure you want to remove
+                    <strong>{{ $place->name ?? 'this workplace' }}</strong>?
+                    This action cannot be undone.
+                </p>
+                <form id="deleteForm"
+                      action="{{ route('doctor.workplaces.destroy', $workplace->id) }}"
+                      method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button"
+                                class="btn btn-secondary btn-sm"
+                                data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i>Remove
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        {{-- Info Sidebar --}}
-        <div class="col-lg-4">
-            {{-- Status Info --}}
-            <div class="status-card">
-                <h5>
-                    <i class="fas fa-info-circle me-2"></i>
-                    Status Information
-                </h5>
-                <div class="status-badge-large status-{{ $workplace->status }}">
-                    @if($workplace->status == 'approved')
-                        <i class="fas fa-check-circle"></i>
-                        <span>Approved</span>
-                    @elseif($workplace->status == 'pending')
-                        <i class="fas fa-clock"></i>
-                        <span>Pending Approval</span>
-                    @else
-                        <i class="fas fa-times-circle"></i>
-                        <span>Rejected</span>
-                    @endif
-                </div>
-
-                <div class="status-info mt-3">
-                    @if($workplace->status == 'pending')
-                        <p class="text-muted small">
-                            Your workplace association is pending admin approval. You can still edit the employment type.
-                        </p>
-                    @endif
-
-                    <p class="text-muted small mb-1">
-                        <strong>Added:</strong> {{ $workplace->created_at->format('M d, Y') }}
-                    </p>
-
-                    @if($workplace->approved_at)
-                        <p class="text-muted small mb-0">
-                            <strong>Approved:</strong> {{ $workplace->approved_at->format('M d, Y') }}
-                        </p>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Help Card --}}
-            <div class="help-card">
-                <h5><i class="fas fa-question-circle me-2"></i>Need Help?</h5>
-                <p class="small">You can only edit pending workplace associations.</p>
-                <p class="small mb-0">For approved workplaces, please contact admin support to make changes.</p>
             </div>
         </div>
     </div>
 </div>
 @endsection
 
-@push('styles')
-<style>
-.edit-workplace-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-}
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
-/* Page Header */
-.page-header-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
+    // ── Employment Type Cards ─────────────────────────
+    document.querySelectorAll('.emp-card').forEach(card => {
+        card.addEventListener('click', function () {
+            document.querySelectorAll('.emp-card')
+                .forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('.emp-radio').checked = true;
+        });
+    });
 
-.page-heading {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #2969bf;
-    margin-bottom: 0.3rem;
-}
+    // ── Delete Shortcut ──────────────────────────────
+    const deleteModal = new bootstrap.Modal(
+        document.getElementById('deleteModal')
+    );
+    document.getElementById('btnDeleteShortcut')
+        .addEventListener('click', function () {
+            deleteModal.show();
+        });
 
-.page-subheading {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin: 0;
-}
-
-/* Form Card */
-.form-card {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-/* Current Workplace Card */
-.current-workplace-card {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border: 2px solid #e9ecef;
-}
-
-.workplace-preview {
-    display: flex;
-    gap: 1.2rem;
-    align-items: center;
-}
-
-.workplace-preview-image {
-    width: 100px;
-    height: 100px;
-    border-radius: 12px;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 2px solid #2969bf;
-}
-
-.workplace-preview-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.workplace-preview-details h6 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #2969bf;
-    margin-bottom: 0.5rem;
-}
-
-/* Form Section */
-.form-section {
-    margin-bottom: 2rem;
-}
-
-.form-section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #2969bf;
-    margin-bottom: 1.5rem;
-}
-
-/* Employment Type Selector */
-.employment-type-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-}
-
-.employment-option {
-    cursor: pointer;
-}
-
-.employment-option input[type="radio"] {
-    display: none;
-}
-
-.employment-option-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 1.5rem 1rem;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-.employment-option:hover .employment-option-content {
-    border-color: #2969bf;
-    box-shadow: 0 3px 12px rgba(41, 105, 191, 0.1);
-}
-
-.employment-option input[type="radio"]:checked ~ .employment-option-content {
-    border-color: #2969bf;
-    background: rgba(41, 105, 191, 0.05);
-}
-
-.employment-option-content i {
-    font-size: 2.2rem;
-    color: #6c757d;
-}
-
-.employment-option input[type="radio"]:checked ~ .employment-option-content i {
-    color: #2969bf;
-}
-
-.employment-option-content span {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #495057;
-}
-
-.employment-option-content small {
-    font-size: 0.75rem;
-    text-align: center;
-}
-
-/* Form Actions */
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    padding-top: 2rem;
-    border-top: 2px solid #f0f0f0;
-}
-
-.form-actions .btn {
-    padding: 0.7rem 2rem;
-    font-weight: 600;
-}
-
-/* Status Card */
-.status-card,
-.help-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    margin-bottom: 1.5rem;
-}
-
-.status-card h5,
-.help-card h5 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #2969bf;
-    margin-bottom: 1rem;
-}
-
-.status-badge-large {
-    padding: 1rem;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-}
-
-.status-badge-large i {
-    font-size: 1.5rem;
-}
-
-.status-badge-large.status-approved {
-    background: #d4edda;
-    color: #155724;
-}
-
-.status-badge-large.status-pending {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.status-badge-large.status-rejected {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.status-info {
-    padding-top: 1rem;
-    border-top: 2px solid #f0f0f0;
-}
-
-.help-card p {
-    font-size: 0.85rem;
-    color: #6c757d;
-    line-height: 1.6;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .employment-type-selector {
-        grid-template-columns: 1fr;
-    }
-
-    .workplace-preview {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .form-actions {
-        flex-direction: column-reverse;
-    }
-
-    .form-actions .btn {
-        width: 100%;
-    }
-}
-</style>
+});
+</script>
 @endpush
-@endsection

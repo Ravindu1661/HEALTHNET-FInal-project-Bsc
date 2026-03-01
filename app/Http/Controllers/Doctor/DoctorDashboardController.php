@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Doctor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Doctor;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -10,212 +12,273 @@ use Carbon\Carbon;
 
 class DoctorDashboardController extends Controller
 {
-    /**
-     * Display the doctor dashboard
-     */
+    private function getDoctor()
+    {
+        return Doctor::where('user_id', Auth::id())->firstOrFail();
+    }
+
+    // ══════════════════════════════════════════
+    //  DASHBOARD INDEX
+    // ══════════════════════════════════════════
     public function index()
     {
-        $doctor = Auth::user()->doctor;
-        
-        return view('doctor.dashboard', compact('doctor'));
-    }
+        $doctor       = $this->getDoctor();
+        $today        = Carbon::today();
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth   = Carbon::now()->endOfMonth();
 
-    /**
-     * Get dashboard statistics
-     */
-    public function getStats(Request $request)
-    {
-        try {
-            $doctorId = Auth::user()->doctor->id;
-            $today = Carbon::today();
-            $startOfMonth = Carbon::now()->startOfMonth();
-            $endOfMonth = Carbon::now()->endOfMonth();
+        // ── Stats ──
+        $todayAppointments = DB::table('appointments')
+            ->where('doctor_id', $doctor->id)
+            ->whereDate('appointment_date', $today)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->count();
 
-            // Today's appointments count
-            $todayAppointments = DB::table('appointments')
-                ->where('doctor_id', $doctorId)
-                ->whereDate('appointment_date', $today)
-                ->whereIn('status', ['pending', 'confirmed'])
-                ->count();
+        $totalPatients = DB::table('appointments')
+            ->where('doctor_id', $doctor->id)
+            ->distinct('patient_id')
+            ->count('patient_id');
 
-            // Total patients (unique)
-            $totalPatients = DB::table('appointments')
-                ->where('doctor_id', $doctorId)
-                ->distinct('patient_id')
-                ->count('patient_id');
+        $monthlyEarnings = DB::table('appointments')
+            ->where('doctor_id', $doctor->id)
+            ->where('status', 'completed')
+            ->whereBetween('appointment_date', [$startOfMonth, $endOfMonth])
+            ->sum('consultation_fee');
 
-            // Monthly earnings
-            $monthlyEarnings = DB::table('appointments')
-                ->where('doctor_id', $doctorId)
-                ->where('status', 'completed')
-                ->whereBetween('appointment_date', [$startOfMonth, $endOfMonth])
-                ->sum('consultation_fee');
+        $avgRating = DB::table('ratings')
+            ->where('ratable_type', 'doctor')
+            ->where('ratable_id', $doctor->id)
+            ->avg('rating') ?? 0;
 
-            // Average rating
-            $avgRating = DB::table('doctor_reviews')
-                ->where('doctor_id', $doctorId)
-                ->avg('rating');
+        $pendingCount = DB::table('appointments')
+            ->where('doctor_id', $doctor->id)
+            ->where('status', 'pending')
+            ->count();
 
-            // Appointment statistics
-            $appointmentStats = [
-                'pending' => DB::table('appointments')
-                    ->where('doctor_id', $doctorId)
-                    ->where('status', 'pending')
-                    ->count(),
-                'confirmed' => DB::table('appointments')
-                    ->where('doctor_id', $doctorId)
-                    ->where('status', 'confirmed')
-                    ->count(),
-                'completed' => DB::table('appointments')
-                    ->where('doctor_id', $doctorId)
-                    ->where('status', 'completed')
-                    ->count(),
-                'cancelled' => DB::table('appointments')
-                    ->where('doctor_id', $doctorId)
-                    ->where('status', 'cancelled')
-                    ->count(),
+        // ── Today's Appointments List ──
+        // appointments table: workplace_type + workplace_id columns use කරනවා
+        $todayList = DB::table('appointments')
+            ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+            ->leftJoin('hospitals', function ($join) {
+                $join->on('appointments.workplace_id', '=', 'hospitals.id')
+                     ->where('appointments.workplace_type', '=', 'hospital');
+            })
+            ->leftJoin('medical_centres', function ($join) {
+                $join->on('appointments.workplace_id', '=', 'medical_centres.id')
+                     ->where('appointments.workplace_type', '=', 'medicalcentre');
+            })
+            ->where('appointments.doctor_id', $doctor->id)
+            ->whereDate('appointments.appointment_date', $today)
+            ->select(
+                'appointments.id',
+                'appointments.appointment_number',
+                'appointments.appointment_time as time',
+                'appointments.status',
+                'appointments.consultation_fee',
+                'appointments.workplace_type',
+                'appointments.workplace_id',
+                DB::raw("CONCAT(patients.first_name, ' ', patients.last_name) as patient_name"),
+                'patients.phone as patient_phone',
+                DB::raw("COALESCE(hospitals.name, medical_centres.name, 'Private Clinic') as location")
+            )
+            ->orderBy('appointments.appointment_time', 'asc')
+            ->get();
+
+        // ── Recent Patients ──
+        $recentPatients = DB::table('appointments')
+            ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+            ->where('appointments.doctor_id', $doctor->id)
+            ->select(
+                'patients.id',
+                DB::raw("CONCAT(patients.first_name, ' ', patients.last_name) as name"),
+                'patients.phone',
+                DB::raw('MAX(appointments.appointment_date) as last_visit'),
+                DB::raw('COUNT(appointments.id) as visit_count')
+            )
+            ->groupBy(
+                'patients.id',
+                'patients.first_name',
+                'patients.last_name',
+                'patients.phone'
+            )
+            ->orderByDesc('last_visit')
+            ->limit(5)
+            ->get();
+
+        // ── Recent Reviews ──
+        $recentReviews = DB::table('ratings')
+            ->join('patients', 'ratings.patient_id', '=', 'patients.id')
+            ->where('ratings.ratable_type', 'doctor')
+            ->where('ratings.ratable_id', $doctor->id)
+            ->select(
+                'ratings.id',
+                'ratings.rating',
+                'ratings.review',
+                DB::raw("CONCAT(patients.first_name, ' ', patients.last_name) as patient_name"),
+                DB::raw("DATE_FORMAT(ratings.created_at, '%d %b %Y') as date")
+            )
+            ->orderByDesc('ratings.created_at')
+            ->limit(5)
+            ->get();
+
+        // ── Appointment Status Stats ──
+        $appointmentStats = [
+            'pending'   => DB::table('appointments')->where('doctor_id', $doctor->id)->where('status', 'pending')->count(),
+            'confirmed' => DB::table('appointments')->where('doctor_id', $doctor->id)->where('status', 'confirmed')->count(),
+            'completed' => DB::table('appointments')->where('doctor_id', $doctor->id)->where('status', 'completed')->count(),
+            'cancelled' => DB::table('appointments')->where('doctor_id', $doctor->id)->where('status', 'cancelled')->count(),
+        ];
+        $appointmentStats['total'] = array_sum($appointmentStats);
+
+        // ── Monthly Trend (Last 6 Months) ──
+        $monthlyTrend = collect(range(5, 0))->map(function ($i) use ($doctor) {
+            $m = Carbon::now()->subMonths($i);
+            return [
+                'month'    => $m->format('M'),
+                'count'    => DB::table('appointments')
+                                ->where('doctor_id', $doctor->id)
+                                ->whereYear('appointment_date', $m->year)
+                                ->whereMonth('appointment_date', $m->month)
+                                ->count(),
+                'earnings' => DB::table('appointments')
+                                ->where('doctor_id', $doctor->id)
+                                ->where('status', 'completed')
+                                ->whereYear('appointment_date', $m->year)
+                                ->whereMonth('appointment_date', $m->month)
+                                ->sum('consultation_fee'),
             ];
+        });
 
-            $appointmentStats['total'] = array_sum($appointmentStats);
+        // ── Workplaces ──
+        // doctor_workplaces table: workplace_type + workplace_id columns
+        $workplaces = DB::table('doctor_workplaces')
+            ->leftJoin('hospitals', function ($join) {
+                $join->on('doctor_workplaces.workplace_id', '=', 'hospitals.id')
+                     ->where('doctor_workplaces.workplace_type', '=', 'hospital');
+            })
+            ->leftJoin('medical_centres', function ($join) {
+                $join->on('doctor_workplaces.workplace_id', '=', 'medical_centres.id')
+                     ->where('doctor_workplaces.workplace_type', '=', 'medicalcentre');
+            })
+            ->where('doctor_workplaces.doctor_id', $doctor->id)
+            ->where('doctor_workplaces.status', 'approved')
+            ->select(
+                'doctor_workplaces.id',
+                'doctor_workplaces.workplace_type',
+                'doctor_workplaces.employment_type',
+                DB::raw("COALESCE(hospitals.name, medical_centres.name) as name"),
+                DB::raw("COALESCE(hospitals.city, medical_centres.city) as city")
+            )
+            ->get();
+
+        // ── Unread Notifications Count ──
+        $unreadCount = Notification::where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', Auth::id())
+            ->where('is_read', false)
+            ->count();
+
+        return view('doctor.dashboard', compact(
+            'doctor',
+            'todayAppointments',
+            'totalPatients',
+            'monthlyEarnings',
+            'avgRating',
+            'pendingCount',
+            'todayList',
+            'recentPatients',
+            'recentReviews',
+            'appointmentStats',
+            'monthlyTrend',
+            'workplaces',
+            'unreadCount'
+        ));
+    }
+
+    // ══════════════════════════════════════════
+    //  AJAX — Dashboard Stats
+    // ══════════════════════════════════════════
+    public function getStats()
+    {
+        try {
+            $doctor       = $this->getDoctor();
+            $today        = Carbon::today();
+            $startOfMonth = Carbon::now()->startOfMonth();
+            $endOfMonth   = Carbon::now()->endOfMonth();
 
             return response()->json([
-                'success' => true,
-                'today_appointments' => $todayAppointments,
-                'total_patients' => $totalPatients,
-                'monthly_earnings' => number_format($monthlyEarnings, 2, '.', ''),
-                'avg_rating' => round($avgRating ?? 0, 1),
-                'appointment_stats' => $appointmentStats
+                'success'            => true,
+                'today_appointments' => DB::table('appointments')
+                    ->where('doctor_id', $doctor->id)
+                    ->whereDate('appointment_date', $today)
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->count(),
+                'total_patients'     => DB::table('appointments')
+                    ->where('doctor_id', $doctor->id)
+                    ->distinct('patient_id')
+                    ->count('patient_id'),
+                'monthly_earnings'   => number_format(
+                    DB::table('appointments')
+                        ->where('doctor_id', $doctor->id)
+                        ->where('status', 'completed')
+                        ->whereBetween('appointment_date', [$startOfMonth, $endOfMonth])
+                        ->sum('consultation_fee'), 2
+                ),
+                'avg_rating'         => round(
+                    DB::table('ratings')
+                        ->where('ratable_type', 'doctor')
+                        ->where('ratable_id', $doctor->id)
+                        ->avg('rating') ?? 0, 1
+                ),
             ]);
-
         } catch (\Exception $e) {
-            \Log::error('Doctor Dashboard Stats Error: ' . $e->getMessage());
-            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to load statistics',
-                'error' => $e->getMessage()
+                'message' => $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Get today's appointments
-     */
-    public function getTodayAppointments(Request $request)
+    // ══════════════════════════════════════════
+    //  AJAX — Notifications List
+    // ══════════════════════════════════════════
+    public function getNotifications()
     {
-        try {
-            $doctorId = Auth::user()->doctor->id;
-            $today = Carbon::today();
+        $notifications = Notification::where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', Auth::id())
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
 
-            $appointments = DB::table('appointments')
-                ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                ->join('users', 'patients.user_id', '=', 'users.id')
-                ->leftJoin('hospitals', 'appointments.hospital_id', '=', 'hospitals.id')
-                ->leftJoin('medical_centres', 'appointments.medical_centre_id', '=', 'medical_centres.id')
-                ->where('appointments.doctor_id', $doctorId)
-                ->whereDate('appointments.appointment_date', $today)
-                ->select(
-                    'appointments.id',
-                    'appointments.appointment_time as time',
-                    'appointments.duration',
-                    'appointments.status',
-                    DB::raw("CONCAT(patients.first_name, ' ', patients.last_name) as patient_name"),
-                    DB::raw("COALESCE(hospitals.name, medical_centres.name, 'Private Clinic') as location")
-                )
-                ->orderBy('appointments.appointment_time', 'asc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'appointments' => $appointments
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Today Appointments Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load appointments',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success'       => true,
+            'notifications' => $notifications,
+            'unread_count'  => $notifications->where('is_read', false)->count(),
+        ]);
     }
 
-    /**
-     * Get recent patients
-     */
-    public function getRecentPatients(Request $request)
+    // ══════════════════════════════════════════
+    //  AJAX — Mark Single Notification Read
+    // ══════════════════════════════════════════
+    public function markNotificationRead($id)
     {
-        try {
-            $doctorId = Auth::user()->doctor->id;
+        Notification::where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', Auth::id())
+            ->where('id', $id)
+            ->update(['is_read' => true]);
 
-            $patients = DB::table('appointments')
-                ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                ->join('users', 'patients.user_id', '=', 'users.id')
-                ->where('appointments.doctor_id', $doctorId)
-                ->select(
-                    'patients.id',
-                    DB::raw("CONCAT(patients.first_name, ' ', patients.last_name) as name"),
-                    'patients.phone',
-                    'users.profile_image as avatar',
-                    DB::raw("DATE_FORMAT(MAX(appointments.appointment_date), '%d %b %Y') as last_visit")
-                )
-                ->groupBy('patients.id', 'patients.first_name', 'patients.last_name', 'patients.phone', 'users.profile_image')
-                ->orderBy('last_visit', 'desc')
-                ->limit(5)
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'patients' => $patients
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Recent Patients Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load patients',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['success' => true]);
     }
 
-    /**
-     * Get recent reviews
-     */
-    public function getRecentReviews(Request $request)
+    // ══════════════════════════════════════════
+    //  AJAX — Mark All Notifications Read
+    // ══════════════════════════════════════════
+    public function markAllNotificationsRead()
     {
-        try {
-            $doctorId = Auth::user()->doctor->id;
+        Notification::where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', Auth::id())
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
 
-            $reviews = DB::table('doctor_reviews')
-                ->join('patients', 'doctor_reviews.patient_id', '=', 'patients.id')
-                ->where('doctor_reviews.doctor_id', $doctorId)
-                ->select(
-                    'doctor_reviews.id',
-                    'doctor_reviews.rating',
-                    'doctor_reviews.comment',
-                    DB::raw("CONCAT(patients.first_name, ' ', patients.last_name) as patient_name"),
-                    DB::raw("DATE_FORMAT(doctor_reviews.created_at, '%d %b %Y') as date")
-                )
-                ->orderBy('doctor_reviews.created_at', 'desc')
-                ->limit(5)
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'reviews' => $reviews
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Recent Reviews Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load reviews',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['success' => true]);
     }
 }

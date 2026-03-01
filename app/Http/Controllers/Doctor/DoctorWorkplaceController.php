@@ -3,219 +3,293 @@
 namespace App\Http\Controllers\Doctor;
 
 use App\Http\Controllers\Controller;
-use App\Models\Doctor;
-use App\Models\DoctorWorkplace;
-use App\Models\Hospital;
-use App\Models\MedicalCentre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DoctorWorkplaceController extends Controller
 {
-    /**
-     * Display doctor's workplaces
-     */
-    public function index()
+    // ── Helper: Get Doctor ──────────────────────────────────────
+    private function getDoctor()
     {
-        $doctor = Doctor::where('user_id', Auth::id())->first();
+        $doctor = DB::table('doctors')
+            ->where('user_id', Auth::id())
+            ->first();
 
         if (!$doctor) {
             return redirect()->route('doctor.dashboard')
-                           ->with('error', 'Doctor profile not found.');
+                ->with('error', 'Doctor profile not found.');
         }
+        return $doctor;
+    }
 
-        // Get all workplaces with relationships
-        $workplaces = DoctorWorkplace::where('doctor_id', $doctor->id)
-            ->with(['hospital', 'medicalCentre', 'approvedBy'])
-            ->orderBy('created_at', 'desc')
+    // ══════════════════════════════════════════════════════════════
+    // INDEX — List all workplaces of this doctor
+    // ══════════════════════════════════════════════════════════════
+    public function index()
+    {
+        $doctor = $this->getDoctor();
+        if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
+
+        // Get all doctor_workplaces with related workplace data
+        $workplaces = DB::table('doctor_workplaces')
+            ->where('doctor_id', $doctor->id)
+            ->orderByDesc('created_at')
             ->get();
 
-        // Separate by type
-        $hospitals = $workplaces->where('workplace_type', 'hospital');
-        $medicalCentres = $workplaces->where('workplace_type', 'medical_centre');
+        // Attach workplace name/details to each row
+        $workplaces = $workplaces->map(function ($wp) {
+            if ($wp->workplace_type === 'hospital') {
+                $place = DB::table('hospitals')
+                    ->where('id', $wp->workplace_id)
+                    ->select('id','name','phone','address','city','profile_image')
+                    ->first();
+            } else {
+                $place = DB::table('medical_centres')
+                    ->where('id', $wp->workplace_id)
+                    ->select('id','name','phone','address','city','profile_image')
+                    ->first();
+            }
+            $wp->place = $place;
+            return $wp;
+        });
 
-        // Count by status
-        $pendingCount = $workplaces->where('status', 'pending')->count();
-        $approvedCount = $workplaces->where('status', 'approved')->count();
-        $rejectedCount = $workplaces->where('status', 'rejected')->count();
+        // Stats
+        $total    = $workplaces->count();
+        $approved = $workplaces->where('status', 'approved')->count();
+        $pending  = $workplaces->where('status', 'pending')->count();
+        $rejected = $workplaces->where('status', 'rejected')->count();
+        $hospitals       = $workplaces->where('workplace_type', 'hospital')->count();
+        $medicalCentres  = $workplaces->where('workplace_type', 'medical_centre')->count();
 
         return view('doctor.workplaces.index', compact(
             'workplaces',
-            'hospitals',
-            'medicalCentres',
-            'pendingCount',
-            'approvedCount',
-            'rejectedCount'
+            'total', 'approved', 'pending', 'rejected',
+            'hospitals', 'medicalCentres'
         ));
     }
 
-    /**
-     * Show form to add new workplace
-     */
+    // ══════════════════════════════════════════════════════════════
+    // CREATE — Show form
+    // ══════════════════════════════════════════════════════════════
     public function create()
     {
-        $doctor = Doctor::where('user_id', Auth::id())->first();
+        $doctor = $this->getDoctor();
+        if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
 
-        if (!$doctor) {
-            return redirect()->route('doctor.dashboard')
-                           ->with('error', 'Doctor profile not found.');
-        }
+        $hospitals = DB::table('hospitals')
+            ->where('status', 'approved')
+            ->orderBy('name')
+            ->get(['id','name','city','address','profile_image']);
 
-        // Get all approved hospitals and medical centres
-        $hospitals = Hospital::where('status', 'approved')
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'city', 'address', 'type']);
+        $medicalCentres = DB::table('medical_centres')
+            ->where('status', 'approved')
+            ->orderBy('name')
+            ->get(['id','name','city','address','profile_image']);
 
-        $medicalCentres = MedicalCentre::where('status', 'approved')
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'city', 'address']);
-
-        return view('doctor.workplaces.create', compact('hospitals', 'medicalCentres'));
+        return view('doctor.workplaces.create',
+            compact('hospitals', 'medicalCentres'));
     }
 
-    /**
-     * Store new workplace association
-     */
+    // ══════════════════════════════════════════════════════════════
+    // STORE — Save new workplace
+    // ══════════════════════════════════════════════════════════════
     public function store(Request $request)
     {
-        $doctor = Doctor::where('user_id', Auth::id())->first();
-
-        if (!$doctor) {
-            return redirect()->route('doctor.dashboard')
-                           ->with('error', 'Doctor profile not found.');
-        }
+        $doctor = $this->getDoctor();
+        if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
 
         $request->validate([
             'workplace_type' => 'required|in:hospital,medical_centre',
-            'workplace_id' => 'required|integer',
-            'employment_type' => 'required|in:permanent,temporary,visiting',
+            'workplace_id'   => 'required|integer',
+            'employment_type'=> 'required|in:permanent,temporary,visiting',
         ]);
 
-        // Check if already exists
-        $exists = DoctorWorkplace::where('doctor_id', $doctor->id)
+        // Check already exists
+        $exists = DB::table('doctor_workplaces')
+            ->where('doctor_id',      $doctor->id)
             ->where('workplace_type', $request->workplace_type)
-            ->where('workplace_id', $request->workplace_id)
+            ->where('workplace_id',   $request->workplace_id)
             ->exists();
 
         if ($exists) {
             return redirect()->back()
-                           ->with('error', 'You have already added this workplace.');
+                ->with('error', 'You have already added this workplace.');
         }
 
         // Verify workplace exists and is approved
-        if ($request->workplace_type == 'hospital') {
-            $workplace = Hospital::where('id', $request->workplace_id)
-                                ->where('status', 'approved')
-                                ->first();
-        } else {
-            $workplace = MedicalCentre::where('id', $request->workplace_id)
-                                     ->where('status', 'approved')
-                                     ->first();
-        }
+        $table    = $request->workplace_type === 'hospital'
+                    ? 'hospitals' : 'medical_centres';
+        $workplace = DB::table($table)
+            ->where('id',     $request->workplace_id)
+            ->where('status', 'approved')
+            ->first();
 
         if (!$workplace) {
             return redirect()->back()
-                           ->with('error', 'Selected workplace is not available.');
+                ->with('error', 'Selected workplace is not available.');
         }
 
-        // Create workplace association
-        DoctorWorkplace::create([
-            'doctor_id' => $doctor->id,
-            'workplace_type' => $request->workplace_type,
-            'workplace_id' => $request->workplace_id,
+        DB::table('doctor_workplaces')->insert([
+            'doctor_id'       => $doctor->id,
+            'workplace_type'  => $request->workplace_type,
+            'workplace_id'    => $request->workplace_id,
             'employment_type' => $request->employment_type,
-            'status' => 'pending', // Admin will approve
+            'status'          => 'pending',
+            'approved_by'     => null,
+            'approved_at'     => null,
+            'created_at'      => now(),
+            'updated_at'      => now(),
         ]);
 
         return redirect()->route('doctor.workplaces.index')
-                       ->with('success', 'Workplace added successfully! Waiting for admin approval.');
+            ->with('success', 'Workplace added successfully! Waiting for admin approval.');
     }
 
-    /**
-     * Show edit form
-     */
+    // ══════════════════════════════════════════════════════════════
+    // EDIT — Show edit form (only pending allowed)
+    // ══════════════════════════════════════════════════════════════
     public function edit($id)
     {
-        $doctor = Doctor::where('user_id', Auth::id())->first();
+        $doctor = $this->getDoctor();
+        if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
 
-        if (!$doctor) {
-            return redirect()->route('doctor.dashboard')
-                           ->with('error', 'Doctor profile not found.');
-        }
-
-        $workplace = DoctorWorkplace::where('id', $id)
+        $workplace = DB::table('doctor_workplaces')
+            ->where('id',        $id)
             ->where('doctor_id', $doctor->id)
-            ->with(['hospital', 'medicalCentre'])
-            ->firstOrFail();
+            ->first();
 
-        // Can only edit if pending
+        if (!$workplace) abort(404);
+
         if ($workplace->status !== 'pending') {
             return redirect()->route('doctor.workplaces.index')
-                           ->with('error', 'Cannot edit approved or rejected workplaces.');
+                ->with('error', 'Cannot edit approved or rejected workplaces.');
         }
 
-        return view('doctor.workplaces.edit', compact('workplace'));
+        // Get place details
+        $table = $workplace->workplace_type === 'hospital'
+                 ? 'hospitals' : 'medical_centres';
+        $place = DB::table($table)
+            ->where('id', $workplace->workplace_id)
+            ->first();
+
+        return view('doctor.workplaces.edit', compact('workplace', 'place'));
     }
 
-    /**
-     * Update workplace
-     */
+    // ══════════════════════════════════════════════════════════════
+    // UPDATE — Update employment_type (only pending)
+    // ══════════════════════════════════════════════════════════════
     public function update(Request $request, $id)
     {
-        $doctor = Doctor::where('user_id', Auth::id())->first();
+        $doctor = $this->getDoctor();
+        if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
 
-        if (!$doctor) {
-            return redirect()->route('doctor.dashboard')
-                           ->with('error', 'Doctor profile not found.');
-        }
-
-        $workplace = DoctorWorkplace::where('id', $id)
+        $workplace = DB::table('doctor_workplaces')
+            ->where('id',        $id)
             ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
+            ->first();
 
-        // Can only edit if pending
+        if (!$workplace) abort(404);
+
         if ($workplace->status !== 'pending') {
             return redirect()->route('doctor.workplaces.index')
-                           ->with('error', 'Cannot edit approved or rejected workplaces.');
+                ->with('error', 'Cannot edit approved or rejected workplaces.');
         }
 
         $request->validate([
             'employment_type' => 'required|in:permanent,temporary,visiting',
         ]);
 
-        $workplace->update([
-            'employment_type' => $request->employment_type,
-        ]);
+        DB::table('doctor_workplaces')
+            ->where('id', $id)
+            ->update([
+                'employment_type' => $request->employment_type,
+                'updated_at'      => now(),
+            ]);
 
         return redirect()->route('doctor.workplaces.index')
-                       ->with('success', 'Workplace updated successfully!');
+            ->with('success', 'Workplace updated successfully!');
     }
 
-    /**
-     * Remove workplace
-     */
+    // ══════════════════════════════════════════════════════════════
+    // DESTROY — Delete (only pending or rejected)
+    // ══════════════════════════════════════════════════════════════
     public function destroy($id)
     {
-        $doctor = Doctor::where('user_id', Auth::id())->first();
+        $doctor = $this->getDoctor();
+        if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
 
-        if (!$doctor) {
-            return redirect()->route('doctor.dashboard')
-                           ->with('error', 'Doctor profile not found.');
-        }
-
-        $workplace = DoctorWorkplace::where('id', $id)
+        $workplace = DB::table('doctor_workplaces')
+            ->where('id',        $id)
             ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
+            ->first();
 
-        // Can only delete if pending or rejected
-        if ($workplace->status == 'approved') {
+        if (!$workplace) abort(404);
+
+        if ($workplace->status === 'approved') {
             return redirect()->route('doctor.workplaces.index')
-                           ->with('error', 'Cannot delete approved workplace. Please contact admin.');
+                ->with('error', 'Cannot delete approved workplace. Please contact admin.');
         }
 
-        $workplace->delete();
+        DB::table('doctor_workplaces')->where('id', $id)->delete();
 
         return redirect()->route('doctor.workplaces.index')
-                       ->with('success', 'Workplace removed successfully!');
+            ->with('success', 'Workplace removed successfully!');
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // SEARCH AVAILABLE WORKPLACES (AJAX)
+    // ══════════════════════════════════════════════════════════════
+    public function search(Request $request)
+    {
+        try {
+            $doctor = $this->getDoctor();
+            if ($doctor instanceof \Illuminate\Http\RedirectResponse) {
+                return response()->json(['success' => false, 'message' => 'Doctor not found'], 403);
+            }
+
+            $q    = trim($request->get('q', ''));
+            $type = $request->get('type', 'hospital'); // hospital | medical_centre
+
+            // Already affiliated workplace_ids for this type
+            $affiliatedIds = DB::table('doctor_workplaces')
+                ->where('doctor_id',      $doctor->id)
+                ->where('workplace_type', $type)
+                ->pluck('workplace_id')
+                ->toArray();
+
+            $table = $type === 'hospital' ? 'hospitals' : 'medical_centres';
+
+            $query = DB::table($table)
+                ->where('status', 'approved')
+                ->select('id','name','city','address','phone','profile_image');
+
+            if ($q !== '') {
+                $like = '%'.$q.'%';
+                $query->where(function ($sub) use ($like) {
+                    $sub->where('name',    'like', $like)
+                        ->orWhere('city',  'like', $like)
+                        ->orWhere('address','like', $like);
+                });
+            }
+
+            $results = $query->orderBy('name')->limit(20)->get()
+                ->map(function ($place) use ($affiliatedIds) {
+                    $place->already_affiliated = in_array($place->id, $affiliatedIds);
+                    return $place;
+                });
+
+            return response()->json([
+                'success' => true,
+                'data'    => $results,
+                'count'   => $results->count(),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Search failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
