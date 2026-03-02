@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Admin/AdminReportController.php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Barryvdh\DomPDF\Facade\Pdf;   // ⬅️ මේ line එක හරි
 
 class AdminReportController extends Controller
 {
@@ -36,7 +37,6 @@ class AdminReportController extends Controller
                 $query->where('status', $status);
             }
 
-            // summary counts
             $summary = [
                 'total'      => (clone $query)->count(),
                 'pending'    => (clone $query)->where('status', 'pending')->count(),
@@ -194,11 +194,81 @@ class AdminReportController extends Controller
     }
 
     /**
-     * Export PDF – placeholder (ඔයා Dompdf/ Snappy add කරලා implement කරන්න).
+     * Export PDF report (appointments / payments).
      */
     public function exportPdf(Request $request)
     {
-        // later implement with PDF lib
-        return back()->with('error', 'PDF export not implemented yet.');
+        $type     = $request->get('type', 'appointments');
+        $dateFrom = $request->get('date_from');
+        $dateTo   = $request->get('date_to');
+        $status   = $request->get('status');
+
+        $data    = [];
+        $summary = [];
+
+        if ($type === 'appointments') {
+            $query = Appointment::query();
+
+            if ($dateFrom) {
+                $query->whereDate('appointment_date', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $query->whereDate('appointment_date', '<=', $dateTo);
+            }
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            $summary = [
+                'total'      => (clone $query)->count(),
+                'pending'    => (clone $query)->where('status', 'pending')->count(),
+                'confirmed'  => (clone $query)->where('status', 'confirmed')->count(),
+                'completed'  => (clone $query)->where('status', 'completed')->count(),
+                'cancelled'  => (clone $query)->where('status', 'cancelled')->count(),
+            ];
+
+            $data = $query
+                ->with(['patient', 'doctor'])
+                ->orderBy('appointment_date')
+                ->orderBy('appointment_time')
+                ->get();
+        } else {
+            $query = Payment::query();
+
+            if ($dateFrom) {
+                $query->whereDate('created_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $query->whereDate('created_at', '<=', $dateTo);
+            }
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            $summary = [
+                'total'        => (clone $query)->count(),
+                'total_amount' => (clone $query)->sum('amount'),
+                'paid'         => (clone $query)->where('status', 'paid')->sum('amount'),
+                'refunded'     => (clone $query)->where('status', 'refunded')->sum('amount'),
+                'failed'       => (clone $query)->where('status', 'failed')->sum('amount'),
+            ];
+
+            $data = $query
+                ->orderBy('created_at')
+                ->get();
+        }
+
+        $pdf = Pdf::loadView('admin.reports.pdf', [
+            'type'     => $type,
+            'dateFrom' => $dateFrom,
+            'dateTo'   => $dateTo,
+            'status'   => $status,
+            'data'     => $data,
+            'summary'  => $summary,
+        ])->setPaper('a4', 'landscape');
+
+        $fileName = $type . '_report_' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->download($fileName);
     }
 }

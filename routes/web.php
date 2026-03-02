@@ -60,6 +60,7 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminLogController;
+use App\Http\Controllers\Admin\AdminProfileController;
 
 
 /*
@@ -883,10 +884,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         ]);
     })->name('dashboard.stats');
 
-    // Profile & Settings
-    Route::get('/profile', function() {
-        return view('admin.profile');
-    })->name('profile');
+    // GET view
+    Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile');
+
+    // POST update (same name you already used in form)
+    Route::post('/profile', [AdminProfileController::class, 'update']);
+
 
     Route::get('/settings', function() {
         return view('admin.settings');
@@ -1071,6 +1074,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
     // PAYMENTS MANAGEMENT
     Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::get('payments/{id}', [PaymentController::class, 'show'])->name('payments.show');
+
     // REPORTS
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [AdminReportController::class, 'index'])->name('index');
