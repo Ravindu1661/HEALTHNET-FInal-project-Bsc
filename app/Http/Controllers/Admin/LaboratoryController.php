@@ -244,6 +244,65 @@ class LaboratoryController extends Controller
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
 }
+// ─────────────────────────────────────────
+// Lab Orders Index
+// ─────────────────────────────────────────
+public function labOrders(Request $request)
+{
+    $query = \App\Models\LabOrder::with('patient.user', 'laboratory', 'items')
+        ->latest();
+
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+    if ($request->filled('payment')) {
+        $query->where('payment_status', $request->payment);
+    }
+    if ($request->filled('lab')) {
+        $query->where('laboratory_id', $request->lab);
+    }
+    if ($request->filled('home')) {
+        $query->where('home_collection', true);
+    }
+    if ($request->filled('date_from')) {
+        $query->whereDate('created_at', '>=', $request->date_from);
+    }
+    if ($request->filled('date_to')) {
+        $query->whereDate('created_at', '<=', $request->date_to);
+    }
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('order_number', 'like', "%$search%")
+              ->orWhere('reference_number', 'like', "%$search%")
+              ->orWhereHas('patient', fn($pq) =>
+                  $pq->where('first_name', 'like', "%$search%")
+                     ->orWhere('last_name',  'like', "%$search%")
+              )
+              ->orWhereHas('laboratory', fn($lq) =>
+                  $lq->where('name', 'like', "%$search%")
+              );
+        });
+    }
+
+    $orders = $query->paginate(15)->appends($request->query());
+
+    $counts = [
+        'all'              => \App\Models\LabOrder::count(),
+        'pending'          => \App\Models\LabOrder::where('status', 'pending')->count(),
+        'sample_collected' => \App\Models\LabOrder::where('status', 'sample_collected')->count(),
+        'processing'       => \App\Models\LabOrder::where('status', 'processing')->count(),
+        'completed'        => \App\Models\LabOrder::where('status', 'completed')->count(),
+        'cancelled'        => \App\Models\LabOrder::where('status', 'cancelled')->count(),
+        'home_collection'  => \App\Models\LabOrder::where('home_collection', true)->count(),
+        'unpaid'           => \App\Models\LabOrder::where('payment_status', 'unpaid')->count(),
+    ];
+
+    $laboratories = \App\Models\Laboratory::where('status', 'approved')
+        ->orderBy('name')->get();
+
+    return view('admin.lab_orders.index', compact('orders', 'counts', 'laboratories'));
+}
 
 
     // public function activate($id)

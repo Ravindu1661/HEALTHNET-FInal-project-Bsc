@@ -743,7 +743,7 @@ class HospitalDashboardController extends Controller
             'type'                => 'nullable|in:government,private',
             'description'         => 'nullable|string',
             'website'             => 'nullable|url|max:255',
-            'operating_hours'     => 'nullable|string',
+            'operatinghours'     => 'nullable|string',
             'specializations'     => 'nullable|array',
             'facilities'          => 'nullable|array',
             'latitude'            => 'nullable|numeric|between:-90,90',
@@ -763,7 +763,7 @@ class HospitalDashboardController extends Controller
                 'type'             => $request->type,
                 'description'      => $request->description,
                 'website'          => $request->website,
-                'operating_hours'  => $request->operating_hours,
+                'operatinghours'  => $request->operatinghours,
                 'specializations'  => $request->specializations
                     ? json_encode($request->specializations)
                     : null,

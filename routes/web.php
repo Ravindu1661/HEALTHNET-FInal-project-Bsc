@@ -50,6 +50,12 @@ use App\Http\Controllers\Patient\PatientLabOrderController;
 use App\Http\Controllers\Patient\PatientProfileController;
 use App\Http\Controllers\Patient\HealthPortfolioController;
 use App\Http\Controllers\Patient\MedicineReminderController;
+use App\Http\Controllers\MedicalCentre\MedicalCentreDashboardController;
+use App\Http\Controllers\MedicalCentre\MedicalCentreProfileController;
+use App\Http\Controllers\MedicalCentre\MedicalCentreAppointmentController;
+use App\Http\Controllers\MedicalCentre\MedicalCentreDoctorController;
+use App\Http\Controllers\MedicalCentre\MedicalCentreAnnouncementController;
+use App\Http\Controllers\MedicalCentre\MedicalCentreReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -700,13 +706,87 @@ Route::prefix('laboratory')
     // ============================================
     // MEDICAL CENTRE DASHBOARD & ROUTES
     // ============================================
-    Route::get('/medical-centre/dashboard', function () {
-        return view('medical_centre.dashboard');
-    })->name('medical_centre.dashboard');
+    // Route::get('/medical-centre/dashboard', function () {
+    //     return view('medical_centre.dashboard');
+    // })->name('medical_centre.dashboard');
 
 
 });
 
+Route::prefix('medical-centre')
+    ->name('medical_centre.')   // ← hyphen → underscore
+    ->middleware(['auth'])
+    ->group(function () {
+    // Dashboard
+    Route::get('/dashboard',          [MedicalCentreDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/stats',    [MedicalCentreDashboardController::class, 'getStats'])->name('dashboard.stats');
+    Route::get('/dashboard/appointments/today', [MedicalCentreDashboardController::class, 'getTodayAppointments'])->name('dashboard.appointments.today');
+    Route::get('/dashboard/doctors',  [MedicalCentreDashboardController::class, 'getDoctors'])->name('dashboard.doctors');
+    Route::get('/dashboard/activity', [MedicalCentreDashboardController::class, 'getRecentActivity'])->name('dashboard.activity');
+
+    // ── Static routes FIRST (before {id}) ──
+    Route::get('/appointments/data',           [MedicalCentreAppointmentController::class, 'data'])->name('appointments.data');
+    Route::get('/appointments/stats',          [MedicalCentreAppointmentController::class, 'stats'])->name('appointments.stats');
+    Route::get('/appointments/filter-options', [MedicalCentreAppointmentController::class, 'filterOptions'])->name('appointments.filter-options');
+    Route::get('/appointments/export',         [MedicalCentreAppointmentController::class, 'export'])->name('appointments.export');
+
+    // Profile
+    Route::get('/',                  [MedicalCentreProfileController::class, 'index'])          ->name('profile');
+    Route::post('/info',             [MedicalCentreProfileController::class, 'updateInfo'])     ->name('profile.update_info');
+    Route::post('/services',         [MedicalCentreProfileController::class, 'updateServices']) ->name('profile.update_services');
+    Route::post('/location',         [MedicalCentreProfileController::class, 'updateLocation']) ->name('profile.update_location');
+    Route::post('/photo',            [MedicalCentreProfileController::class, 'updatePhoto'])    ->name('profile.update_photo');
+    Route::delete('/photo',          [MedicalCentreProfileController::class, 'deletePhoto'])    ->name('profile.delete_photo');
+    Route::post('/document',         [MedicalCentreProfileController::class, 'uploadDocument']) ->name('profile.upload_document');
+    Route::post('/change-password',  [MedicalCentreProfileController::class, 'changePassword']) ->name('profile.change_password');
+    Route::post('/update-email',     [MedicalCentreProfileController::class, 'updateEmail'])    ->name('profile.update_email');
+
+    // Appointments
+    Route::get('/appointments',                [MedicalCentreAppointmentController::class, 'index'])->name('appointments');
+    Route::get('/appointments/export',         [MedicalCentreAppointmentController::class, 'export'])->name('appointments.export');
+    Route::get('/appointments/{id}',           [MedicalCentreAppointmentController::class, 'show'])->name('appointments.show');
+    Route::post('/appointments/{id}/confirm',  [MedicalCentreAppointmentController::class, 'confirm'])->name('appointments.confirm');
+    Route::post('/appointments/{id}/complete', [MedicalCentreAppointmentController::class, 'complete'])->name('appointments.complete');
+    Route::post('/appointments/{id}/cancel',   [MedicalCentreAppointmentController::class, 'cancel'])->name('appointments.cancel');
+    Route::post('/appointments/{id}/no-show',  [MedicalCentreAppointmentController::class, 'noShow'])->name('appointments.noshow');
+    Route::post('/appointments/{id}/payment',  [MedicalCentreAppointmentController::class, 'updatePayment'])->name('appointments.payment');
+
+    // Doctors
+    Route::get('/doctors',                         [MedicalCentreDoctorController::class, 'index'])  ->name('doctors');
+    Route::get('/doctors/{workplaceId}',           [MedicalCentreDoctorController::class, 'show'])   ->name('doctors.show');
+    Route::post('/doctors/{workplaceId}/approve',  [MedicalCentreDoctorController::class, 'approve'])->name('doctors.approve');
+    Route::post('/doctors/{workplaceId}/reject',   [MedicalCentreDoctorController::class, 'reject']) ->name('doctors.reject');
+    Route::delete('/doctors/{workplaceId}/remove', [MedicalCentreDoctorController::class, 'remove']) ->name('doctors.remove');
+
+    // Announcements
+    Route::get('/announcements',                    [MedicalCentreAnnouncementController::class, 'index'])       ->name('announcements');
+    Route::get('/announcements/create',             [MedicalCentreAnnouncementController::class, 'create'])      ->name('announcements.create');
+    Route::post('/announcements',                   [MedicalCentreAnnouncementController::class, 'store'])       ->name('announcements.store');
+    Route::get('/announcements/{id}',               [MedicalCentreAnnouncementController::class, 'show'])        ->name('announcements.show');
+    Route::get('/announcements/{id}/edit',          [MedicalCentreAnnouncementController::class, 'edit'])        ->name('announcements.edit');
+    Route::put('/announcements/{id}',               [MedicalCentreAnnouncementController::class, 'update'])      ->name('announcements.update');
+    Route::post('/announcements/{id}/toggle',       [MedicalCentreAnnouncementController::class, 'toggleStatus'])->name('announcements.toggle');
+    Route::delete('/announcements/{id}',            [MedicalCentreAnnouncementController::class, 'destroy'])     ->name('announcements.destroy');
+
+    // Ratings & Reviews
+    Route::get('/reviews',                 [MedicalCentreReviewController::class, 'index'])       ->name('reviews');
+    Route::get('/reviews/{id}',            [MedicalCentreReviewController::class, 'show'])        ->name('reviews.show');
+    Route::post('/reviews/{id}/reply',     [MedicalCentreReviewController::class, 'reply'])       ->name('reviews.reply');
+    Route::delete('/reviews/{id}/reply',   [MedicalCentreReviewController::class, 'deleteReply'])->name('reviews.delete_reply');
+
+    // Notifications
+    Route::post('/notifications/mark-all-read',  [MedicalCentreDashboardController::class, 'markAllNotificationsRead'])->name('notifications.mark-all-read');
+    Route::get('/notifications',                 [MedicalCentreDashboardController::class, 'notifications'])            ->name('notifications');
+    Route::post('/notifications/{id}/read',      [MedicalCentreDashboardController::class, 'markNotificationRead'])     ->name('notifications.read');
+    Route::delete('/notifications/{id}',         [MedicalCentreDashboardController::class, 'deleteNotification'])       ->name('notifications.delete');
+    // Resend verification
+    Route::post('/resend-verification',         [MedicalCentreDashboardController::class, 'resendVerification'])      ->name('resend-verification');
+
+    // Settings
+    Route::get('/settings',                   [MedicalCentreDashboardController::class, 'settings'])->name('settings');
+    Route::post('/settings/password',         [MedicalCentreDashboardController::class, 'updatePassword'])->name('settings.password');
+    Route::post('/settings/resend-verification', [MedicalCentreDashboardController::class, 'resendVerification'])->name('resend.verification');
+});
 
 
 /*
@@ -768,7 +848,7 @@ Route::prefix('hospital')->name('hospital.')->middleware(['auth'])->group(functi
     Route::get('/notifications/data', [HospitalDashboardController::class, 'notificationsData'])->name('notifications.data');
     Route::post('/notifications/{id}/read', [HospitalDashboardController::class, 'markNotificationRead'])->name('notifications.read');
     Route::post('/notifications/mark-all-read', [HospitalDashboardController::class, 'markAllNotificationsRead'])->name('notifications.mark-all-read');
-
+    Route::delete('/notifications/{id}', [HospitalDashboardController::class, 'deleteNotification'])->name('notifications.delete');
     // ============================================
     // SETTINGS & ACCOUNT
     // ============================================
