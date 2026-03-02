@@ -75,16 +75,16 @@
                         <a class="nav-link active" href="{{ route('Home') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#services">Services</a>
+                        <a class="nav-link" href="{{ route('login') }}">Services</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#about">About</a>
+                        <a class="nav-link" href="{{ route('login') }}">About</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#doctors">Doctors</a>
+                        <a class="nav-link" href="{{ route('login') }}">Doctors</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#contact">Contact</a>
+                        <a class="nav-link" href="{{ route('login') }}">Contact</a>
                     </li>
                 </ul>
 
@@ -140,11 +140,11 @@
                     </p>
 
                     <div class="hero-buttons">
-                        <a href="pages/auth/signup.html" class="btn-hero btn-primary-hero">
+                        <a href="{{ route('signup') }}" class="btn-hero btn-primary-hero">
                             <span>Get Started</span>
                             <i class="fas fa-arrow-right"></i>
                         </a>
-                        <a href="#services" class="btn-hero btn-secondary-hero">
+                        <a href="{{ route('login') }}" class="btn-hero btn-secondary-hero">
                             <i class="fas fa-search"></i>
                             <span>Find a Doctor</span>
                         </a>
@@ -154,19 +154,19 @@
                     <div class="provider-links">
                         <p class="provider-text">Are you a healthcare provider?</p>
                         <div class="provider-buttons">
-                            <a href="{{ route('provider-signup', ['type' => 'doctor']) }}" class="provider-btn">
+                            <a href="{{ route('provider-signup') }}" class="provider-btn">
                                 <i class="fas fa-user-md"></i> Doctor
                             </a>
-                            <a href="{{ route('provider-signup', ['type' => 'hospital']) }}" class="provider-btn">
+                            <a href="{{ route('provider-signup') }}" class="provider-btn">
                                 <i class="fas fa-hospital"></i> Hospital
                             </a>
-                            <a href="{{ route('provider-signup', ['type' => 'laboratory']) }}" class="provider-btn">
+                            <a href="{{ route('provider-signup') }}" class="provider-btn">
                                 <i class="fas fa-flask"></i> Laboratory
                             </a>
-                            <a href="{{ route('provider-signup', ['type' => 'pharmacy']) }}" class="provider-btn">
+                            <a href="{{ route('provider-signup') }}" class="provider-btn">
                                 <i class="fas fa-pills"></i> Pharmacy
                             </a>
-                            <a href="{{ route('provider-signup', ['type' => 'medical_centre']) }}" class="provider-btn">
+                            <a href="{{ route('provider-signup') }}" class="provider-btn">
                                 <i class="fas fa-clinic-medical"></i> Medical Centre
                             </a>
                         </div>
@@ -266,7 +266,7 @@
                                 World-class heart care with advanced diagnostics and surgical solutions.
                             </p>
 
-                            <a href="#" class="service-link service-link-rose">
+                            <a href="{{ route('login') }}" class="service-link service-link-rose">
                                 Learn More <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -290,7 +290,7 @@
                                 Comprehensive care for brain and nervous system disorders.
                             </p>
 
-                            <a href="#" class="service-link service-link-violet">
+                            <a href="{{ route('login') }}" class="service-link service-link-violet">
                                 Learn More <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -314,7 +314,7 @@
                                 Advanced cosmetic and restorative dentistry for a perfect smile.
                             </p>
 
-                            <a href="#" class="service-link service-link-blue">
+                            <a href="{{ route('login') }}" class="service-link service-link-blue">
                                 Learn More <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -338,7 +338,7 @@
                                 Cutting-edge genetic testing and personalized medicine.
                             </p>
 
-                            <a href="#" class="service-link service-link-emerald">
+                            <a href="{{ route('login') }}" class="service-link service-link-emerald">
                                 Learn More <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -481,7 +481,7 @@
                                 Comprehensive health screening including blood pressure, diabetes, and cholesterol tests for all age groups.
                             </p>
 
-                            <a href="#" class="event-register-btn">
+                            <a href="{{ route('login') }}" class="event-register-btn">
                                 Register Now <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -518,7 +518,7 @@
                                 Learn about diabetes management, nutrition tips, and lifestyle changes with our expert endocrinologists.
                             </p>
 
-                            <a href="#" class="event-register-btn">
+                            <a href="{{ route('login') }}" class="event-register-btn">
                                 Register Now <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -555,7 +555,7 @@
                                 Understanding stress, anxiety, and depression. Interactive session with psychiatrists and counselors.
                             </p>
 
-                            <a href="#" class="event-register-btn">
+                            <a href="{{ route('login') }}" class="event-register-btn">
                                 Register Now <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -695,7 +695,7 @@
                         Expert advice to help you live a healthier, happier life.
                     </p>
                 </div>
-                <a href="#" class="view-all-link d-none d-md-block">View All Articles</a>
+                <a href="{{ route('login') }}" class="view-all-link d-none d-md-block">View All Articles</a>
             </div>
 
             <div class="row g-4">
@@ -1111,44 +1111,44 @@
                     <h5><i class="fas fa-heartbeat me-2"></i>HealthNet Sri Lanka</h5>
                     <p>Revolutionizing healthcare delivery in Sri Lanka through innovative digital solutions. Your health, our priority - connecting patients with quality healthcare services nationwide.</p>
                     <div class="social-links">
-                        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                        <a href="{{ route('login') }}" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                        <a href="{{ route('login') }}" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="{{ route('login') }}" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="{{ route('login') }}" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="{{ route('login') }}" class="social-link"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
 
                 <div class="col-xl-2 col-lg-2 col-md-6">
                     <h5>Quick Links</h5>
                     <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="#home">Home</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#about">About Us</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#services">Services</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#doctors">Doctors</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#contact">Contact</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">Home</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">About Us</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">Services</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">Doctors</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">Contact</a></li>
                     </ul>
                 </div>
 
                 <div class="col-xl-2 col-lg-2 col-md-6">
                     <h5>For Patients</h5>
                     <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/find-doctors.html">Find Doctors</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/hospitals.html">Find Hospitals</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/laboratories.html">Laboratories</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/pharmacies.html">Pharmacies</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/health-tips.html">Health Tips</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.doctors') }}">Find Doctors</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.hospitals') }}">Find Hospitals</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.laboratories') }}">Laboratories</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.pharmacies') }}">Pharmacies</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">Health Tips</a></li>
                     </ul>
                 </div>
 
                 <div class="col-xl-2 col-lg-2 col-md-6">
                     <h5>For Providers</h5>
                     <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/doctor-signup.html">Register as Doctor</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/hospital-signup.html">Register Hospital</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/lab-signup.html">Register Laboratory</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/pharmacy-signup.html">Register Pharmacy</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/medical-centre-signup.html">Register Centre</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup') }}">Register as Doctor</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup') }}">Register Hospital</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup') }}">Register Laboratory</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup') }}">Register Pharmacy</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup') }}">Register Centre</a></li>
                     </ul>
                 </div>
 
@@ -1159,7 +1159,7 @@
                         <li style="margin-bottom: 0.8rem;"><a href="tel:110">Police: 110</a></li>
                         <li style="margin-bottom: 0.8rem;"><a href="tel:118">Fire Service: 118</a></li>
                         <li style="margin-bottom: 0.8rem;"><a href="tel:+94112345678">Hospital: +94 11 234 5678</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/emergency.html">Emergency Guide</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('login') }}">Emergency Guide</a></li>
                     </ul>
                 </div>
             </div>

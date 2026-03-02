@@ -1,70 +1,71 @@
-    {{-- Footer --}}
-    <footer class="footer">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-xl-3 col-lg-3 col-md-6">
-                    <h5><i class="fas fa-heartbeat me-2"></i>HealthNet Sri Lanka</h5>
-                    <p>Revolutionizing healthcare delivery in Sri Lanka through innovative digital solutions. Your health, our priority - connecting patients with quality healthcare services nationwide.</p>
-                    <div class="social-links">
-                        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
-                    </div>
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-6">
-                    <h5>Quick Links</h5>
-                    <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="#home">Home</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#about">About Us</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#services">Services</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#doctors">Doctors</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="#contact">Contact</a></li>
-                    </ul>
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-6">
-                    <h5>For Patients</h5>
-                    <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/find-doctors.html">Find Doctors</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/hospitals.html">Find Hospitals</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/laboratories.html">Laboratories</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/pharmacies.html">Pharmacies</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/health-tips.html">Health Tips</a></li>
-                    </ul>
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-6">
-                    <h5>For Providers</h5>
-                    <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/doctor-signup.html">Register as Doctor</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/hospital-signup.html">Register Hospital</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/lab-signup.html">Register Laboratory</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/pharmacy-signup.html">Register Pharmacy</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/auth/medical-centre-signup.html">Register Centre</a></li>
-                    </ul>
-                </div>
-
-                <div class="col-xl-3 col-lg-3 col-md-12">
-                    <h5>Emergency Services</h5>
-                    <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 0.8rem;"><a href="tel:119">Ambulance: 119</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="tel:110">Police: 110</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="tel:118">Fire Service: 118</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="tel:+94112345678">Hospital: +94 11 234 5678</a></li>
-                        <li style="margin-bottom: 0.8rem;"><a href="pages/public/emergency.html">Emergency Guide</a></li>
-                    </ul>
+{{-- Footer --}}
+<footer class="footer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-xl-3 col-lg-3 col-md-6">
+                <h5><i class="fas fa-heartbeat me-2"></i>HealthNet Sri Lanka</h5>
+                <p>Revolutionizing healthcare delivery in Sri Lanka through innovative digital solutions. Your health, our priority - connecting patients with quality healthcare services nationwide.</p>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
                 </div>
             </div>
 
-            <div class="footer-bottom">
-                <p>&copy; 2024 HealthNet Sri Lanka. All rights reserved. | Designed for better healthcare delivery across the island.</p>
-                <p style="color: rgba(255, 255, 255, 0.6); margin: 0.8rem 0 0 0; font-size: 0.9rem;">Connecting patients with quality healthcare - Your health, our mission.</p>
+            <div class="col-xl-2 col-lg-2 col-md-6">
+                <h5>Quick Links</h5>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('Home') }}">Home</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="#">About Us</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="#services">Services</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.doctors') }}">Doctors</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="#">Contact</a></li>
+                </ul>
+            </div>
+
+            <div class="col-xl-2 col-lg-2 col-md-6">
+                <h5>For Patients</h5>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.doctors') }}">Find Doctors</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.hospitals') }}">Find Hospitals</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.laboratories') }}">Laboratories</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('patient.pharmacies') }}">Pharmacies</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="#">Health Tips</a></li>
+                </ul>
+            </div>
+
+            <div class="col-xl-2 col-lg-2 col-md-6">
+                <h5>For Providers</h5>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup', ['type' => 'doctor']) }}">Register as Doctor</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup', ['type' => 'hospital']) }}">Register Hospital</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup', ['type' => 'laboratory']) }}">Register Laboratory</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup', ['type' => 'pharmacy']) }}">Register Pharmacy</a></li>
+                        <li style="margin-bottom: 0.8rem;"><a href="{{ route('provider-signup', ['type' => 'medical_centre']) }}">Register Centre</a></li>
+                    </ul>
+            </div>
+
+            <div class="col-xl-3 col-lg-3 col-md-12">
+                <h5>Emergency Services</h5>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 0.8rem;"><a href="tel:119">Ambulance: 119</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="tel:110">Police: 110</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="tel:118">Fire Service: 118</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="tel:+94112345678">Hospital: +94 11 234 5678</a></li>
+                    <li style="margin-bottom: 0.8rem;"><a href="#">Emergency Guide</a></li>
+                </ul>
             </div>
         </div>
-    </footer>
+
+        <div class="footer-bottom">
+            <p>© 2024 HealthNet Sri Lanka. All rights reserved. | Designed for better healthcare delivery across the island.</p>
+            <p style="color: rgba(255, 255, 255, 0.6); margin: 0.8rem 0 0 0; font-size: 0.9rem;">Connecting patients with quality healthcare - Your health, our mission.</p>
+        </div>
+    </div>
+</footer>
+
 {{-- Bootstrap JS --}}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -77,6 +78,7 @@
 (function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="IbqKuCIci9h1OzBSxeWwx";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
 </script> --}}
 <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="4c49fd60-f7b6-4497-8a15-de5860603e59";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+
 {{-- Notification Alert Scripts --}}
 <script>
     function closeAlert(id) {
@@ -248,7 +250,7 @@
             toast.style.transition = 'opacity 0.4s ease-out';
             toast.style.opacity = '0';
             setTimeout(() => document.body.removeChild(toast), 400);
-        }, 2700);
+        }, 2707);
     }
 </script>
 

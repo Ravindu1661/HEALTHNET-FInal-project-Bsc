@@ -41,7 +41,7 @@
 
                         {{-- Action Buttons --}}
                         <div class="hero-buttons-group">
-                            <a href="{{ route('patient.Main_dashboard') }}" class="hero-btn hero-btn-primary">
+                            <a href="{{ route('patient.dashboard') }}" class="hero-btn hero-btn-primary">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <span>Go to Dashboard</span>
                             </a>
@@ -167,7 +167,7 @@
                         <p class="service-description">
                             Schedule appointments with doctors online seamlessly. Sign up today to access our booking system.
                         </p>
-                        <a href="pages/auth/signup.html" class="service-learn-more">
+                        <a href="{{ route('signup') }}" class="service-learn-more">
                             Learn More <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
@@ -183,7 +183,7 @@
                         <p class="service-description">
                             Maintain digital medical records securely with our advanced health information management system.
                         </p>
-                        <a href="pages/auth/signup.html" class="service-learn-more">
+                        <a href="{{ route('patient.health-portfolio') }}" class="service-learn-more">
                             Learn More <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
@@ -200,7 +200,6 @@
                     <img src="{{ asset('images/center-doctor2.png') }}"
                          alt="Healthcare Professional"
                          class="doctor-custom-image">
-
 
                     {{-- Decorative Elements --}}
                     <div class="image-glow-effect-custom"></div>
@@ -264,7 +263,7 @@
 </section>
 
 {{-- Quick Dashboard Section - After Hero --}}
-<section class="quick-dashboard-section">
+<section class="quick-dashboard-section" >
     <div class="container">
         <div class="dashboard-cards-grid">
             {{-- Card 1: Book Appointment --}}
@@ -276,7 +275,7 @@
                     <h3>Book Appointment</h3>
                     <p>Schedule with specialists</p>
                 </div>
-                <a href="#" class="card-arrow-link">
+                <a href="{{ route('patient.appointments.create') }}" class="card-arrow-link">
                     <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
@@ -290,7 +289,7 @@
                     <h3>Find Doctors</h3>
                     <p>Search by specialization</p>
                 </div>
-                <a href="#" class="card-arrow-link">
+                <a href="{{ route('patient.doctors') }}" class="card-arrow-link">
                     <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
@@ -304,7 +303,7 @@
                     <h3>Lab Tests</h3>
                     <p>Book diagnostic tests</p>
                 </div>
-                <a href="#" class="card-arrow-link">
+                <a href="{{ route('patient.laboratories') }}" class="card-arrow-link">
                     <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
@@ -318,15 +317,16 @@
                     <h3>Order Medicine</h3>
                     <p>Online pharmacy delivery</p>
                 </div>
-                <a href="#" class="card-arrow-link">
+                <a href="{{ route('patient.pharmacies') }}" class="card-arrow-link">
                     <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
         </div>
     </div>
 </section>
+
 {{-- Featured Doctors Slider Section --}}
-<section class="featured-doctors-section">
+<section class="featured-doctors-section" id="featured-doctors">
     <div class="container">
         <div class="section-header-flex">
             <div>
@@ -535,7 +535,7 @@
                 @foreach($announcements as $announcement)
                     @if($announcement && is_object($announcement))
                         @php
-                            // Safely get properties with defaults
+                            // (keeping original logic unchanged)
                             $announcementTitle = $announcement->title ?? 'Untitled Event';
                             $announcementContent = $announcement->content ?? 'No description available';
                             $announcementType = $announcement->announcement_type ?? 'general';
@@ -544,7 +544,6 @@
                             $endDate = $announcement->end_date ?? null;
                             $publisherType = $announcement->publisher_type ?? 'admin';
 
-                            // Get display date
                             if ($startDate) {
                                 try {
                                     $displayDate = \Carbon\Carbon::parse($startDate);
@@ -555,7 +554,6 @@
                                 $displayDate = now();
                             }
 
-                            // Badge color
                             $badgeColorClass = 'date-badge-blue';
                             if (in_array($announcementType, ['healthcamp', 'awareness'])) {
                                 $badgeColorClass = 'date-badge-blue';
@@ -565,7 +563,6 @@
                                 $badgeColorClass = 'date-badge-red';
                             }
 
-                            // Type badge styling
                             $typeBadgeClass = 'event-type-blue';
                             if (in_array($announcementType, ['healthcamp', 'awareness'])) {
                                 $typeBadgeClass = 'event-type-blue';
@@ -577,7 +574,6 @@
                                 $typeBadgeClass = 'event-type-gray';
                             }
 
-                            // Placeholder color
                             $placeholderColors = [
                                 'healthcamp' => '10b981',
                                 'awareness' => '3b82f6',
@@ -586,10 +582,8 @@
                             ];
                             $placeholderColor = $placeholderColors[$announcementType] ?? '4299e1';
 
-                            // Format type name for display
                             $typeDisplayName = ucwords(str_replace('_', ' ', $announcementType));
 
-                            // Prepare safe data for modal
                             $modalData = [
                                 'title' => str_replace("'", "\\'", $announcementTitle),
                                 'content' => str_replace("'", "\\'", $announcementContent),
@@ -812,7 +806,7 @@ function openEventModal(button) {
 
 
 {{-- Health Tips Section --}}
-<section class="health-tips-section">
+<section class="health-tips-section" id="health-tips">
     <div class="container">
         <div class="section-header-center">
             <span class="section-label">Stay Informed</span>
@@ -865,7 +859,7 @@ function openEventModal(button) {
 </section>
 
 {{-- Emergency Help Section --}}
-<section class="emergency-help-section">
+<section class="emergency-help-section" id="emergency-help">
     <div class="container">
         <div class="emergency-help-card" data-aos="zoom-in">
             <div class="emergency-icon-pulse">

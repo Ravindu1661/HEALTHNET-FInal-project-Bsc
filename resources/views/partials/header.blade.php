@@ -72,9 +72,9 @@
                 <ul class="navbar-nav mx-auto">
                     <li class="nav-item"><a class="nav-link active" href="{{ route('patient.dashboard') }}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#doctors">Doctors</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#health-tips">Health Tips</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#featured-doctors">Doctors</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#emergency-help">Contact</a></li>
                 </ul>
 
                 <div class="d-flex align-items-center">
