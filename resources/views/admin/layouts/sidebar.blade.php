@@ -54,10 +54,21 @@
             <i class="fas fa-money-bill-wave"></i>
             <span>Payments</span>
         </a>
-        <a href="{{ route('admin.announcements.index') }}" class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
+        {{-- NEW: Reports --}}
+        <a href="{{ route('admin.reports.index') }}" class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+            <i class="fas fa-chart-line"></i>
+            <span>Reports</span>
+        </a>
+
+        {{-- NEW: System Logs --}}
+        <a href="{{ route('admin.logs.index') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+            <i class="fas fa-clipboard-list"></i>
+            <span>System Logs</span>
+        </a>
+        {{-- <a href="{{ route('admin.announcements.index') }}" class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
             <i class="fas fa-bullhorn"></i>
             <span>Announcements</span>
-        </a>
+        </a> --}}
         <a href="{{ route('admin.settings') }}" class="nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
             <i class="fas fa-cog"></i>
             <span>Settings</span>

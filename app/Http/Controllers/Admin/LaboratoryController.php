@@ -245,7 +245,7 @@ class LaboratoryController extends Controller
     }
 }
 // ─────────────────────────────────────────
-// Lab Orders Index
+// Admin: All Lab Orders
 // ─────────────────────────────────────────
 public function labOrders(Request $request)
 {
@@ -273,7 +273,7 @@ public function labOrders(Request $request)
     if ($request->filled('search')) {
         $search = $request->search;
         $query->where(function ($q) use ($search) {
-            $q->where('order_number', 'like', "%$search%")
+            $q->where('order_number',      'like', "%$search%")
               ->orWhere('reference_number', 'like', "%$search%")
               ->orWhereHas('patient', fn($pq) =>
                   $pq->where('first_name', 'like', "%$search%")
@@ -298,10 +298,26 @@ public function labOrders(Request $request)
         'unpaid'           => \App\Models\LabOrder::where('payment_status', 'unpaid')->count(),
     ];
 
-    $laboratories = \App\Models\Laboratory::where('status', 'approved')
+    $laboratories = Laboratory::where('status', 'approved')
         ->orderBy('name')->get();
 
     return view('admin.lab_orders.index', compact('orders', 'counts', 'laboratories'));
+}
+
+// ─────────────────────────────────────────
+// Admin: Lab Order Detail
+// ─────────────────────────────────────────
+public function labOrderShow($id)
+{
+    $order = \App\Models\LabOrder::with(
+        'patient.user',
+        'laboratory',
+        'items.test',
+        'items.package',
+        'doctor'
+    )->findOrFail($id);
+
+    return view('admin.lab_orders.show', compact('order'));
 }
 
 

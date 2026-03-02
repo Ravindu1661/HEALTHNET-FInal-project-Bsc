@@ -56,6 +56,11 @@ use App\Http\Controllers\MedicalCentre\MedicalCentreAppointmentController;
 use App\Http\Controllers\MedicalCentre\MedicalCentreDoctorController;
 use App\Http\Controllers\MedicalCentre\MedicalCentreAnnouncementController;
 use App\Http\Controllers\MedicalCentre\MedicalCentreReviewController;
+use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminLogController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1030,18 +1035,26 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::post('/{id}/mark-no-show', [AppointmentController::class, 'markNoShow'])->name('mark-no-show');
     });
 
-
-
     // ============================================
     // LAB ORDERS MANAGEMENT
     // ============================================
-    Route::get('/lab-orders', function() {
-        return view('admin.lab_orders.index');
-    })->name('lab-orders.index');
+    Route::prefix('lab-orders')->name('lab-orders.')->group(function () {
+        Route::get('/',     [LaboratoryController::class, 'labOrders'])->name('index');
+        Route::get('/{id}', [LaboratoryController::class, 'labOrderShow'])->name('show');
+    });
 
-    Route::get('/lab-orders/{id}', function($id) {
-        return view('admin.lab_orders.show', compact('id'));
-    })->name('lab-orders.show');
+    //  SETTINGS
+        Route::get('/settings', [AdminSettingsController::class, 'index'])
+            ->name('settings');
+
+        Route::put('/settings/general', [AdminSettingsController::class, 'updateGeneral'])
+            ->name('settings.update.general');
+
+        Route::put('/settings/mail', [AdminSettingsController::class, 'updateMail'])
+            ->name('settings.update.mail');
+
+        Route::post('/settings/change-password', [AdminSettingsController::class, 'changePassword'])
+            ->name('settings.change-password');
 
     // ============================================
     // PRESCRIPTIONS MANAGEMENT
@@ -1054,16 +1067,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         return view('admin.prescriptions.show', compact('id'));
     })->name('prescriptions.show');
 
-    // ============================================
-    // PAYMENTS MANAGEMENT
-    // ============================================
-    Route::get('/payments', function() {
-        return view('admin.payments.index');
-    })->name('payments.index');
 
-    Route::get('/payments/{id}', function($id) {
-        return view('admin.payments.show', compact('id'));
-    })->name('payments.show');
+    // PAYMENTS MANAGEMENT
+    Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::get('payments/{id}', [PaymentController::class, 'show'])->name('payments.show');
+    // REPORTS
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [AdminReportController::class, 'index'])->name('index');
+        Route::get('/export/csv', [AdminReportController::class, 'exportCsv'])->name('export.csv');
+        Route::get('/export/pdf', [AdminReportController::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    // SYSTEM LOGS
+    Route::prefix('logs')->name('logs.')->group(function () {
+        Route::get('/', [AdminLogController::class, 'index'])->name('index');
+        Route::get('/{id}', [AdminLogController::class, 'show'])->name('show');
+    });
 
     // ============================================
     // ANNOUNCEMENTS MANAGEMENT
