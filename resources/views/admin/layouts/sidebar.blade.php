@@ -60,6 +60,20 @@
             <span>Reports</span>
         </a>
 
+        <a href="{{ route('admin.chatbot.index') }}"
+        class="nav-link {{ request()->routeIs('admin.chatbot.*') ? 'active' : '' }}">
+            <i class="fas fa-robot"></i>
+            <span>Chatbot</span>
+            @php try {
+                $pendingChatContacts = \Illuminate\Support\Facades\DB::table('chatbot_admin_contacts')
+                    ->where('status','pending')->count();
+            } catch(\Exception $e) { $pendingChatContacts = 0; } @endphp
+            @if($pendingChatContacts > 0)
+            <span class="badge bg-danger ms-auto">{{ $pendingChatContacts }}</span>
+            @endif
+        </a>
+
+
         {{-- NEW: System Logs --}}
         <a href="{{ route('admin.logs.index') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
             <i class="fas fa-clipboard-list"></i>

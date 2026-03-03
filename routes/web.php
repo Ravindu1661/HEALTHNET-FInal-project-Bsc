@@ -61,7 +61,19 @@ use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminLogController;
 use App\Http\Controllers\Admin\AdminProfileController;
+use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\Admin\AdminChatbotController;
+use Illuminate\Support\Facades\Str;
 
+Route::prefix('chatbot')->name('chatbot.')->group(function () {
+    Route::post('/session/start',   [ChatbotController::class, 'startSession'])->name('session.start');
+    Route::post('/message/send',    [ChatbotController::class, 'sendMessage'])->name('message.send');
+    Route::post('/switch-to-admin', [ChatbotController::class, 'switchToAdmin'])->name('switch.admin');
+    Route::post('/switch-to-bot',   [ChatbotController::class, 'switchToBot'])->name('switch.bot');
+    Route::post('/contact-admin',   [ChatbotController::class, 'submitContact'])->name('contact.submit');
+    Route::get('/messages/{convId}', [ChatbotController::class, 'pollMessages'])->name('poll');
+    Route::get('/faqs',             [ChatbotController::class, 'getFaqs'])->name('faqs');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -874,6 +886,27 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
     // Admin Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+  // ── Chatbot (NEW) ──────────────────────────
+    Route::prefix('chatbot')->name('chatbot.')->group(function () {
+        Route::get('/',                           [AdminChatbotController::class, 'index'])              ->name('index');
+        // Contacts
+        Route::get('contacts',                    [AdminChatbotController::class, 'contacts'])           ->name('contacts');
+        Route::get('contacts/{id}',               [AdminChatbotController::class, 'showContact'])        ->name('contacts.show');
+        Route::post('contacts/{id}/reply',        [AdminChatbotController::class, 'replyContact'])       ->name('contacts.reply');
+        Route::put('contacts/{id}/status',        [AdminChatbotController::class, 'updateContactStatus'])->name('contacts.status');
+        Route::delete('contacts/{id}',            [AdminChatbotController::class, 'destroyContact'])     ->name('contacts.destroy');
+
+        // FAQs
+        Route::get('faqs',                        [AdminChatbotController::class, 'faqs'])               ->name('faqs');
+        Route::post('faqs',                       [AdminChatbotController::class, 'storeFaq'])           ->name('faqs.store');
+        Route::put('faqs/{id}',                   [AdminChatbotController::class, 'updateFaq'])          ->name('faqs.update');
+        Route::delete('faqs/{id}',               [AdminChatbotController::class, 'destroyFaq'])          ->name('faqs.destroy');
+
+        // Conversations
+        Route::get('conversations',               [AdminChatbotController::class, 'conversations'])      ->name('conversations');
+        Route::get('conversations/{id}',          [AdminChatbotController::class, 'showConversation'])   ->name('conversations.show');
+    });
+
     // Dashboard Stats API
     Route::get('/dashboard/stats', function() {
         return response()->json([
@@ -1219,6 +1252,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
     // ══════════════════════════════════════════
     Route::get('settings',                           [DoctorSettingsController::class, 'index'])  ->name('settings');
     Route::put('settings/update',                    [DoctorSettingsController::class, 'update']) ->name('settings.update');
+
 
 });
 

@@ -1240,4 +1240,7 @@
     </script>
 
 </body>
+{{-- before </body> --}}
+@include('partials.chatbot-widget')
+
 </html>

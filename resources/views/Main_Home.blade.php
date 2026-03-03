@@ -943,3 +943,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 @include('partials.footer')
+{{-- before </body> --}}
+{{-- @include('partials.chatbot-widget') --}}
