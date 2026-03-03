@@ -1179,9 +1179,12 @@
     <script src="https://cdn.gtranslate.net/widgets/latest/dwf.js" defer></script>
 
     <!-- AI Chatbot -->
-    <script>
+    {{-- <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="4c49fd60-f7b6-4497-8a15-de5860603e59";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script> --}}
+
+    {{-- <script>
     (function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="IbqKuCIci9h1OzBSxeWwx";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
-    </script>
+    </script> --}}
+
     <!-- Custom JS - Using Laravel asset helper with correct path -->
     <script src="{{ asset('js/main.js') }}"></script>
     <script src="{{ asset('js/doc_sec_Slider.js') }}"></script>
