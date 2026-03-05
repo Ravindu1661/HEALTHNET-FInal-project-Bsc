@@ -888,6 +888,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
 
  // ── Chatbot (Admin) ──────────────────────────
     Route::prefix('chatbot')->name('chatbot.')->group(function () {
+    Route::post('conversations/{id}/mode', [AdminChatbotController::class, 'switchMode'])
+        ->name('admin.chatbot.conversations.mode');
 
         // Dashboard
         Route::get('/', [AdminChatbotController::class, 'index'])->name('index');

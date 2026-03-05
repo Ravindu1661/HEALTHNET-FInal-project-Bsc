@@ -58,29 +58,67 @@
 
         <!-- CHAT TAB -->
         <div id="hn-tab-chat" class="hn-tab-content">
-            <!-- Guest Info Form (shown only when not logged in) -->
+
+            <!-- ════ GUEST FORM (not logged in only) ════ -->
             @if(!$isLoggedIn)
-                <div id="hn-guest-form">
-                    <div class="hn-guest-title">
-                        <i class="fas fa-user-circle"></i>
-                        Start your health consultation
-                    </div>
-                    <input type="text" id="hn-guest-name" placeholder="Your Name *" maxlength="100" />
-                    <input type="email" id="hn-guest-email" placeholder="Your Email * (reply will be sent)" maxlength="255" />
-                    <button onclick="HNChat.startAsGuest()">Start Chat <i class="fas fa-arrow-right"></i></button>
-                    <p class="hn-guest-note">AI replies will also be sent to your email.</p>
+            <div id="hn-guest-form">
+                <div class="hn-guest-title">
+                    <i class="fas fa-user-circle"></i>
+                    Start your health consultation
                 </div>
+                <input type="text"
+                       id="hn-guest-name"
+                       placeholder="Your Full Name *"
+                       maxlength="100"
+                       autocomplete="name" />
+                <input type="email"
+                       id="hn-guest-email"
+                       placeholder="Your Email * (reply will be sent here)"
+                       maxlength="255"
+                       autocomplete="email" />
+                <button onclick="HNChat.startAsGuest()">
+                    Start Chat <i class="fas fa-arrow-right"></i>
+                </button>
+                <p class="hn-guest-note">
+                    <i class="fas fa-envelope me-1"></i>
+                    AI replies and admin responses will be sent to your email.
+                </p>
+            </div>
+
+            <!-- Email confirmation notice (shown after guest submits) -->
+            <div id="hn-guest-email-notice" style="display:none">
+                <div class="hn-email-notice-inner">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Chat started! Replies will be sent to
+                    <strong id="hn-guest-email-display"></strong>
+                </div>
+            </div>
             @endif
 
+            <!-- Messages body -->
             <div id="hn-chat-body" @if(!$isLoggedIn) style="display:none" @endif>
                 <div id="hn-messages"></div>
             </div>
 
+            <!-- Admin waiting indicator -->
             <div id="hn-admin-wait" class="d-none">
                 <i class="fas fa-spinner fa-spin"></i>
                 Waiting for admin reply...
             </div>
 
+            <!-- Admin mode instruction banner (shown after switching to admin mode) -->
+            <div id="hn-admin-mode-banner" class="d-none">
+                <div class="hn-admin-banner-inner">
+                    <i class="fas fa-headset me-2 text-success"></i>
+                    <div>
+                        <strong>Connected to Live Support</strong><br>
+                        <small>Type your complete message and press Send.
+                        Our admin will reply to your email.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input area -->
             <div id="hn-chat-input-area" @if(!$isLoggedIn) style="display:none" @endif>
                 <div id="hn-typing-indicator" class="d-none">
                     <span></span><span></span><span></span>
@@ -117,10 +155,12 @@
                 <div class="hn-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Chatbot Styles -->
+    </div><!-- /chat-window -->
+</div><!-- /chatbot-wrap -->
+
+
+<!-- ══════════════ STYLES ══════════════ -->
 <style>
 :root {
     --hn-primary: #0d6efd;
@@ -201,6 +241,7 @@
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    transition: background 0.3s;
 }
 
 #hn-chat-avatar {
@@ -240,17 +281,21 @@
     display: flex; align-items: center; justify-content: center; gap: 4px;
 }
 .hn-tab.active { color: var(--hn-primary); border-bottom-color: var(--hn-primary); font-weight: 600; }
-.hn-tab:hover { color: var(--hn-primary); background: #f0f4ff; }
+.hn-tab:hover  { color: var(--hn-primary); background: #f0f4ff; }
 
 .hn-tab-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .hn-tab-content.d-none { display: none !important; }
 
-/* Guest Form */
+/* ── Guest Form ── */
 #hn-guest-form {
     padding: 20px 16px;
     display: flex; flex-direction: column; gap: 10px;
+    flex-shrink: 0;
 }
-.hn-guest-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 4px; display: flex; align-items: center; gap-8px; }
+.hn-guest-title {
+    font-size: 14px; font-weight: 600; color: #1e293b;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+}
 #hn-guest-form input {
     padding: 10px 12px;
     border: 1.5px solid #e2e8f0;
@@ -258,8 +303,10 @@
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s;
+    font-family: inherit;
 }
 #hn-guest-form input:focus { border-color: var(--hn-primary); }
+#hn-guest-form input.hn-field-error { border-color: #dc3545; background: #fff5f5; }
 #hn-guest-form button {
     padding: 11px;
     background: var(--hn-primary);
@@ -270,9 +317,41 @@
     display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 #hn-guest-form button:hover { background: var(--hn-primary-dark); }
-.hn-guest-note { font-size: 11px; color: #64748b; text-align: center; margin: 0; }
+.hn-guest-note {
+    font-size: 11px; color: #64748b;
+    text-align: center; margin: 0;
+}
 
-/* Messages */
+/* ── Email notice strip ── */
+#hn-guest-email-notice { flex-shrink: 0; }
+.hn-email-notice-inner {
+    background: #e8f5e9;
+    border-left: 3px solid #198754;
+    border-radius: 0;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #1b5e20;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* ── Admin mode banner ── */
+#hn-admin-mode-banner { flex-shrink: 0; }
+.hn-admin-banner-inner {
+    background: #e8f5e9;
+    border-left: 3px solid #198754;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #1b5e20;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.5;
+}
+
+/* ── Messages ── */
 #hn-chat-body {
     flex: 1;
     overflow-y: auto;
@@ -295,33 +374,16 @@
     word-wrap: break-word;
     white-space: pre-wrap;
 }
-.hn-msg-user .hn-msg-bubble {
-    background: var(--hn-msg-user);
-    color: #fff;
-    border-bottom-right-radius: 4px;
-}
-.hn-msg-bot .hn-msg-bubble {
-    background: var(--hn-msg-bot);
-    color: #1e293b;
-    border-bottom-left-radius: 4px;
-    border: 1px solid #e2e8f0;
-}
-.hn-msg-admin .hn-msg-bubble {
-    background: var(--hn-msg-admin);
-    color: #1e293b;
-    border-bottom-left-radius: 4px;
-    border: 1px solid #bbf7d0;
-}
+.hn-msg-user  .hn-msg-bubble { background: var(--hn-msg-user); color: #fff; border-bottom-right-radius: 4px; }
+.hn-msg-bot   .hn-msg-bubble { background: var(--hn-msg-bot);  color: #1e293b; border-bottom-left-radius: 4px; border: 1px solid #e2e8f0; }
+.hn-msg-admin .hn-msg-bubble { background: var(--hn-msg-admin);color: #1e293b; border-bottom-left-radius: 4px; border: 1px solid #bbf7d0; }
 .hn-msg-system .hn-msg-bubble {
-    background: #fff3cd;
-    color: #856404;
-    font-size: 12px;
-    border-radius: 8px;
+    background: #fff3cd; color: #856404;
+    font-size: 12px; border-radius: 8px;
     border: 1px solid #ffc107;
-    margin: 0 auto;
-    max-width: 90%;
-    text-align: center;
+    margin: 0 auto; max-width: 90%; text-align: center;
 }
+
 .hn-msg-avatar {
     width: 28px; height: 28px;
     border-radius: 50%; background: #e2e8f0;
@@ -330,7 +392,7 @@
 }
 .hn-msg-time { font-size: 10px; color: #94a3b8; margin-top: 3px; text-align: right; }
 
-/* Typing indicator */
+/* ── Typing indicator ── */
 #hn-typing-indicator {
     padding: 6px 12px;
     display: flex; gap: 4px; align-items: center;
@@ -339,16 +401,30 @@
     width: 7px; height: 7px; border-radius: 50%;
     background: #94a3b8;
     animation: hnBounce 1.2s infinite ease-in-out;
+    display: inline-block;
 }
 #hn-typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
 #hn-typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes hnBounce {
     0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
+    40%           { transform: scale(1); }
 }
 
-/* Input area */
-#hn-chat-input-area { padding: 10px; border-top: 1px solid #e2e8f0; background: #fff; flex-shrink: 0; }
+/* ── Admin wait ── */
+#hn-admin-wait {
+    padding: 16px; text-align: center;
+    color: #64748b; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ── Input area ── */
+#hn-chat-input-area {
+    padding: 10px;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+    flex-shrink: 0;
+}
 .hn-input-row { display: flex; gap: 8px; align-items: flex-end; }
 #hn-msg-input {
     flex: 1; padding: 10px 12px;
@@ -366,37 +442,25 @@
     width: 40px; height: 40px;
     background: var(--hn-primary); color: #fff;
     border: none; border-radius: 50%;
-    cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
     font-size: 15px; flex-shrink: 0;
     transition: background 0.2s, transform 0.1s;
 }
-#hn-send-btn:hover { background: var(--hn-primary-dark); transform: scale(1.05); }
+#hn-send-btn:hover    { background: var(--hn-primary-dark); transform: scale(1.05); }
 #hn-send-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
 .hn-input-footer { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 5px; }
 
-/* Admin wait */
-#hn-admin-wait {
-    padding: 20px; text-align: center;
-    color: #64748b; font-size: 13px;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    flex: 1;
-}
-
-/* FAQ Tab */
-#hn-faq-search { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+/* ── FAQ Tab ── */
+#hn-faq-search { padding: 10px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
 #hn-faq-search input {
     width: 100%; padding: 8px 12px;
     border: 1.5px solid #e2e8f0; border-radius: 10px;
-    font-size: 13px; outline: none; box-sizing: border-box;
+    font-size: 13px; outline: none; box-sizing: border-box; font-family: inherit;
 }
 #hn-faq-list { flex: 1; overflow-y: auto; padding: 8px; }
 
-.hn-faq-item {
-    border: 1px solid #e2e8f0; border-radius: 10px;
-    margin-bottom: 8px; overflow: hidden;
-    transition: border-color 0.2s;
-}
+.hn-faq-item { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; overflow: hidden; transition: border-color 0.2s; }
 .hn-faq-item:hover { border-color: var(--hn-primary); }
 .hn-faq-q {
     padding: 10px 13px; font-size: 13px; font-weight: 600;
@@ -412,7 +476,7 @@
 }
 .hn-faq-a.open { display: block; }
 
-/* Quick Links Tab */
+/* ── Quick Links Tab ── */
 #hn-links-list { flex: 1; overflow-y: auto; padding: 10px; }
 .hn-link-item {
     display: flex; align-items: center; gap: 10px;
@@ -426,44 +490,38 @@
 .hn-link-icon { width: 30px; height: 30px; background: var(--hn-primary); color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
 
 .hn-loading { text-align: center; padding: 20px; color: #94a3b8; font-size: 13px; }
-.hn-error { text-align: center; padding: 20px; color: #dc3545; font-size: 13px; }
-.hn-empty { text-align: center; padding: 20px; color: #94a3b8; font-size: 13px; }
+.hn-error   { text-align: center; padding: 20px; color: #dc3545;  font-size: 13px; }
+.hn-empty   { text-align: center; padding: 20px; color: #94a3b8;  font-size: 13px; }
 
-/* Admin mode indicator */
+/* ── Admin mode header ── */
 #hn-chat-header.admin-mode { background: linear-gradient(135deg, #198754 0%, #146c43 100%); }
 
-/* Responsive */
+/* ── Responsive ── */
 @media (max-width: 480px) {
     #hn-chat-window { width: calc(100vw - 20px); right: -14px; }
     #hn-chatbot-wrap { bottom: 20px; right: 14px; }
 }
 </style>
 
-<!-- Chatbot Script -->
 
+<!-- ══════════════ SCRIPT ══════════════ -->
 <script>
 window.HNChat = (function () {
+
     const CSRF         = '{{ $csrfToken }}';
     const IS_LOGGED_IN = {{ $isLoggedIn ? 'true' : 'false' }};
     const USER_ID      = {{ $userId ? (int)$userId : 'null' }};
 
-    // Use different storage keys for guest vs logged user
     const GUEST_KEY = 'hn_session_guest';
     const USER_KEY  = USER_ID ? ('hn_session_user_' + USER_ID) : null;
 
     function getStoredSessionId() {
-        if (IS_LOGGED_IN && USER_KEY) {
-            return localStorage.getItem(USER_KEY);
-        }
+        if (IS_LOGGED_IN && USER_KEY) return localStorage.getItem(USER_KEY);
         return localStorage.getItem(GUEST_KEY);
     }
-
-    function storeSessionId(sessionId) {
-        if (IS_LOGGED_IN && USER_KEY) {
-            localStorage.setItem(USER_KEY, sessionId);
-        } else {
-            localStorage.setItem(GUEST_KEY, sessionId);
-        }
+    function storeSessionId(sid) {
+        if (IS_LOGGED_IN && USER_KEY) localStorage.setItem(USER_KEY, sid);
+        else localStorage.setItem(GUEST_KEY, sid);
     }
 
     let state = {
@@ -479,9 +537,13 @@ window.HNChat = (function () {
         allFaqs: [],
         quickLinks: [],
         currentTab: 'chat',
+        guestEmail: '',   // ← save කරන email track කරන්නට
     };
 
-    // ---- PUBLIC API ----
+    // ════════════════════════════
+    //  PUBLIC API
+    // ════════════════════════════
+
     function toggle() {
         state.open = !state.open;
         const win   = document.getElementById('hn-chat-window');
@@ -492,8 +554,6 @@ window.HNChat = (function () {
             win.classList.remove('d-none');
             iconO.classList.add('d-none');
             iconC.classList.remove('d-none');
-
-            // IMPORTANT: logged user එකට new conversation එකක් හරියට ගන්න
             if (!state.convId) _init();
         } else {
             win.classList.add('d-none');
@@ -511,19 +571,47 @@ window.HNChat = (function () {
             if (el)  el.classList.toggle('d-none', t !== tab);
             if (btn) btn.classList.toggle('active', t === tab);
         });
-        if (tab === 'faq' && !state.faqsLoaded) _loadFaqs();
+        if (tab === 'faq'   && !state.faqsLoaded)                          _loadFaqs();
         if (tab === 'links' && !state.linksLoaded && state.quickLinks.length > 0) _renderLinks();
     }
 
     function startAsGuest() {
-        const name  = document.getElementById('hn-guest-name').value.trim();
-        const email = document.getElementById('hn-guest-email').value.trim();
-        if (!name) { alert('Please enter your name.'); return; }
-        if (!email || !_isEmail(email)) { alert('Please enter a valid email.'); return; }
+        const nameEl  = document.getElementById('hn-guest-name');
+        const emailEl = document.getElementById('hn-guest-email');
 
-        // When starting as guest, always reset guest session
+        const name  = nameEl.value.trim();
+        const email = emailEl.value.trim();
+
+        // Reset validation styles
+        nameEl.classList.remove('hn-field-error');
+        emailEl.classList.remove('hn-field-error');
+
+        let valid = true;
+
+        if (!name) {
+            nameEl.classList.add('hn-field-error');
+            nameEl.placeholder = 'Name is required!';
+            nameEl.focus();
+            valid = false;
+        }
+
+        if (!email || !_isEmail(email)) {
+            emailEl.classList.add('hn-field-error');
+            emailEl.placeholder = 'Valid email is required!';
+            if (valid) emailEl.focus();   // only focus if name was OK
+            valid = false;
+        }
+
+        if (!valid) return;
+
+        // Save email for notice display
+        state.guestEmail = email;
+
+        // Always start fresh guest session
         state.sessionId = null;
         state.convId    = null;
+        localStorage.removeItem(GUEST_KEY);
+
         _init(name, email);
     }
 
@@ -532,7 +620,7 @@ window.HNChat = (function () {
         const input = document.getElementById('hn-msg-input');
         const msg   = input.value.trim();
         if (!msg) return;
-        input.value       = '';
+        input.value        = '';
         input.style.height = 'auto';
         _doSend(msg);
     }
@@ -549,7 +637,7 @@ window.HNChat = (function () {
 
     function toggleMode() {
         if (state.mode === 'bot') _switchToAdmin();
-        else _switchToBot();
+        else                      _switchToBot();
     }
 
     function filterFaqs(query) {
@@ -564,45 +652,56 @@ window.HNChat = (function () {
         });
     }
 
-    // ---- PRIVATE ----
-    async function _init(guestName = null, guestEmail = null) {
-        // For logged-in users, if no sessionId yet, create a new one and keep it separate
-        if (!state.sessionId) {
-            state.sessionId = _uuid();
-            storeSessionId(state.sessionId);
-        }
+    // ════════════════════════════
+    //  PRIVATE
+    // ════════════════════════════
 
-        const body = { session_id: state.sessionId };
-        if (guestName)  body.guest_name  = guestName;
-        if (guestEmail) body.guest_email = guestEmail;
-
-        try {
-            const res = await _post('{{ route("chatbot.session.start") }}', body);
-            if (res.ok) {
-                state.convId     = res.conv_id;
-                state.mode       = res.mode;
-                state.quickLinks = res.quick_links || [];
-
-                if (!IS_LOGGED_IN && (guestName || res.user.logged_in === false)) {
-                    document.getElementById('hn-guest-form').style.display      = 'none';
-                    document.getElementById('hn-chat-body').style.display       = '';
-                    document.getElementById('hn-chat-input-area').style.display = '';
-                }
-
-                _updateModeUI();
-                _renderHistory(res.messages || []);
-                if ((res.messages || []).length === 0) _addBotMsg(_welcomeMsg(res.user));
-                _startPoll();
-
-                if (!state.linksLoaded && state.quickLinks.length) {
-                    _renderLinks();
-                    state.linksLoaded = true;
-                }
-            }
-        } catch (e) {
-            _addBotMsg('❌ Could not connect. Please try again.');
-        }
+   async function _init(guestName = null, guestEmail = null) {
+    if (!state.sessionId) {
+        state.sessionId = _uuid();
+        storeSessionId(state.sessionId);
     }
+
+    const body = { session_id: state.sessionId };
+    if (guestName)  body.guest_name  = guestName;
+    if (guestEmail) body.guest_email = guestEmail;
+
+    try {
+        const res = await _post('{{ route("chatbot.session.start") }}', body);
+        if (res.ok) {
+            state.convId     = res.conv_id;
+            state.mode       = res.mode;
+            state.quickLinks = res.quick_links || [];
+
+            // ─── Guest: hide form, show chat body + input ONLY ───
+            if (!IS_LOGGED_IN && guestName) {
+                const guestForm = document.getElementById('hn-guest-form');
+                if (guestForm) guestForm.style.display = 'none';
+
+                // ❌ email notice এখানে show නොකරනු — admin mode switch-ය-දී show කරනු
+                // Show chat body + input only
+                const chatBody  = document.getElementById('hn-chat-body');
+                const inputArea = document.getElementById('hn-chat-input-area');
+                if (chatBody)  chatBody.style.display  = '';
+                if (inputArea) inputArea.style.display = '';
+            }
+
+            _updateModeUI();
+            _renderHistory(res.messages || []);
+            if ((res.messages || []).length === 0) _addBotMsg(_welcomeMsg(res.user));
+            _startPoll();
+
+            if (!state.linksLoaded && state.quickLinks.length) {
+                _renderLinks();
+                state.linksLoaded = true;
+            }
+
+            _scrollBottom();
+        }
+    } catch (e) {
+        _addBotMsg('❌ Could not connect. Please try again.');
+    }
+}
 
     async function _doSend(msg) {
         if (!state.convId) return;
@@ -628,6 +727,7 @@ window.HNChat = (function () {
                 if (res.mode === 'bot' && res.reply) {
                     _addBotMsg(res.reply);
                 } else if (res.mode === 'admin') {
+                    // Show waiting + reminder that reply comes via email
                     document.getElementById('hn-admin-wait').classList.remove('d-none');
                 }
             } else {
@@ -643,27 +743,54 @@ window.HNChat = (function () {
         document.getElementById('hn-msg-input').focus();
     }
 
-    async function _switchToAdmin() {
-        if (!state.convId) return;
-        const res = await _post('{{ route("chatbot.switch.admin") }}', {
-            conv_id: state.convId,
-            session_id: state.sessionId,
-        });
-        if (res.ok) {
-            state.mode = 'admin';
-            _updateModeUI();
+   async function _switchToAdmin() {
+    if (!state.convId) return;
+    const res = await _post('{{ route("chatbot.switch.admin") }}', {
+        conv_id:    state.convId,
+        session_id: state.sessionId,
+    });
+    if (res.ok) {
+        state.mode = 'admin';
+        _updateModeUI();
+
+        // Show instruction banner — guest-ට පමණයි email line
+        if (!IS_LOGGED_IN) {
+            // Guest: banner + email note show කරන්න
+            document.getElementById('hn-admin-mode-banner').classList.remove('d-none');
+
+            const emailLine = state.guestEmail
+                ? `\n📧 Admin reply will be sent to: ${state.guestEmail}`
+                : '';
+            _addBotMsg(
+                '🎧 You are now connected to Live Support.\n' +
+                'Please type your complete message below and press Send.' +
+                emailLine
+            );
+        } else {
+            // Logged-in user: banner hide, simple message only
+            document.getElementById('hn-admin-mode-banner').classList.add('d-none');
+            _addBotMsg(
+                '🎧 You are now connected to Live Support.\n' +
+                'Please type your complete message and press Send.'
+            );
         }
+
+        _startPoll();
+        _scrollBottom();
     }
+}
+
 
     async function _switchToBot() {
         if (!state.convId) return;
         const res = await _post('{{ route("chatbot.switch.bot") }}', {
-            conv_id: state.convId,
+            conv_id:    state.convId,
             session_id: state.sessionId,
         });
         if (res.ok) {
             state.mode = 'bot';
             document.getElementById('hn-admin-wait').classList.add('d-none');
+            document.getElementById('hn-admin-mode-banner').classList.add('d-none');
             _updateModeUI();
         }
     }
@@ -685,8 +812,8 @@ window.HNChat = (function () {
     async function _pollMessages() {
         if (!state.convId || state.mode !== 'admin') return;
         try {
-            const url = `{{ url('/chatbot/messages') }}/${state.convId}?after=${state.lastMsgId}`;
-            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const url  = `{{ url('/chatbot/messages') }}/${state.convId}?after=${state.lastMsgId}`;
+            const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await res.json();
             if (data.ok && data.messages.length) {
                 data.messages.forEach(m => {
@@ -698,6 +825,7 @@ window.HNChat = (function () {
                         }
                     }
                 });
+                _scrollBottom();
             }
         } catch (e) {}
     }
@@ -707,7 +835,7 @@ window.HNChat = (function () {
         try {
             const res  = await fetch('{{ route("chatbot.faqs") }}');
             const data = await res.json();
-            state.allFaqs   = data.faqs || [];
+            state.allFaqs    = data.faqs || [];
             state.faqsLoaded = true;
 
             if (!state.allFaqs.length) {
@@ -736,12 +864,13 @@ window.HNChat = (function () {
             return;
         }
         container.innerHTML = state.quickLinks.map(l => `
-            <a href="${_esc(l.url)}" class="hn-link-item">
+            <a href="${_esc(l.url)}" class="hn-link-item" target="_blank">
                 <div class="hn-link-icon"><i class="${_esc(l.icon)}"></i></div>
                 ${_esc(l.label)}
                 <i class="fas fa-chevron-right ms-auto" style="font-size:10px;opacity:0.4"></i>
             </a>
         `).join('');
+        state.linksLoaded = true;
     }
 
     function _toggleFaq(id) {
@@ -749,47 +878,56 @@ window.HNChat = (function () {
         if (el) el.classList.toggle('open');
     }
 
-    function _updateModeUI() {
-        const header = document.getElementById('hn-chat-header');
-        const title  = document.getElementById('hn-chat-title');
-        const status = document.getElementById('hn-chat-status');
-        const modeBtn= document.getElementById('hn-mode-toggle');
+   function _updateModeUI() {
+    const header  = document.getElementById('hn-chat-header');
+    const title   = document.getElementById('hn-chat-title');
+    const status  = document.getElementById('hn-chat-status');
+    const modeBtn = document.getElementById('hn-mode-toggle');
+    const banner  = document.getElementById('hn-admin-mode-banner');
 
-        if (state.mode === 'admin') {
-            header.classList.add('admin-mode');
-            title.textContent = 'Live Admin Chat';
-            status.innerHTML  = '<span class="hn-dot" style="background:#4ade80"></span> Connected to Admin';
-            modeBtn.title     = 'Switch back to AI Bot';
-            modeBtn.innerHTML = '<i class="fas fa-robot"></i>';
-            _startPoll();
-        } else {
-            header.classList.remove('admin-mode');
-            title.textContent = 'HealthNet Assistant';
-            status.innerHTML  = '<span class="hn-dot"></span> Online';
-            modeBtn.title     = 'Connect to Admin';
-            modeBtn.innerHTML = '<i class="fas fa-headset"></i>';
-            _stopPoll();
-        }
+    if (state.mode === 'admin') {
+        header.classList.add('admin-mode');
+        title.textContent = 'Live Admin Chat';
+        status.innerHTML  = '<span class="hn-dot" style="background:#4ade80"></span> Connected to Admin';
+        modeBtn.title     = 'Switch back to AI Bot';
+        modeBtn.innerHTML = '<i class="fas fa-robot"></i>';
+        // Banner — guest-ට පමණයි
+        if (banner) banner.classList.toggle('d-none', IS_LOGGED_IN);
+        _startPoll();
+    } else {
+        header.classList.remove('admin-mode');
+        title.textContent = 'HealthNet Assistant';
+        status.innerHTML  = '<span class="hn-dot"></span> Online';
+        modeBtn.title     = 'Connect to Admin';
+        modeBtn.innerHTML = '<i class="fas fa-headset"></i>';
+        if (banner) banner.classList.add('d-none');
+        _stopPoll();
     }
+}
+
 
     function _welcomeMsg(user) {
         if (user && user.logged_in) {
             const name = user.first_name || user.name || 'there';
             return `👋 Hello ${name}! I'm HealthNet AI Assistant.\n\nHow can I help you today? You can ask me about:\n• Health symptoms & advice\n• Finding doctors or hospitals\n• Your appointments & orders\n• Medicine information\n\nFor urgent medical issues, please call emergency services.`;
         }
-        return `👋 Hello! I'm HealthNet AI Assistant.\n\nI can help you with health questions, finding doctors, and navigating our platform.\n\n⚠️ Note: AI replies will be sent to your email as well.`;
+        // Guest welcome
+        const emailNote = state.guestEmail
+            ? `\n\n📧 AI replies will also be sent to: ${state.guestEmail}`
+            : '\n\n📧 AI replies will also be sent to your email.';
+        return `👋 Hello! I'm HealthNet AI Assistant.\n\nI can help you with health questions, finding doctors, and navigating our platform.${emailNote}`;
     }
 
     function _renderHistory(messages) {
         (messages || []).forEach(m => {
-            if (m.sender_type === 'user')      _addUserMsg(m.message, true);
-            else if (m.sender_type === 'bot')  _addBotMsg(m.message, true);
-            else if (m.sender_type === 'admin')_addAdminMsg(m.message, true);
+            if      (m.sender_type === 'user')  _addUserMsg(m.message,  true);
+            else if (m.sender_type === 'bot')   _addBotMsg(m.message,   true);
+            else if (m.sender_type === 'admin') _addAdminMsg(m.message, true);
         });
     }
 
-    function _addUserMsg(msg, noScroll)  { _appendMsg('user', msg, noScroll); }
-    function _addBotMsg(msg, noScroll)   { _appendMsg('bot', msg, noScroll); }
+    function _addUserMsg(msg, noScroll)  { _appendMsg('user',  msg, noScroll); }
+    function _addBotMsg(msg, noScroll)   { _appendMsg('bot',   msg, noScroll); }
     function _addAdminMsg(msg, noScroll) { _appendMsg('admin', msg, noScroll); }
 
     function _appendMsg(type, msg, noScroll) {
@@ -829,9 +967,9 @@ window.HNChat = (function () {
         const res = await fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF,
-                'Accept': 'application/json',
+                'Content-Type':  'application/json',
+                'X-CSRF-TOKEN':  CSRF,
+                'Accept':        'application/json',
             },
             body: JSON.stringify(data),
         });
@@ -843,10 +981,10 @@ window.HNChat = (function () {
     }
     function _esc(s) {
         return String(s)
-            .replace(/&/g,'&amp;')
-            .replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;')
-            .replace(/"/g,'&quot;');
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
     function _uuid() {
         return 'xxxx-xxxx-xxxx'.replace(/x/g, () => Math.random().toString(16)[2]);
