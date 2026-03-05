@@ -285,5 +285,6 @@
     window.addEventListener('resize', applySb);
 </script>
 @stack('scripts')
+{{-- @include('partials.chatbot-widget') --}}
 </body>
 </html>

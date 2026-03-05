@@ -3,435 +3,129 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class ChatbotController extends Controller
 {
-    /* ═══════════════════════════════════════════════
-     | START / RESUME session
-    ═══════════════════════════════════════════════ */
-    public function startSession(Request $request): JsonResponse
+    private string $hfToken;
+    private string $hfModel = 'moonshotai/Kimi-K2-Instruct-0905';
+    private string $hfUrl   = 'https://router.huggingface.co/v1/chat/completions';
+
+    public function __construct()
+    {
+        $this->hfToken = env('HF_TOKEN', '');
+    }
+
+    /**
+     * Start or resume a chatbot session
+     */
+    public function startSession(Request $request)
     {
         $sessionId = $request->input('session_id') ?? Str::uuid()->toString();
+        $user      = Auth::user();
 
-        // Check existing open conversation
-        $conv = DB::table('chatbot_conversations')
+        // Check if conversation already exists
+        $conversation = DB::table('chatbot_conversations')
             ->where('session_id', $sessionId)
-            ->whereNull('ended_at')
+            ->where('status', 'active')
             ->first();
 
-        if (!$conv) {
-            $userId    = Auth::check() ? Auth::id() : null;
-            $guestName = $request->input('guest_name');
+        if (!$conversation) {
+            $data = [
+                'session_id' => $sessionId,
+                'mode'       => 'bot',
+                'status'     => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
 
-            // Auto-fill name from patient profile if logged in
-            if ($userId && !$guestName) {
-                $patient = DB::table('patients')->where('user_id', $userId)->first();
-                if ($patient) {
-                    $guestName = trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? ''));
-                }
+            if ($user) {
+                $data['user_id'] = $user->id;
+            } else {
+                $data['guest_name']  = $request->input('guest_name');
+                $data['guest_email'] = $request->input('guest_email');
             }
 
-            $convId = DB::table('chatbot_conversations')->insertGetId([
-                'session_id'  => $sessionId,
-                'user_id'     => $userId,
-                'guest_name'  => $guestName,
-                'mode'        => 'bot',
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
-
-            // Welcome message
-            $name    = $guestName ? ", {$guestName}" : '';
-            $welcome = "👋 Hello{$name}! I'm **HEALTHNET Assistant**.\n\nI can help you with:\n• 📅 Booking appointments\n• 🔬 Lab tests\n• 💊 Pharmacy orders\n• ❤️ Health tips\n• 📞 Contacting our support team\n\nHow can I help you today?";
-
-            DB::table('chatbot_messages')->insert([
-                'conversation_id' => $convId,
-                'sender'          => 'bot',
-                'message'         => $welcome,
-                'intent'          => 'welcome',
-                'created_at'      => now(),
-            ]);
-
-            return response()->json([
-                'success'     => true,
-                'session_id'  => $sessionId,
-                'conv_id'     => $convId,
-                'mode'        => 'bot',
-                'guest_name'  => $guestName,
-                'messages'    => [['sender' => 'bot', 'message' => $welcome, 'time' => now()->format('h:i A')]],
-            ]);
+            $convId = DB::table('chatbot_conversations')->insertGetId($data);
+        } else {
+            $convId = $conversation->id;
         }
 
-        // Resume existing
-        $messages = DB::table('chatbot_messages')
-            ->where('conversation_id', $conv->id)
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn($m) => [
-                'sender'  => $m->sender,
-                'message' => $m->message,
-                'time'    => \Carbon\Carbon::parse($m->created_at)->format('h:i A'),
-            ]);
+        // Build user info
+        $userInfo = $this->getUserInfo($user);
 
-        return response()->json([
-            'success'    => true,
-            'session_id' => $sessionId,
-            'conv_id'    => $conv->id,
-            'mode'       => $conv->mode,
-            'guest_name' => $conv->guest_name,
-            'messages'   => $messages,
-        ]);
-    }
-
-    /* ═══════════════════════════════════════════════
-     | SEND MESSAGE (user → bot or admin)
-    ═══════════════════════════════════════════════ */
-    public function sendMessage(Request $request): JsonResponse
-    {
-        $request->validate([
-            'conv_id' => 'required|integer',
-            'message' => 'required|string|max:1000',
-        ]);
-
-        $conv = DB::table('chatbot_conversations')->find($request->conv_id);
-        if (!$conv) {
-            return response()->json(['success' => false, 'message' => 'Session not found.'], 404);
-        }
-
-        // Save user message
-        DB::table('chatbot_messages')->insert([
-            'conversation_id' => $conv->id,
-            'sender'          => 'user',
-            'message'         => $request->message,
-            'created_at'      => now(),
-        ]);
-
-        // Admin mode — just save, admin will reply
-        if ($conv->mode === 'admin') {
-            // Notify admin via notification
-            $this->notifyAdmins(
-                "💬 New patient message",
-                "Patient says: " . Str::limit($request->message, 80),
-                $conv->id
-            );
-
-            return response()->json(['success' => true, 'mode' => 'admin']);
-        }
-
-        // BOT mode — generate response
-        $reply = $this->generateBotReply($request->message, $conv->id);
-
-        DB::table('chatbot_messages')->insert([
-            'conversation_id' => $conv->id,
-            'sender'          => 'bot',
-            'message'         => $reply['text'],
-            'intent'          => $reply['intent'] ?? null,
-            'created_at'      => now(),
-        ]);
-
-        return response()->json([
-            'success'    => true,
-            'mode'       => 'bot',
-            'reply'      => $reply['text'],
-            'route_name' => $reply['route_name'] ?? null,
-            'route_label'=> $reply['route_label'] ?? null,
-            'time'       => now()->format('h:i A'),
-        ]);
-    }
-
-    /* ═══════════════════════════════════════════════
-     | SWITCH TO ADMIN LIVE CHAT
-    ═══════════════════════════════════════════════ */
-    public function switchToAdmin(Request $request): JsonResponse
-    {
-        $conv = DB::table('chatbot_conversations')->find($request->conv_id);
-        if (!$conv) return response()->json(['success' => false], 404);
-
-        DB::table('chatbot_conversations')
-            ->where('id', $conv->id)
-            ->update(['mode' => 'admin', 'updated_at' => now()]);
-
-        $msg = "🔔 You are now connected to our **Support Team**.\nAn agent will respond shortly. Average response time: 5–10 minutes.\n\nType your message below and we'll get back to you! 😊";
-
-        DB::table('chatbot_messages')->insert([
-            'conversation_id' => $conv->id,
-            'sender'          => 'bot',
-            'message'         => $msg,
-            'intent'          => 'switch_admin',
-            'created_at'      => now(),
-        ]);
-
-        $this->notifyAdmins(
-            "🆕 Patient wants to chat",
-            ($conv->guest_name ?? 'A patient') . " has requested live support.",
-            $conv->id
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => $msg,
-            'time'    => now()->format('h:i A'),
-        ]);
-    }
-
-    /* ═══════════════════════════════════════════════
-     | SWITCH BACK TO BOT
-    ═══════════════════════════════════════════════ */
-    public function switchToBot(Request $request): JsonResponse
-    {
-        DB::table('chatbot_conversations')
-            ->where('id', $request->conv_id)
-            ->update(['mode' => 'bot', 'updated_at' => now()]);
-
-        $msg = "🤖 Switched back to **AI Assistant** mode. How can I help you?";
-
-        DB::table('chatbot_messages')->insert([
-            'conversation_id' => $request->conv_id,
-            'sender'          => 'bot',
-            'message'         => $msg,
-            'intent'          => 'switch_bot',
-            'created_at'      => now(),
-        ]);
-
-        return response()->json(['success' => true, 'message' => $msg]);
-    }
-
-    /* ═══════════════════════════════════════════════
-     | POLL NEW MESSAGES (long-poll)
-    ═══════════════════════════════════════════════ */
-    public function pollMessages(int $convId, Request $request): JsonResponse
-    {
-        $lastId = $request->input('last_id', 0);
-
+        // Get recent messages
         $messages = DB::table('chatbot_messages')
             ->where('conversation_id', $convId)
-            ->where('id', '>', $lastId)
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn($m) => [
-                'id'      => $m->id,
-                'sender'  => $m->sender,
-                'message' => $m->message,
-                'time'    => \Carbon\Carbon::parse($m->created_at)->format('h:i A'),
-            ]);
+            ->orderBy('created_at', 'asc')
+            ->get(['sender_type', 'message', 'created_at']);
 
-        $conv = DB::table('chatbot_conversations')->find($convId);
+        // Quick links for this user's role
+        $quickLinks = $this->getQuickLinks($user);
 
         return response()->json([
-            'messages' => $messages,
-            'mode'     => $conv->mode ?? 'bot',
+            'ok'          => true,
+            'session_id'  => $sessionId,
+            'conv_id'     => $convId,
+            'user'        => $userInfo,
+            'messages'    => $messages,
+            'quick_links' => $quickLinks,
+            'mode'        => $conversation->mode ?? 'bot',
         ]);
     }
 
-    /* ═══════════════════════════════════════════════
-     | SUBMIT CONTACT ADMIN FORM
-    ═══════════════════════════════════════════════ */
-    public function submitContact(Request $request): JsonResponse
+    /**
+     * Send a message (to AI bot or admin)
+     */
+    public function sendMessage(Request $request)
     {
         $request->validate([
-            'conv_id' => 'nullable|integer',
-            'name'    => 'required|string|max:100',
-            'email'   => 'nullable|email',
-            'phone'   => 'nullable|string|max:20',
-            'subject' => 'nullable|string|max:255',
-            'message' => 'required|string|max:2000',
+            'conv_id'    => 'required|integer',
+            'session_id' => 'required|string',
+            'message'    => 'required|string|max:2000',
         ]);
 
-        $contactId = DB::table('chatbot_admin_contacts')->insertGetId([
-            'conversation_id' => $request->conv_id,
-            'user_id'         => Auth::check() ? Auth::id() : null,
-            'name'            => $request->name,
-            'email'           => $request->email,
-            'phone'           => $request->phone,
-            'subject'         => $request->subject ?? 'Chat Support Request',
-            'message'         => $request->message,
-            'status'          => 'pending',
-            'created_at'      => now(),
-            'updated_at'      => now(),
-        ]);
+        $convId    = $request->input('conv_id');
+        $sessionId = $request->input('session_id');
+        $message   = trim($request->input('message'));
+        $user      = Auth::user();
 
-        // Notify all admins
-        $admins = DB::table('users')
-            ->where('user_type', 'admin')
+        // Verify conversation
+        $conversation = DB::table('chatbot_conversations')
+            ->where('id', $convId)
+            ->where('session_id', $sessionId)
             ->where('status', 'active')
-            ->get();
+            ->first();
 
-        foreach ($admins as $admin) {
-            DB::table('notifications')->insert([
-                'notifiable_type' => 'App\Models\User',
-                'notifiable_id'   => $admin->id,
-                'type'            => 'chatbot_contact',
-                'title'           => '📨 New Support Request',
-                'message'         => $request->name . ' sent a support request: ' . Str::limit($request->message, 80),
-                'related_type'    => 'chatbot_contact',
-                'related_id'      => $contactId,
-                'is_read'         => 0,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-            ]);
+        if (!$conversation) {
+            return response()->json(['ok' => false, 'error' => 'Conversation not found'], 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => '✅ Message sent! Our team will respond within 24 hours.',
+        // Store user message
+        DB::table('chatbot_messages')->insert([
+            'conversation_id' => $convId,
+            'sender_type'     => 'user',
+            'sender_id'       => $user?->id,
+            'message'         => $message,
+            'created_at'      => now(),
         ]);
-    }
 
-    /* ═══════════════════════════════════════════════
-     | GET FAQs (for quick reply buttons)
-    ═══════════════════════════════════════════════ */
-    public function getFaqs(): JsonResponse
-    {
-        $faqs = DB::table('chatbot_faqs')
-            ->where('is_active', 1)
-            ->orderBy('sort_order')
-            ->get(['id', 'question', 'intent_key', 'route_name', 'route_label']);
+        DB::table('chatbot_conversations')->where('id', $convId)->update(['updated_at' => now()]);
 
-        return response()->json(['faqs' => $faqs]);
-    }
-
-    /* ═══════════════════════════════════════════════
-     | PRIVATE: Generate Bot Reply
-    ═══════════════════════════════════════════════ */
-    private function generateBotReply(string $userMessage, int $convId): array
-    {
-        $lower = strtolower($userMessage);
-
-        // 1. Check FAQ keyword match first (fastest)
-        $faqs = DB::table('chatbot_faqs')->where('is_active', 1)->get();
-        foreach ($faqs as $faq) {
-            if (!$faq->intent_key) continue;
-            $keywords = array_map('trim', explode(',', $faq->intent_key));
-            foreach ($keywords as $kw) {
-                if ($kw && str_contains($lower, $kw)) {
-                    return [
-                        'text'        => $faq->answer,
-                        'intent'      => 'faq',
-                        'route_name'  => $faq->route_name,
-                        'route_label' => $faq->route_label,
-                    ];
-                }
-            }
-        }
-
-        // 2. Contact admin intent
-        if (str_contains($lower, 'contact admin') ||
-            str_contains($lower, 'talk to human') ||
-            str_contains($lower, 'speak to agent') ||
-            str_contains($lower, 'live chat')) {
-            return [
-                'text'   => "I'll connect you with our support team right away! Click the **\"💬 Contact Admin\"** button below.",
-                'intent' => 'contact_admin',
-            ];
-        }
-
-        // 3. Health tip keywords — use Gemini
-        $healthTopics = ['diet','exercise','water','sleep','stress','diabetes','blood pressure',
-                         'weight','nutrition','vitamin','fever','cough','headache','pregnancy',
-                         'heart','kidney','sugar','cholesterol','mental health','anxiety'];
-
-        $isHealthTopic = false;
-        foreach ($healthTopics as $topic) {
-            if (str_contains($lower, $topic)) { $isHealthTopic = true; break; }
-        }
-
-        if ($isHealthTopic) {
-            return $this->callGemini($userMessage, 'health_tip');
-        }
-
-        // 4. General platform help — Gemini with system context
-        $platformWords = ['how','what','where','can i','appointment','doctor','pharmacy','lab',
-                          'payment','login','register','account','password','profile'];
-        $isPlatformQ   = false;
-        foreach ($platformWords as $w) {
-            if (str_contains($lower, $w)) { $isPlatformQ = true; break; }
-        }
-
-        if ($isPlatformQ) {
-            return $this->callGemini($userMessage, 'platform');
-        }
-
-        // 5. Fallback
-        return [
-            'text'   => "I'm not sure I understand that. Here are some things I can help you with:\n\n• 📅 Book appointments\n• 🔬 Lab tests\n• 💊 Pharmacy orders\n• ❤️ Health tips\n\nOr would you like to **contact our support team** directly?",
-            'intent' => 'fallback',
-        ];
-    }
-
-    /* ═══════════════════════════════════════════════
-     | PRIVATE: Call Google Gemini API (FREE)
-    ═══════════════════════════════════════════════ */
-    private function callGemini(string $userMessage, string $context): array
-    {
-        $apiKey = config('services.gemini.key', env('GEMINI_API_KEY'));
-        $model  = config('services.gemini.model', 'gemini-1.5-flash');
-
-        if (!$apiKey) {
-            return ['text' => "I'm having trouble connecting to AI services right now. Please try again later or contact our support team.", 'intent' => 'ai_error'];
-        }
-
-        $systemPrompt = $context === 'health_tip'
-            ? "You are HEALTHNET Assistant, a professional health advisor for a Sri Lankan healthcare platform. ONLY answer health-related questions: nutrition, exercise, wellness, disease prevention, symptoms, and healthy lifestyle. Keep responses friendly, clear, and under 150 words. Do NOT discuss unrelated topics. End with a tip or encouragement."
-            : "You are HEALTHNET Assistant for a Sri Lankan healthcare management platform called HEALTHNET. The platform allows patients to: book doctor appointments, order lab tests, order medicines from pharmacies, track health metrics, and manage medical records. ONLY answer questions related to the HEALTHNET platform features. Keep answers under 120 words, friendly and helpful. If unsure, recommend contacting support.";
-
-        try {
-            $response = Http::timeout(10)->post(
-                "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}",
-                [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $systemPrompt . "\n\nUser question: " . $userMessage]
-                            ]
-                        ]
-                    ],
-                    'generationConfig' => [
-                        'maxOutputTokens' => 200,
-                        'temperature'     => 0.7,
-                    ]
-                ]
-            );
-
-            if ($response->successful()) {
-                $text = $response->json('candidates.0.content.parts.0.text') ?? '';
-                if ($text) {
-                    return ['text' => trim($text), 'intent' => 'ai'];
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('Gemini API error: ' . $e->getMessage());
-        }
-
-        return [
-            'text'   => "I'm unable to process that right now. Please try rephrasing, or **contact our support team** for immediate assistance.",
-            'intent' => 'ai_error',
-        ];
-    }
-
-    /* ═══════════════════════════════════════════════
-     | PRIVATE: Notify Admins
-    ═══════════════════════════════════════════════ */
-    private function notifyAdmins(string $title, string $message, int $convId): void
-    {
-        try {
-            $admins = DB::table('users')
-                ->where('user_type', 'admin')
-                ->where('status', 'active')
-                ->pluck('id');
-
-            foreach ($admins as $adminId) {
+        // If mode is 'admin' - just store, admin will reply
+        if ($conversation->mode === 'admin') {
+            // Notify admin via DB notification
+            $adminUser = DB::table('users')->where('user_type', 'admin')->first();
+            if ($adminUser) {
                 DB::table('notifications')->insert([
-                    'notifiable_type' => 'App\Models\User',
-                    'notifiable_id'   => $adminId,
-                    'type'            => 'live_chat',
-                    'title'           => $title,
-                    'message'         => $message,
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id'   => $adminUser->id,
+                    'type'            => 'chatbot_message',
+                    'title'           => 'New Live Chat Message',
+                    'message'         => ($conversation->guest_name ?? ($user?->name ?? 'User')) . ': ' . Str::limit($message, 80),
                     'related_type'    => 'chatbot_conversation',
                     'related_id'      => $convId,
                     'is_read'         => 0,
@@ -439,8 +133,328 @@ class ChatbotController extends Controller
                     'updated_at'      => now(),
                 ]);
             }
+
+            return response()->json([
+                'ok'   => true,
+                'mode' => 'admin',
+                'reply'=> null,
+                'note' => 'Message sent to admin. Waiting for reply.',
+            ]);
+        }
+
+        // BOT mode - call HF AI
+        $reply = $this->callHfAi($message, $user, $convId);
+
+        if ($reply === false) {
+            return response()->json(['ok' => false, 'error' => 'AI service unavailable'], 500);
+        }
+
+        // Store bot reply
+        DB::table('chatbot_messages')->insert([
+            'conversation_id' => $convId,
+            'sender_type'     => 'bot',
+            'sender_id'       => null,
+            'message'         => $reply,
+            'created_at'      => now(),
+        ]);
+
+        // If guest - send email with reply
+        if (!$user && $conversation->guest_email) {
+            $this->sendGuestEmail($conversation, $message, $reply);
+        }
+
+        return response()->json([
+            'ok'    => true,
+            'mode'  => 'bot',
+            'reply' => $reply,
+        ]);
+    }
+
+    /**
+     * Switch conversation to admin live chat
+     */
+    public function switchToAdmin(Request $request)
+    {
+        $convId    = $request->input('conv_id');
+        $sessionId = $request->input('session_id');
+
+        DB::table('chatbot_conversations')
+            ->where('id', $convId)
+            ->where('session_id', $sessionId)
+            ->update(['mode' => 'admin', 'updated_at' => now()]);
+
+        // System message
+        DB::table('chatbot_messages')->insert([
+            'conversation_id' => $convId,
+            'sender_type'     => 'bot',
+            'message'         => 'You have been connected to an admin. Please wait for a response. Our team will reply shortly.',
+            'created_at'      => now(),
+        ]);
+
+        // Notify admin
+        $adminUser = DB::table('users')->where('user_type', 'admin')->first();
+        if ($adminUser) {
+            DB::table('notifications')->insert([
+                'notifiable_type' => 'App\\Models\\User',
+                'notifiable_id'   => $adminUser->id,
+                'type'            => 'live_chat_request',
+                'title'           => 'New Live Chat Request',
+                'message'         => 'A user has requested live admin support.',
+                'related_type'    => 'chatbot_conversation',
+                'related_id'      => $convId,
+                'is_read'         => 0,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'mode' => 'admin']);
+    }
+
+    /**
+     * Switch back to bot mode
+     */
+    public function switchToBot(Request $request)
+    {
+        $convId    = $request->input('conv_id');
+        $sessionId = $request->input('session_id');
+
+        DB::table('chatbot_conversations')
+            ->where('id', $convId)
+            ->where('session_id', $sessionId)
+            ->update(['mode' => 'bot', 'updated_at' => now()]);
+
+        return response()->json(['ok' => true, 'mode' => 'bot']);
+    }
+
+    /**
+     * Contact admin form (guest)
+     */
+    public function submitContact(Request $request)
+    {
+        $request->validate([
+            'name'    => 'required|string|max:100',
+            'email'   => 'required|email',
+            'message' => 'required|string|max:2000',
+        ]);
+
+        // Save to DB
+        DB::table('chatbot_conversations')->insertGetId([
+            'session_id'  => Str::uuid()->toString(),
+            'guest_name'  => $request->input('name'),
+            'guest_email' => $request->input('email'),
+            'mode'        => 'admin',
+            'status'      => 'active',
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        return response()->json(['ok' => true, 'message' => 'Your message has been sent to admin.']);
+    }
+
+    /**
+     * Poll new messages (for live admin chat)
+     */
+    public function pollMessages(Request $request, $convId)
+    {
+        $after = $request->query('after', 0); // last message id
+        $msgs  = DB::table('chatbot_messages')
+            ->where('conversation_id', $convId)
+            ->where('id', '>', $after)
+            ->orderBy('created_at', 'asc')
+            ->get(['id', 'sender_type', 'message', 'created_at']);
+
+        return response()->json(['ok' => true, 'messages' => $msgs]);
+    }
+
+    /**
+     * Get FAQs
+     */
+    public function getFaqs()
+    {
+        $faqs = DB::table('chatbot_faqs')
+            ->where('is_active', 1)
+            ->orderBy('sort_order')
+            ->get(['id', 'question', 'answer', 'category']);
+
+        return response()->json(['ok' => true, 'faqs' => $faqs]);
+    }
+
+    // ==================== PRIVATE HELPERS ====================
+
+    private function callHfAi(string $userMessage, $user, int $convId): string|false
+    {
+        if (!$this->hfToken) return false;
+
+        // Build system prompt with health context
+        $systemPrompt = $this->buildSystemPrompt($user, $convId);
+
+        $payload = [
+            'model'       => $this->hfModel,
+            'messages'    => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user',   'content' => $userMessage],
+            ],
+            'temperature' => 0.6,
+            'max_tokens'  => 350,
+        ];
+
+        $ch = curl_init($this->hfUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $this->hfToken,
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ],
+            CURLOPT_TIMEOUT        => 60,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_USERAGENT      => 'HealthNet-Bot/1.0',
+        ]);
+
+        $response = curl_exec($ch);
+        $errno    = curl_errno($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($errno || $httpCode >= 400) return false;
+
+        $data  = json_decode($response, true);
+        $reply = trim($data['choices'][0]['message']['content'] ?? '');
+
+        return $reply ?: false;
+    }
+
+    private function buildSystemPrompt($user, int $convId): string
+    {
+        $context = "You are HealthNet AI Assistant, a helpful medical information chatbot for HealthNet healthcare platform in Sri Lanka.\n\n";
+        $context .= "IMPORTANT RULES:\n";
+        $context .= "- Only provide health-related information, medical advice guidance, and platform navigation help.\n";
+        $context .= "- Always recommend consulting a real doctor for diagnosis or treatment.\n";
+        $context .= "- Do NOT discuss non-health topics.\n";
+        $context .= "- Be empathetic, clear, and concise.\n";
+        $context .= "- Respond in the same language the user writes (Sinhala or English).\n\n";
+
+        if ($user) {
+            $context .= "CURRENT USER CONTEXT:\n";
+            $context .= "- Name: " . ($user->name ?? 'User') . "\n";
+            $context .= "- Role: " . $user->user_type . "\n";
+
+            // Load patient health data if available
+            if ($user->user_type === 'patient') {
+                $patient = DB::table('patients')->where('user_id', $user->id)->first();
+                if ($patient) {
+                    $context .= "- Blood Group: " . ($patient->blood_group ?? 'Unknown') . "\n";
+                    $context .= "- City: " . ($patient->city ?? 'Unknown') . "\n";
+                }
+
+                $healthData = DB::table('patient_health_data')
+                    ->where('patient_id', $patient->id ?? 0)
+                    ->orderBy('recorded_date', 'desc')
+                    ->first();
+
+                if ($healthData) {
+                    $context .= "- Has Diabetes: " . ($healthData->has_diabetes ? 'Yes' : 'No') . "\n";
+                    $context .= "- Has Hypertension: " . ($healthData->has_hypertension ? 'Yes' : 'No') . "\n";
+                    $context .= "- Has Heart Disease: " . ($healthData->has_heart_disease ? 'Yes' : 'No') . "\n";
+                    if ($healthData->allergies) {
+                        $context .= "- Allergies: " . $healthData->allergies . "\n";
+                    }
+                    if ($healthData->current_medications) {
+                        $context .= "- Current Medications: " . $healthData->current_medications . "\n";
+                    }
+                }
+            }
+        }
+
+        // Recent conversation context (last 5 messages)
+        $recentMsgs = DB::table('chatbot_messages')
+            ->where('conversation_id', $convId)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->reverse();
+
+        if ($recentMsgs->count() > 0) {
+            $context .= "\nRECENT CONVERSATION:\n";
+            foreach ($recentMsgs as $msg) {
+                $role = $msg->sender_type === 'user' ? 'User' : 'Assistant';
+                $context .= $role . ': ' . Str::limit($msg->message, 150) . "\n";
+            }
+        }
+
+        return $context;
+    }
+
+    private function getUserInfo($user): array
+    {
+        if (!$user) return ['logged_in' => false];
+
+        $info = [
+            'logged_in' => true,
+            'name'      => $user->name,
+            'email'     => $user->email,
+            'role'      => $user->user_type,
+        ];
+
+        if ($user->user_type === 'patient') {
+            $patient = DB::table('patients')->where('user_id', $user->id)->first();
+            if ($patient) {
+                $info['first_name']    = $patient->first_name;
+                $info['last_name']     = $patient->last_name;
+                $info['profile_image'] = $patient->profile_image;
+            }
+        }
+
+        return $info;
+    }
+
+   private function getQuickLinks($user): array
+{
+    $role    = $user?->user_type ?? 'guest';
+    $appUrl  = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
+
+    $links = DB::table('chatbot_quick_links')
+        ->where('is_active', 1)
+        ->orderBy('sort_order')
+        ->get();
+
+    $filtered = [];
+    foreach ($links as $link) {
+        $roles = json_decode($link->roles ?? '[]', true);
+        if (in_array($role, $roles) || empty($roles)) {
+            $path = ltrim($link->url_path ?? '', '/');
+            $filtered[] = [
+                'label' => $link->label,
+                'url'   => $appUrl . '/' . $path,
+                'icon'  => $link->icon,
+            ];
+        }
+    }
+
+    return $filtered;
+}
+
+
+    private function sendGuestEmail($conversation, string $userMessage, string $botReply): void
+    {
+        try {
+            $to    = $conversation->guest_email;
+            $name  = $conversation->guest_name ?? 'User';
+
+            Mail::send('emails.chatbot-reply', [
+                'name'       => $name,
+                'userMessage'=> $userMessage,
+                'botReply'   => $botReply,
+            ], function ($m) use ($to, $name) {
+                $m->to($to, $name)
+                  ->from(config('mail.from.address'), config('mail.from.name'))
+                  ->subject('HealthNet Assistant - Your Health Query Response');
+            });
         } catch (\Exception $e) {
-            Log::warning('Admin chat notify error: ' . $e->getMessage());
+            \Log::error('Chatbot email failed: ' . $e->getMessage());
         }
     }
 }

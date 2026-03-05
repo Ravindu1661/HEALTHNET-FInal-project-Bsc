@@ -886,26 +886,36 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
     // Admin Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-  // ── Chatbot (NEW) ──────────────────────────
+ // ── Chatbot (Admin) ──────────────────────────
     Route::prefix('chatbot')->name('chatbot.')->group(function () {
-        Route::get('/',                           [AdminChatbotController::class, 'index'])              ->name('index');
-        // Contacts
-        Route::get('contacts',                    [AdminChatbotController::class, 'contacts'])           ->name('contacts');
-        Route::get('contacts/{id}',               [AdminChatbotController::class, 'showContact'])        ->name('contacts.show');
-        Route::post('contacts/{id}/reply',        [AdminChatbotController::class, 'replyContact'])       ->name('contacts.reply');
-        Route::put('contacts/{id}/status',        [AdminChatbotController::class, 'updateContactStatus'])->name('contacts.status');
-        Route::delete('contacts/{id}',            [AdminChatbotController::class, 'destroyContact'])     ->name('contacts.destroy');
 
-        // FAQs
-        Route::get('faqs',                        [AdminChatbotController::class, 'faqs'])               ->name('faqs');
-        Route::post('faqs',                       [AdminChatbotController::class, 'storeFaq'])           ->name('faqs.store');
-        Route::put('faqs/{id}',                   [AdminChatbotController::class, 'updateFaq'])          ->name('faqs.update');
-        Route::delete('faqs/{id}',               [AdminChatbotController::class, 'destroyFaq'])          ->name('faqs.destroy');
+        // Dashboard
+        Route::get('/', [AdminChatbotController::class, 'index'])->name('index');
 
         // Conversations
-        Route::get('conversations',               [AdminChatbotController::class, 'conversations'])      ->name('conversations');
-        Route::get('conversations/{id}',          [AdminChatbotController::class, 'showConversation'])   ->name('conversations.show');
+        Route::get('/conversations',          [AdminChatbotController::class, 'conversations'])->name('conversations');
+        Route::get('/conversations/{id}',     [AdminChatbotController::class, 'showConversation'])->name('conversations.show');
+        Route::post('/conversations/{id}/reply',  [AdminChatbotController::class, 'reply'])->name('conversations.reply');
+        Route::get('/conversations/{id}/poll',    [AdminChatbotController::class, 'pollMessages'])->name('conversations.poll');
+        Route::post('/conversations/{id}/close',  [AdminChatbotController::class, 'close'])->name('conversations.close');
+        Route::post('/conversations/{id}/reopen', [AdminChatbotController::class, 'reopen'])->name('conversations.reopen');
+        Route::delete('/conversations/{id}',      [AdminChatbotController::class, 'destroy'])->name('conversations.destroy');
+
+        // FAQs
+        Route::get('/faqs',        [AdminChatbotController::class, 'faqs'])->name('faqs');
+        Route::post('/faqs',       [AdminChatbotController::class, 'storeFaq'])->name('faqs.store');
+        Route::put('/faqs/{id}',   [AdminChatbotController::class, 'updateFaq'])->name('faqs.update');
+        Route::delete('/faqs/{id}',[AdminChatbotController::class, 'destroyFaq'])->name('faqs.destroy');
+        Route::post('/faqs/{id}/toggle', [AdminChatbotController::class, 'toggleFaq'])->name('faqs.toggle');
+
+        // Quick Links
+        Route::get('/links',        [AdminChatbotController::class, 'links'])->name('links');
+        Route::post('/links',       [AdminChatbotController::class, 'storeLink'])->name('links.store');
+        Route::put('/links/{id}',   [AdminChatbotController::class, 'updateLink'])->name('links.update');
+        Route::delete('/links/{id}',[AdminChatbotController::class, 'destroyLink'])->name('links.destroy');
+        Route::post('/links/{id}/toggle', [AdminChatbotController::class, 'toggleLink'])->name('links.toggle');
     });
+
 
     // Dashboard Stats API
     Route::get('/dashboard/stats', function() {
