@@ -4,6 +4,13 @@
 @section('page-title', 'Live Chat Conversation #'.$conversation->id)
 
 @section('content')
+
+@php
+    // Guest නම් පමණයි email target ඇත — logged-in user-ට email නොයවයි
+    $isGuest    = !$conversation->user_id;
+    $replyEmail = $isGuest ? $conversation->guest_email : null;
+@endphp
+
 <div class="row g-4" style="height: calc(100vh - 155px);">
 
     {{-- LEFT: Conversation Info --}}
@@ -17,6 +24,7 @@
                 </h6>
             </div>
             <div class="card-body p-0">
+
                 <div class="hn-detail-row">
                     <i class="fas fa-hashtag text-primary"></i>
                     <div>
@@ -44,16 +52,12 @@
                     </div>
                 </div>
 
-                {{-- Email Reply Target — key info ──────────────────── --}}
+                {{-- Email Reply Target — Guest-ට පමණයි --}}
+                @if($isGuest)
                 <div class="hn-detail-row">
                     <i class="fas fa-envelope text-primary"></i>
                     <div>
                         <div class="hn-detail-label">Reply Email Target</div>
-                        @php
-                            $replyEmail = $conversation->user_id
-                                ? $conversation->user_email
-                                : $conversation->guest_email;
-                        @endphp
                         @if($replyEmail)
                             <div class="hn-detail-val">
                                 <a href="mailto:{{ $replyEmail }}"
@@ -69,6 +73,22 @@
                         @endif
                     </div>
                 </div>
+                @else
+                {{-- Logged-in user — email info row --}}
+                <div class="hn-detail-row">
+                    <i class="fas fa-envelope text-primary"></i>
+                    <div>
+                        <div class="hn-detail-label">Reply Delivery</div>
+                        <div class="hn-detail-val">
+                            <span class="text-primary fw-semibold" style="font-size:.8rem;">
+                                <i class="fas fa-bolt me-1"></i>Real-time (in chat)
+                            </span>
+                            <br>
+                            <small class="text-muted">No email sent to logged-in users</small>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 <div class="hn-detail-row">
                     <i class="fas fa-signal text-primary"></i>
@@ -112,23 +132,32 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
-        {{-- Email Reply Notice --}}
-        @if($replyEmail)
-        <div class="alert mb-0 py-2 px-3"
-             style="background:#e8f5e9;border-left:3px solid #388e3c;border-radius:8px;font-size:12px;color:#1b5e20;">
-            <i class="fas fa-paper-plane me-1"></i>
-            When you send a reply, an <strong>email</strong> will be sent to:<br>
-            <strong>{{ $replyEmail }}</strong>
-        </div>
+        {{-- Email / Delivery Notice --}}
+        @if($isGuest)
+            @if($replyEmail)
+            <div class="alert mb-0 py-2 px-3"
+                 style="background:#e8f5e9;border-left:3px solid #388e3c;border-radius:8px;font-size:12px;color:#1b5e20;">
+                <i class="fas fa-paper-plane me-1"></i>
+                Reply will be <strong>emailed</strong> to:<br>
+                <strong>{{ $replyEmail }}</strong>
+            </div>
+            @else
+            <div class="alert mb-0 py-2 px-3"
+                 style="background:#fff3e0;border-left:3px solid #f57c00;border-radius:8px;font-size:12px;color:#e65100;">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Guest has <strong>no email</strong>. Reply stored only — no email notification.
+            </div>
+            @endif
         @else
-        <div class="alert mb-0 py-2 px-3"
-             style="background:#fff3e0;border-left:3px solid #f57c00;border-radius:8px;font-size:12px;color:#e65100;">
-            <i class="fas fa-exclamation-triangle me-1"></i>
-            No email address found. Reply will be <strong>stored only</strong> — no email notification.
-        </div>
+            <div class="alert mb-0 py-2 px-3"
+                 style="background:#e8f0ff;border-left:3px solid #0d6efd;border-radius:8px;font-size:12px;color:#1e3a8a;">
+                <i class="fas fa-bolt me-1"></i>
+                Logged-in user — replies delivered <strong>real-time</strong> in chat widget. No email sent.
+            </div>
         @endif
 
         {{-- Actions --}}
@@ -146,7 +175,6 @@
                             <i class="fas fa-exchange-alt me-1"></i>
                             Switch to {{ $conversation->mode === 'admin' ? 'Bot' : 'Admin' }} Mode
                         </button>
-
                         <button type="button" class="btn btn-sm btn-danger"
                                 onclick="HNConv.closeConversation()">
                             <i class="fas fa-times-circle me-1"></i> Close Conversation
@@ -180,13 +208,23 @@
                 <h6 class="mb-0">Live Chat</h6>
                 <span class="badge bg-light text-muted ms-2">{{ $conversation->display_name }}</span>
 
-                {{-- Email sent toast (hidden initially) --}}
-                <span id="hn-email-sent-badge" class="badge bg-success ms-2 d-none">
-                    <i class="fas fa-envelope-circle-check me-1"></i>Email Sent!
-                </span>
-                <span id="hn-email-fail-badge" class="badge bg-warning text-dark ms-2 d-none">
-                    <i class="fas fa-exclamation-triangle me-1"></i>Email not sent
-                </span>
+                @if($isGuest)
+                    <span class="badge bg-warning text-dark ms-1">Guest</span>
+                @else
+                    <span class="badge bg-primary ms-1" style="font-size:10px;">
+                        <i class="fas fa-bolt me-1"></i>Logged-in
+                    </span>
+                @endif
+
+                {{-- Email sent toast — Guest-ට පමණයි show වේ --}}
+                @if($isGuest)
+                    <span id="hn-email-sent-badge" class="badge bg-success ms-2 d-none">
+                        <i class="fas fa-envelope me-1"></i>Email Sent!
+                    </span>
+                    <span id="hn-email-fail-badge" class="badge bg-warning text-dark ms-2 d-none">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Email not sent
+                    </span>
+                @endif
 
                 <span class="ms-auto text-muted small" id="hn-typing-label" style="display:none;">
                     <i class="fas fa-ellipsis-h fa-beat-fade me-1"></i> User is typing...
@@ -227,19 +265,28 @@
             {{-- Reply box --}}
             <div class="card-footer">
                 @if($conversation->status === 'active')
-                    {{-- Email reminder strip --}}
-                    @if($replyEmail)
-                    <div class="mb-2 px-2 py-1 rounded"
-                         style="background:#e8f5e9;border-left:3px solid #388e3c;font-size:12px;color:#2e7d32;">
-                        <i class="fas fa-envelope me-1"></i>
-                        Reply will be <strong>emailed</strong> to: <strong>{{ $replyEmail }}</strong>
-                    </div>
+
+                    {{-- Delivery strip — user type අනුව --}}
+                    @if($isGuest)
+                        @if($replyEmail)
+                        <div class="mb-2 px-2 py-1 rounded"
+                             style="background:#e8f5e9;border-left:3px solid #388e3c;font-size:12px;color:#2e7d32;">
+                            <i class="fas fa-envelope me-1"></i>
+                            Reply will be <strong>emailed</strong> to: <strong>{{ $replyEmail }}</strong>
+                        </div>
+                        @else
+                        <div class="mb-2 px-2 py-1 rounded"
+                             style="background:#fff3e0;border-left:3px solid #f57c00;font-size:12px;color:#e65100;">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            No email address — reply stored only.
+                        </div>
+                        @endif
                     @else
-                    <div class="mb-2 px-2 py-1 rounded"
-                         style="background:#fff3e0;border-left:3px solid #f57c00;font-size:12px;color:#e65100;">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        No email address — reply stored only, no email notification.
-                    </div>
+                        <div class="mb-2 px-2 py-1 rounded"
+                             style="background:#e8f0ff;border-left:3px solid #0d6efd;font-size:12px;color:#1e3a8a;">
+                            <i class="fas fa-bolt me-1"></i>
+                            Logged-in user — reply delivered <strong>real-time</strong> in chat. No email sent.
+                        </div>
                     @endif
 
                     <form onsubmit="HNConv.sendReply(event)">
@@ -248,26 +295,28 @@
                                 <textarea id="hn-reply-text"
                                           class="form-control"
                                           rows="1"
-                                          placeholder="Type your reply… (email will be sent to {{ $replyEmail ?? 'user' }})"
+                                          placeholder="Type your reply…"
                                           oninput="HNConv.autoResize(this)"></textarea>
                             </div>
                             <button type="submit" id="hn-reply-btn" class="btn btn-success">
                                 <i class="fas fa-paper-plane me-1"></i> Send
-                                @if($replyEmail)
-                                    <small class="d-block" style="font-size:10px;opacity:.85;">
-                                        + Email
-                                    </small>
+                                @if($isGuest && $replyEmail)
+                                    <small class="d-block" style="font-size:10px;opacity:.85;">+ Email</small>
                                 @endif
                             </button>
                         </div>
                         <small class="text-muted d-block mt-1">
                             <i class="fas fa-info-circle me-1"></i>
-                            Admin replies work in both Bot and Admin mode.
-                            @if($replyEmail)
-                                An email notification will be sent to the user.
+                            @if($isGuest && $replyEmail)
+                                Reply will be stored and emailed to the guest.
+                            @elseif($isGuest)
+                                Reply stored only — guest has no email.
+                            @else
+                                Reply delivered in real-time to the logged-in user's chat widget.
                             @endif
                         </small>
                     </form>
+
                 @else
                     <div class="text-center text-muted py-2">
                         <i class="fas fa-lock me-1"></i>
@@ -291,7 +340,6 @@
 .hn-detail-label { font-size: .7rem; color: #999; font-weight: 500; text-transform: uppercase; }
 .hn-detail-val   { font-size: .83rem; color: #333; font-weight: 500; }
 
-/* WhatsApp-style conversation */
 .hn-conv-area {
     flex: 1; overflow-y: auto; padding: 16px;
     background: #e5ddd5; display: flex;
@@ -300,11 +348,8 @@
 .hn-conv-area::-webkit-scrollbar { width: 4px; }
 .hn-conv-area::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
 
-.hn-wa-row {
-    display: flex; gap: 7px;
-    align-items: flex-end; max-width: 78%;
-}
-.hn-wa-user  { align-self: flex-end;   flex-direction: row-reverse; margin-left: auto; }
+.hn-wa-row { display: flex; gap: 7px; align-items: flex-end; max-width: 78%; }
+.hn-wa-user  { align-self: flex-end; flex-direction: row-reverse; margin-left: auto; }
 .hn-wa-bot,
 .hn-wa-admin { align-self: flex-start; }
 
@@ -321,12 +366,10 @@
     word-wrap: break-word; white-space: pre-wrap;
     box-shadow: 0 1px 2px rgba(0,0,0,.1);
 }
-.hn-wa-bot   .hn-wa-text { background: #fff;     color: #333;    border-radius: 4px 12px 12px 12px; }
-.hn-wa-admin .hn-wa-text { background: #d1f2d3;  color: #1b5e20; border-radius: 4px 12px 12px 12px; }
-.hn-wa-user  .hn-wa-text { background: #dcf8c6;  color: #333;    border-radius: 12px 4px 12px 12px; }
-.hn-wa-meta {
-    font-size: .65rem; color: #999; margin-top: 3px; padding: 0 4px;
-}
+.hn-wa-bot   .hn-wa-text { background: #fff;    color: #333;    border-radius: 4px 12px 12px 12px; }
+.hn-wa-admin .hn-wa-text { background: #d1f2d3; color: #1b5e20; border-radius: 4px 12px 12px 12px; }
+.hn-wa-user  .hn-wa-text { background: #dcf8c6; color: #333;    border-radius: 12px 4px 12px 12px; }
+.hn-wa-meta { font-size: .65rem; color: #999; margin-top: 3px; padding: 0 4px; }
 .hn-wa-user .hn-wa-meta { text-align: right; }
 </style>
 @endpush
@@ -334,10 +377,11 @@
 @push('scripts')
 <script>
 const HNConv = (function () {
-    const CSRF   = '{{ csrf_token() }}';
-    const convId = {{ $conversation->id }};
-    let lastId   = {{ $messages->last()->id ?? 0 }};
-    let pollInt  = null;
+    const CSRF    = '{{ csrf_token() }}';
+    const convId  = {{ $conversation->id }};
+    const IS_GUEST = {{ $isGuest ? 'true' : 'false' }};
+    let lastId    = {{ $messages->last()->id ?? 0 }};
+    let pollInt   = null;
 
     function startPolling() {
         stopPolling();
@@ -367,17 +411,11 @@ const HNConv = (function () {
 
         let rowClass, iconClass, label;
         if (m.sender_type === 'user') {
-            rowClass  = 'hn-wa-user';
-            iconClass = 'fas fa-user';
-            label     = 'User';
+            rowClass = 'hn-wa-user'; iconClass = 'fas fa-user'; label = 'User';
         } else if (m.sender_type === 'admin') {
-            rowClass  = 'hn-wa-admin';
-            iconClass = 'fas fa-headset';
-            label     = 'Admin';
+            rowClass = 'hn-wa-admin'; iconClass = 'fas fa-headset'; label = 'Admin';
         } else {
-            rowClass  = 'hn-wa-bot';
-            iconClass = 'fas fa-robot';
-            label     = 'Bot';
+            rowClass = 'hn-wa-bot'; iconClass = 'fas fa-robot'; label = 'Bot';
         }
 
         const wrap = document.createElement('div');
@@ -398,15 +436,14 @@ const HNConv = (function () {
 
     function escapeHtml(str) {
         return String(str)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
     }
 
     function formatTime(iso) {
-        try {
-            return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } catch { return ''; }
+        try { return new Date(iso).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
+        catch { return ''; }
     }
 
     async function sendReply(e) {
@@ -416,13 +453,15 @@ const HNConv = (function () {
         const msg = ta.value.trim();
         if (!msg) return;
 
-        btn.disabled = true;
+        btn.disabled  = true;
         const oldHtml = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending…';
 
-        // Hide previous badges
-        document.getElementById('hn-email-sent-badge').classList.add('d-none');
-        document.getElementById('hn-email-fail-badge').classList.add('d-none');
+        // Hide previous badges (Guest-ට පමණයි exist වෙනවා)
+        const sentBadge = document.getElementById('hn-email-sent-badge');
+        const failBadge = document.getElementById('hn-email-fail-badge');
+        if (sentBadge) sentBadge.classList.add('d-none');
+        if (failBadge) failBadge.classList.add('d-none');
 
         try {
             const res  = await fetch('{{ route('admin.chatbot.conversations.reply', $conversation->id) }}', {
@@ -440,19 +479,17 @@ const HNConv = (function () {
                 ta.value = '';
                 autoResize(ta);
 
-                // Show email result badge
-                if (data.email_sent) {
-                    const badge = document.getElementById('hn-email-sent-badge');
-                    badge.classList.remove('d-none');
-                    setTimeout(() => badge.classList.add('d-none'), 4000);
-                } else if (data.email_address === null) {
-                    // No email address existed — show warning
-                    const badge = document.getElementById('hn-email-fail-badge');
-                    badge.classList.remove('d-none');
-                    setTimeout(() => badge.classList.add('d-none'), 4000);
+                // Email badge — Guest-ට පමණයි relevant
+                if (IS_GUEST) {
+                    if (data.email_sent && sentBadge) {
+                        sentBadge.classList.remove('d-none');
+                        setTimeout(() => sentBadge.classList.add('d-none'), 4000);
+                    } else if (!data.email_sent && failBadge) {
+                        failBadge.classList.remove('d-none');
+                        setTimeout(() => failBadge.classList.add('d-none'), 4000);
+                    }
                 }
 
-                // Immediately poll to show new message
                 pollNew();
             } else {
                 alert('Error: ' + (data.error || 'Failed to send reply.'));
@@ -498,35 +535,41 @@ const HNConv = (function () {
         });
     }
 
-   async function toggleMode() {
-    const currentMode = '{{ $conversation->mode }}';
-    const newMode     = currentMode === 'admin' ? 'bot' : 'admin';
-    const label       = newMode === 'admin' ? 'Admin/Live Chat' : 'Bot';
+    async function toggleMode() {
+        const currentMode = '{{ $conversation->mode }}';
+        const newMode     = currentMode === 'admin' ? 'bot' : 'admin';
+        const label       = newMode === 'admin' ? 'Admin / Live Chat' : 'Bot Mode';
 
-    if (!confirm(`Switch conversation to ${label} mode?`)) return;
+        if (!confirm(`Switch conversation to ${label}?`)) return;
 
-    try {
-        const url = newMode === 'admin'
-            ? '{{ route("chatbot.switch.admin") }}'
-            : '{{ route("chatbot.switch.bot") }}';
+        const btn = document.querySelector('[onclick="HNConv.toggleMode()"]');
+        if (btn) {
+            btn.disabled  = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Switching…';
+        }
 
-        // Admin side-ය-ට switch route නොමැත — chatbot_conversations table update කරන්න
-        await fetch(`/admin/chatbot/conversations/${convId}/mode`, {
-            method : 'POST',
-            headers: {
-                'Content-Type' : 'application/json',
-                'X-CSRF-TOKEN' : CSRF,
-                'Accept'       : 'application/json',
-            },
-            body: JSON.stringify({ mode: newMode }),
-        });
-
-        location.reload();
-    } catch (e) {
-        alert('Failed to switch mode. Please try again.');
+        try {
+            const res  = await fetch(`/admin/chatbot/conversations/${convId}/mode`, {
+                method : 'POST',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'X-CSRF-TOKEN' : CSRF,
+                    'Accept'       : 'application/json',
+                },
+                body: JSON.stringify({ mode: newMode }),
+            });
+            const data = await res.json();
+            if (data.ok) {
+                location.reload();
+            } else {
+                alert('Switch failed. Please try again.');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Switch Mode'; }
+            }
+        } catch (e) {
+            alert('Network error. Please try again.');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Switch Mode'; }
+        }
     }
-}
-
 
     document.addEventListener('DOMContentLoaded', function () {
         scrollBottom();

@@ -888,8 +888,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
 
  // ── Chatbot (Admin) ──────────────────────────
     Route::prefix('chatbot')->name('chatbot.')->group(function () {
-    Route::post('conversations/{id}/mode', [AdminChatbotController::class, 'switchMode'])
-        ->name('admin.chatbot.conversations.mode');
+
 
         // Dashboard
         Route::get('/', [AdminChatbotController::class, 'index'])->name('index');
@@ -916,7 +915,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::put('/links/{id}',   [AdminChatbotController::class, 'updateLink'])->name('links.update');
         Route::delete('/links/{id}',[AdminChatbotController::class, 'destroyLink'])->name('links.destroy');
         Route::post('/links/{id}/toggle', [AdminChatbotController::class, 'toggleLink'])->name('links.toggle');
-    });
+        Route::post('conversations/{id}/mode', [AdminChatbotController::class, 'switchMode'])->name('admin.chatbot.conversations.mode');
+        });
 
 
     // Dashboard Stats API

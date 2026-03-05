@@ -153,90 +153,63 @@ class AdminChatbotController extends Controller
     //  REPLY — message store + email send
     // =====================================================================
 
-    public function reply(Request $request, $id)
-    {
-        $request->validate(['message' => 'required|string|max:2000']);
+   public function reply(Request $request, $id)
+{
+    $request->validate(['message' => 'required|string|max:2000']);
 
-        $conversation = DB::table('chatbot_conversations')
-            ->where('id', $id)
-            ->where('status', 'active')
-            ->first();
+    $conversation = DB::table('chatbot_conversations')
+        ->where('id', $id)
+        ->where('status', 'active')
+        ->first();
 
-        if (!$conversation) {
-            return response()->json(['ok' => false, 'error' => 'Conversation not found or closed.'], 404);
-        }
-
-        $admin = Auth::user();
-
-        // Store admin message
-        DB::table('chatbot_messages')->insert([
-            'conversation_id' => $id,
-            'sender_type'     => 'admin',
-            'sender_id'       => $admin->id,
-            'message'         => trim($request->message),
-            'is_read'         => 0,
-            'created_at'      => now(),
-        ]);
-
-        DB::table('chatbot_conversations')->where('id', $id)->update([
-            'admin_id'   => $conversation->admin_id ?? $admin->id,
-            'updated_at' => now(),
-        ]);
-
-        // ── Determine recipient email + name ──────────────────────────────
-        $recipientEmail = null;
-        $recipientName  = 'User';
-
-        if ($conversation->user_id) {
-            // Logged-in user
-            $user = DB::table('users')->where('id', $conversation->user_id)->first();
-            if ($user) {
-                $recipientEmail = $user->email;
-
-                // Try to get display name from relevant profile table
-                $recipientName = match($user->user_type ?? '') {
-                    'patient' => $this->_getProfileName(
-                        DB::table('patients')->where('user_id', $user->id)->first(),
-                        ['first_name', 'last_name']
-                    ),
-                    'doctor' => $this->_getProfileName(
-                        DB::table('doctors')->where('user_id', $user->id)->first(),
-                        ['first_name', 'last_name']
-                    ),
-                    'hospital'      => DB::table('hospitals')->where('user_id', $user->id)->value('name') ?? '',
-                    'laboratory'    => DB::table('laboratories')->where('user_id', $user->id)->value('name') ?? '',
-                    'pharmacy'      => DB::table('pharmacies')->where('user_id', $user->id)->value('name') ?? '',
-                    'medicalcentre' => DB::table('medical_centres')->where('user_id', $user->id)->value('name') ?? '',
-                    default         => $user->name ?? strtok($user->email, '@'),
-                };
-
-                $recipientName = $recipientName ?: strtok($user->email, '@');
-            }
-        } elseif ($conversation->guest_email) {
-            // Guest user
-            $recipientEmail = $conversation->guest_email;
-            $recipientName  = $conversation->guest_name ?? 'Guest';
-        }
-
-        // ── Send email if recipient exists ────────────────────────────────
-        $emailSent = false;
-        if ($recipientEmail) {
-            $emailSent = $this->sendReplyEmail(
-                $recipientEmail,
-                $recipientName,
-                trim($request->message),
-                $conversation,
-                $admin
-            );
-        }
-
-        return response()->json([
-            'ok'            => true,
-            'message'       => 'Reply sent.',
-            'email_sent'    => $emailSent,
-            'email_address' => $recipientEmail,
-        ]);
+    if (!$conversation) {
+        return response()->json(['ok' => false, 'error' => 'Conversation not found or closed.'], 404);
     }
+
+    $admin = Auth::user();
+
+    // Store admin message
+    DB::table('chatbot_messages')->insert([
+        'conversation_id' => $id,
+        'sender_type'     => 'admin',
+        'sender_id'       => $admin->id,
+        'message'         => trim($request->message),
+        'is_read'         => 0,
+        'created_at'      => now(),
+    ]);
+
+    DB::table('chatbot_conversations')->where('id', $id)->update([
+        'admin_id'   => $conversation->admin_id ?? $admin->id,
+        'updated_at' => now(),
+    ]);
+
+    // ── Email send — Guest-ට පමණයි ──────────────────────────────────────
+    $emailSent    = false;
+    $recipientEmail = null;
+
+    if (!$conversation->user_id && $conversation->guest_email) {
+        // Guest user — email send කරනවා
+        $recipientEmail = $conversation->guest_email;
+        $recipientName  = $conversation->guest_name ?? 'Guest';
+
+        $emailSent = $this->sendReplyEmail(
+            $recipientEmail,
+            $recipientName,
+            trim($request->message),
+            $conversation,
+            $admin
+        );
+    }
+    // Logged-in user — email send නොකරනවා (real-time poll හරහා receive කරනවා)
+
+    return response()->json([
+        'ok'            => true,
+        'message'       => 'Reply sent.',
+        'email_sent'    => $emailSent,
+        'email_address' => $recipientEmail,
+    ]);
+}
+
 
     // =====================================================================
     //  EMAIL HELPER
