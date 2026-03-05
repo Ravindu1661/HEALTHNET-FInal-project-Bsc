@@ -717,9 +717,9 @@ Route::prefix('laboratory')
     // ============================================
     // PHARMACY DASHBOARD & ROUTES
     // ============================================
-    Route::get('/pharmacy/dashboard', function () {
-        return view('pharmacy.dashboard');
-    })->name('pharmacy.dashboard');
+    // Route::get('/pharmacy/dashboard', function () {
+    //     return view('pharmacy.dashboard');
+    // })->name('pharmacy.dashboard');
 
     // ============================================
     // MEDICAL CENTRE DASHBOARD & ROUTES
@@ -730,6 +730,17 @@ Route::prefix('laboratory')
 
 
 });
+
+// ✅ මේක හරි — controller use කරනවා
+// Route::prefix('pharmacy')->name('pharmacy.')->middleware(['auth'])->group(function () {
+//     Route::get('/dashboard', [PharmacyDashboardController::class, 'index'])->name('dashboard');
+
+// });
+
+
+
+
+
 
 Route::prefix('medical-centre')
     ->name('medical_centre.')   // ← hyphen → underscore

@@ -5,29 +5,20 @@ namespace App\Http\Controllers\Pharmacy;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\PharmacyOrder;
-use App\Models\Medicine;
-use App\Models\Patient;
-use App\Models\Rating;
 use Illuminate\Support\Facades\DB;
 
 class PharmacyDashboardController extends Controller
 {
-    /**
-     * Display pharmacy dashboard
-     */
     public function index()
     {
-        $user = Auth::user();
+        $user     = Auth::user();
         $pharmacy = $user->pharmacy;
 
-        // If pharmacy profile doesn't exist, redirect to create profile
         if (!$pharmacy) {
             return redirect()->route('pharmacy.profile.create')
                 ->with('error', 'Please complete your pharmacy profile first.');
         }
 
-        // Check if pharmacy is approved
         if ($pharmacy->status === 'pending') {
             return view('pharmacy.dashboard-pending', compact('pharmacy'));
         }
@@ -36,69 +27,139 @@ class PharmacyDashboardController extends Controller
             return view('pharmacy.dashboard-rejected', compact('pharmacy'));
         }
 
-        // Statistics
-        $totalMedicines = Medicine::where('pharmacy_id', $pharmacy->id)->count();
+        $pid = $pharmacy->id;
 
-        $totalOrders = PharmacyOrder::where('pharmacy_id', $pharmacy->id)->count();
-
-        $pendingOrders = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
-            ->where('status', 'pending')
+        // ── MEDICATIONS ──
+        // stock_status enum: 'in_stock', 'low_stock', 'out_of_stock' ✅
+        $totalMedicines = DB::table('medications')
+            ->where('pharmacy_id', $pid)
             ->count();
 
-        $totalRevenue = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
-            ->where('payment_status', 'paid')
-            ->sum('total_amount');
+        $outOfStockCount = DB::table('medications')
+            ->where('pharmacy_id', $pid)
+            ->where('stock_status', 'out_of_stock')
+            ->count();
 
-        $totalPatients = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
-            ->distinct('patient_id')
-            ->count('patient_id');
+        $lowStockCount = DB::table('medications')
+            ->where('pharmacy_id', $pid)
+            ->where('stock_status', 'low_stock')
+            ->count();
 
-        // Recent Orders
-        $recentOrders = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
-            ->with(['patient.user', 'items'])
-            ->latest()
-            ->limit(10)
-            ->get();
-
-        // Low Stock Medicines
-        $lowStockMedicines = Medicine::where('pharmacy_id', $pharmacy->id)
-            ->where('stock_quantity', '<=', 10)
-            ->where('stock_quantity', '>', 0)
+        $lowStockMedicines = DB::table('medications')
+            ->where('pharmacy_id', $pid)
+            ->where('stock_status', 'low_stock')
             ->orderBy('stock_quantity', 'asc')
             ->limit(5)
             ->get();
 
-        // Out of Stock Medicines
-        $outOfStockMedicines = Medicine::where('pharmacy_id', $pharmacy->id)
-            ->where('stock_quantity', '<=', 0)
+        // ── PRESCRIPTION ORDERS ──
+        // payment_status enum: 'unpaid', 'paid' ✅
+        $totalOrders = DB::table('prescription_orders')
+            ->where('pharmacy_id', $pid)
             ->count();
 
-        // Monthly Sales Data (for chart)
-        $monthlySales = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
-            ->where('payment_status', 'paid')
-            ->whereYear('created_at', date('Y'))
-            ->select(
-                DB::raw('MONTH(created_at) as month'),
-                DB::raw('SUM(total_amount) as total')
-            )
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get()
-            ->pluck('total', 'month');
+        $pendingOrders = DB::table('prescription_orders')
+            ->where('pharmacy_id', $pid)
+            ->where('status', 'pending')
+            ->count();
 
-        // Fill missing months with 0
-        $salesData = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $salesData[] = $monthlySales->get($i, 0);
+        $totalRevenue = (float) DB::table('prescription_orders')
+            ->where('pharmacy_id', $pid)
+            ->where('payment_status', 'paid')
+            ->sum('total_amount');
+
+        $totalPatients = DB::table('prescription_orders')
+            ->where('pharmacy_id', $pid)
+            ->distinct()
+            ->count('patient_id');
+
+        $orderStats = [
+            'total'      => $totalOrders,
+            'pending'    => $pendingOrders,
+            'verified'   => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'verified')->count(),
+            'processing' => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'processing')->count(),
+            'ready'      => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'ready')->count(),
+            'dispatched' => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'dispatched')->count(),
+            'delivered'  => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'delivered')->count(),
+            'cancelled'  => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'cancelled')->count(),
+        ];
+
+        // Recent orders — patients JOIN (first_name, last_name from patients table)
+        $recentOrders = DB::table('prescription_orders as po')
+            ->leftJoin('patients as pt', 'pt.id', '=', 'po.patient_id')
+            ->where('po.pharmacy_id', $pid)
+            ->orderByDesc('po.created_at')
+            ->limit(10)
+            ->select(
+                'po.*',
+                DB::raw("CONCAT(pt.first_name, ' ', pt.last_name) as patient_name"),
+                'pt.profile_image as patient_image'
+            )
+            ->get();
+
+        // Today's orders — patients JOIN
+        $todayOrders = DB::table('prescription_orders as po')
+            ->leftJoin('patients as pt', 'pt.id', '=', 'po.patient_id')
+            ->where('po.pharmacy_id', $pid)
+            ->whereDate('po.order_date', today())
+            ->orderByDesc('po.created_at')
+            ->select(
+                'po.*',
+                DB::raw("CONCAT(pt.first_name, ' ', pt.last_name) as patient_name"),
+                'pt.profile_image as patient_image'
+            )
+            ->get();
+
+        // Monthly sales chart data (current year)
+        $monthlySalesRaw = DB::table('prescription_orders')
+            ->where('pharmacy_id', $pid)
+            ->where('payment_status', 'paid')
+            ->whereRaw('YEAR(created_at) = ?', [date('Y')])
+            ->selectRaw('MONTH(created_at) as month, SUM(total_amount) as total, COUNT(*) as cnt')
+            ->groupByRaw('MONTH(created_at)')
+            ->get()
+            ->keyBy('month');
+
+        $salesData     = [];
+        $monthlyOrders = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $row             = $monthlySalesRaw->get($m);
+            $salesData[]     = $row ? (float) $row->total : 0;
+            $monthlyOrders[] = $row ? (int)   $row->cnt   : 0;
         }
 
-        // Recent Ratings
-        $recentRatings = Rating::where('ratable_type', 'pharmacy')
-            ->where('ratable_id', $pharmacy->id)
-            ->with('patient.user')
-            ->latest()
+        // ── RATINGS ──
+        // ratable_type enum: 'doctor','hospital','laboratory','pharmacy','medical_centre' ✅
+        $recentRatings = DB::table('ratings as r')
+            ->leftJoin('patients as pt', 'pt.id', '=', 'r.patient_id')
+            ->where('r.ratable_type', 'pharmacy')
+            ->where('r.ratable_id', $pid)
+            ->orderByDesc('r.created_at')
             ->limit(5)
+            ->select(
+                'r.*',
+                DB::raw("CONCAT(pt.first_name, ' ', pt.last_name) as patient_name"),
+                'pt.profile_image as patient_image'
+            )
             ->get();
+
+        $avgRating = DB::table('ratings')
+            ->where('ratable_type', 'pharmacy')
+            ->where('ratable_id', $pid)
+            ->avg('rating') ?? 0;
+
+        $totalRatings = DB::table('ratings')
+            ->where('ratable_type', 'pharmacy')
+            ->where('ratable_id', $pid)
+            ->count();
+
+        // ── NOTIFICATIONS ──
+        // is_read: boolean (0/1), read_at: timestamp ✅
+        $unreadNotifications = DB::table('notifications')
+            ->where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', $user->id)
+            ->where('is_read', 0)
+            ->count();
 
         return view('pharmacy.dashboard', compact(
             'pharmacy',
@@ -107,46 +168,73 @@ class PharmacyDashboardController extends Controller
             'pendingOrders',
             'totalRevenue',
             'totalPatients',
+            'outOfStockCount',
+            'lowStockCount',
+            'orderStats',
             'recentOrders',
+            'todayOrders',
             'lowStockMedicines',
-            'outOfStockMedicines',
             'salesData',
-            'recentRatings'
+            'monthlyOrders',
+            'recentRatings',
+            'avgRating',
+            'totalRatings',
+            'unreadNotifications'
         ));
     }
 
-    /**
-     * Get all notifications
-     */
+    // ── AJAX Stats ──
+    public function getStats()
+    {
+        $pid = Auth::user()->pharmacy->id;
+
+        return response()->json([
+            'totalOrders'   => DB::table('prescription_orders')->where('pharmacy_id', $pid)->count(),
+            'pendingOrders' => DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('status', 'pending')->count(),
+            'totalRevenue'  => (float) DB::table('prescription_orders')->where('pharmacy_id', $pid)->where('payment_status', 'paid')->sum('total_amount'),
+            'lowStock'      => DB::table('medications')->where('pharmacy_id', $pid)->where('stock_status', 'low_stock')->count(),
+        ]);
+    }
+
+    // ── Notifications Page ──
     public function notifications()
     {
-        $notifications = Auth::user()->notifications()
-            ->orderBy('created_at', 'desc')
+        $user = Auth::user();
+
+        $notifications = DB::table('notifications')
+            ->where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', $user->id)
+            ->orderByDesc('created_at')
             ->paginate(20);
 
         return view('pharmacy.notifications', compact('notifications'));
     }
 
-    /**
-     * Mark notification as read
-     */
-    public function markNotificationRead($id)
+    // ── Mark Single Notification Read ──
+    public function markNotificationRead($notification)
     {
-        $notification = Auth::user()->notifications()->findOrFail($id);
-        $notification->update(['is_read' => true, 'read_at' => now()]);
+        DB::table('notifications')
+            ->where('id', $notification)
+            ->where('notifiable_id', Auth::id())
+            ->update([
+                'is_read' => 1,
+                'read_at' => now(),
+            ]);
 
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Mark all notifications as read
-     */
+    // ── Mark All Notifications Read ──
     public function markAllNotificationsRead()
     {
-        Auth::user()->notifications()->update([
-            'is_read' => true,
-            'read_at' => now()
-        ]);
+        DB::table('notifications')
+            ->where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', Auth::id())
+            ->where('is_read', 0)
+            ->update([
+                'is_read' => 1,
+                'read_at' => now(),
+            ]);
 
         return back()->with('success', 'All notifications marked as read.');
     }
