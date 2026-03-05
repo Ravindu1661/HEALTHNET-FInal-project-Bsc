@@ -15,12 +15,168 @@
     <link rel="stylesheet" href="{{ asset('css/service-section.css') }}" />
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}" />
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}" />
+
+    <style>
+    /* ════════════════════════════════════════════════
+       MOBILE RESPONSIVE FIX — ≤ 991px
+       සියලු existing CSS override කරනවා
+    ════════════════════════════════════════════════ */
+    @media (max-width: 991.98px) {
+
+        /* Collapse container */
+        #navbarNav {
+            overflow: visible !important;
+        }
+        #navbarNav.show,
+        #navbarNav.collapsing {
+            display: flex !important;
+            flex-direction: column !important;
+            background: #fff;
+            border-top: 1px solid #e8f5e9;
+            border-radius: 0 0 14px 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.09);
+            padding: 6px 4px 12px;
+        }
+
+        /* ── Nav links — FIRST in order ── */
+        #navbarNav .navbar-nav {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            order: 1 !important;
+            padding: 0 6px !important;
+            gap: 2px !important;
+            margin: 0 !important;
+        }
+        #navbarNav .navbar-nav .nav-item {
+            width: 100% !important;
+        }
+        #navbarNav .navbar-nav .nav-link {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            color: #374151 !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            font-size: .92rem !important;
+            font-weight: 500 !important;
+            white-space: nowrap !important;
+        }
+        #navbarNav .navbar-nav .nav-link:hover,
+        #navbarNav .navbar-nav .nav-link.active {
+            background: #f0fdf9 !important;
+            color: #00796b !important;
+        }
+
+        /* ── Right controls — SECOND in order ── */
+        #navbarNav .d-flex.align-items-center {
+            order: 2 !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            width: 100% !important;
+            padding: 10px 8px 4px !important;
+            border-top: 1px solid #f0f4f8 !important;
+            margin-top: 6px !important;
+            gap: 8px !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+        }
+
+        /* Google Translate — compact */
+        .translation-widget {
+            flex-shrink: 0;
+            max-width: 140px;
+        }
+
+        /* Bell wrapper */
+        .notification-bell-wrapper {
+            margin-right: 0 !important;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Notification dropdown — fixed full width */
+        .notification-dropdown {
+            position: fixed !important;
+            top: 62px !important;
+            left: 8px !important;
+            right: 8px !important;
+            width: auto !important;
+            max-width: none !important;
+            max-height: 72vh !important;
+            overflow-y: auto !important;
+            z-index: 9999 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,.18) !important;
+            background: #fff !important;
+        }
+
+        /* Profile dropdown — fixed bottom sheet */
+        .dropdown .dropdown-menu {
+            position: fixed !important;
+            top: auto !important;
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+            width: auto !important;
+            min-width: unset !important;
+            transform: none !important;
+            border-radius: 14px !important;
+            box-shadow: 0 -4px 32px rgba(0,0,0,.16) !important;
+            max-height: 80vh !important;
+            overflow-y: auto !important;
+        }
+
+        /* Profile button — compact */
+        .btn-profile {
+            padding: 5px 10px !important;
+            font-size: .82rem !important;
+        }
+        .btn-profile img {
+            width: 32px !important;
+            height: 32px !important;
+        }
+        .btn-profile > span {
+            max-width: 72px !important;
+            font-size: .8rem !important;
+        }
+
+        /* Login / Signup */
+        .btn-login,
+        .btn-signup {
+            padding: 7px 14px !important;
+            font-size: .82rem !important;
+        }
+
+        /* Notification stack — below navbar */
+        .notification-stack {
+            top: 68px !important;
+            right: 8px !important;
+        }
+    }
+
+    /* ── Extra small: < 400px ── */
+    @media (max-width: 399.98px) {
+        .navbar-brand {
+            font-size: 1rem !important;
+        }
+        .btn-profile > span {
+            display: none !important;
+        }
+        .btn-profile::after {
+            display: none !important;
+        }
+        .notification-bell-btn {
+            font-size: .9rem !important;
+            padding: 5px 6px !important;
+        }
+    }
+    </style>
 </head>
 <body>
     {{-- ══ Notification Stack ══ --}}
     <div class="notification-stack">
         @auth
-            {{-- ✅ Verify alert: session('verified') නම් එකවරයි | unverified නම් session flag check කරලා එකවරයි --}}
             @if(session('verified'))
                 <div class="verify-alert" id="verifyAlert">
                     <span class="icon"><i class="fas fa-envelope-circle-check"></i></span>
@@ -64,7 +220,9 @@
             <a class="navbar-brand" href="{{ route('patient.dashboard') }}">
                 <i class="fas fa-heartbeat me-2"></i>HealthNet
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
@@ -85,7 +243,6 @@
 
                     @auth
                     @php
-
                         $authUser    = Auth::user();
                         $authPatient = $authUser->patient ?? null;
 
@@ -202,7 +359,6 @@
                                 <span style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                                     {{ Auth::user()->patient->first_name ?? strtok(Auth::user()->email, '@') }}
                                 </span>
-
                             </button>
 
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown"
@@ -211,9 +367,9 @@
                                 {{-- Header Info --}}
                                 <li>
                                     <div style="padding:.6rem .85rem .5rem;border-bottom:1px solid #f0f4f8;margin-bottom:.3rem">
-                                    <div style="font-weight:700;font-size:.88rem;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                                        {{ trim((Auth::user()->patient->first_name ?? '') . ' ' . (Auth::user()->patient->last_name ?? '')) ?: strtok(Auth::user()->email, '@') }}
-                                    </div>
+                                        <div style="font-weight:700;font-size:.88rem;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                            {{ trim((Auth::user()->patient->first_name ?? '') . ' ' . (Auth::user()->patient->last_name ?? '')) ?: strtok(Auth::user()->email, '@') }}
+                                        </div>
                                         <div style="font-size:.75rem;color:#888;margin-top:.1rem">{{ $authUser->email }}</div>
                                         @if($authPatient?->nic)
                                         <div style="font-size:.72rem;color:#00796b;margin-top:.15rem">

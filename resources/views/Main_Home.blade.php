@@ -41,10 +41,11 @@
 
                         {{-- Action Buttons --}}
                         <div class="hero-buttons-group">
-                            <a href="{{ route('patient.dashboard') }}" class="hero-btn hero-btn-primary">
-                                <i class="fas fa-tachometer-alt"></i>
-                                <span>Go to Dashboard</span>
+                           <a href="{{ route('patient.health-portfolio') }}" class="hero-btn hero-btn-primary">
+                                <i class="fas fa-notes-medical"></i>
+                                <span>Health Portfolio</span>
                             </a>
+
                             <a href="#services" class="hero-btn hero-btn-secondary">
                                 <i class="fas fa-stethoscope"></i>
                                 <span>Explore Services</span>
@@ -99,15 +100,15 @@
                         </div>
 
                         {{-- Floating Feature Card 3 --}}
-                        <div class="feature-card feature-card-3">
+                         <div class="feature-card feature-card-3">
                             <div class="feature-icon-wrapper">
                                 <div class="feature-icon feature-icon-activity">
-                                    <i class="fas fa-activity"></i>
+                                    <i class="fas fa-chart-line"></i>
                                 </div>
                             </div>
                             <div class="feature-content">
                                 <h4>Health Tracking</h4>
-                                <p>Real-time Updates</p>
+                                <p>Real-time Vitals</p>
                             </div>
                         </div>
                     </div>
@@ -160,21 +161,22 @@
                     </div>
                 </div>
 
-                {{-- Service Item 2 - Book Appointments --}}
+                {{-- Service Item 2 - Find Medical Centres --}}
                 <div class="service-item-center" data-animate="fade-right" data-delay="200">
                     <div class="service-content-box service-align-right">
-                        <h3 class="service-heading">Book Appointments</h3>
+                        <h3 class="service-heading">Find Medical Centres</h3>
                         <p class="service-description">
-                            Schedule appointments with doctors online seamlessly. Sign up today to access our booking system.
+                            Discover trusted medical centres near you and book appointments with ease through our platform.
                         </p>
-                        <a href="{{ route('signup') }}" class="service-learn-more">
+                        <a href="{{ route('patient.medical-centres') }}" class="service-learn-more">
                             Learn More <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
                     <div class="service-icon-circle icon-orange">
-                        <i class="fas fa-calendar-check"></i>
+                        <i class="fas fa-hospital-alt"></i>
                     </div>
                 </div>
+
 
                 {{-- Service Item 3 - Health Records --}}
                 <div class="service-item-center" data-animate="fade-right" data-delay="400">
