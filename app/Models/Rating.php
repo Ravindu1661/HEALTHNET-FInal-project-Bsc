@@ -18,10 +18,13 @@ class Rating extends Model
         'rating',
         'review',
         'status',
+        'reply',         // ✅ නව column
+        'replied_at',
     ];
 
     protected $casts = [
         'rating' => 'integer',
+        'replied_at' => 'datetime',  // ✅ නව cast
     ];
 
     // protected $attributes = [

@@ -197,18 +197,29 @@ class PharmacyDashboardController extends Controller
     }
 
     // ── Notifications Page ──
-    public function notifications()
-    {
-        $user = Auth::user();
+   public function notifications()
+{
+    $user = Auth::user();
 
-        $notifications = DB::table('notifications')
-            ->where('notifiable_type', 'App\Models\User')
-            ->where('notifiable_id', $user->id)
-            ->orderByDesc('created_at')
-            ->paginate(20);
+    $notifications = $user->notifications()
+        ->paginate(20);
 
-        return view('pharmacy.notifications', compact('notifications'));
-    }
+    $unreadCount = $user->notifications()
+        ->where('is_read', false)
+        ->count();
+
+    $typeStats = $user->notifications()
+        ->selectRaw('type, count(*) as count')
+        ->groupBy('type')
+        ->pluck('count', 'type');
+
+    return view('pharmacy.notifications', compact(
+        'notifications',
+        'unreadCount',
+        'typeStats'
+    ));
+}
+
 
     // ── Mark Single Notification Read ──
     public function markNotificationRead($notification)

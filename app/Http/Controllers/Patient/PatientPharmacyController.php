@@ -97,23 +97,37 @@ class PatientPharmacyController extends Controller
         $pharmacy = Pharmacy::where('status', 'approved')->findOrFail($id);
 
         $query = Medicine::where('pharmacy_id', $pharmacy->id)
-            ->where('is_active', true);
+            ->where('is_active', true)
+            ->where('stock_status', '!=', 'out_of_stock');
 
-        if ($request->filled('category'))  $query->where('category', $request->category);
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
-            $query->where(fn($q) => $q->where('name', 'like', $s)->orWhere('generic_name', 'like', $s));
+            $query->where(fn($q) =>
+                $q->where('name', 'like', $s)
+                ->orWhere('generic_name', 'like', $s)
+            );
         }
+
         if ($request->filled('rx')) {
             $query->where('requires_prescription', $request->rx === 'rx' ? 1 : 0);
         }
 
         $medicines  = $query->orderBy('category')->orderBy('name')->paginate(18);
-        $categories = Medicine::where('pharmacy_id', $pharmacy->id)->where('is_active', true)
-            ->whereNotNull('category')->distinct()->orderBy('category')->pluck('category');
+        $categories = Medicine::where('pharmacy_id', $pharmacy->id)
+            ->where('is_active', true)
+            ->where('stock_status', '!=', 'out_of_stock') // ✅ correct ENUM
+            ->whereNotNull('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
 
         return view('patient.pharmacy-medicines', compact('pharmacy', 'medicines', 'categories'));
     }
+
 
     public function orderForm($id)
     {
