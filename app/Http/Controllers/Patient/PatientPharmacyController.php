@@ -129,65 +129,149 @@ class PatientPharmacyController extends Controller
     }
 
 
-    public function orderForm($id)
-    {
-        $pharmacy = Pharmacy::where('status', 'approved')->findOrFail($id);
-        $patient  = Auth::user()->patient;
-        if (!$patient) return redirect()->route('login');
+  public function orderForm($id)
+{
+    $pharmacy = Pharmacy::where('status', 'approved')->findOrFail($id);
+    $patient  = Auth::user()->patient;
+    if (!$patient) return redirect()->route('login');
 
-        return view('patient.pharmacy-order', compact('pharmacy', 'patient'));
-    }
+    // Latest unpaid online order (for payment section)
+    $order = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
+        ->where('patient_id', $patient->id)
+        ->where('payment_method', 'online')
+        ->where('payment_status', 'unpaid')
+        ->with(['items.medication', 'pharmacy'])
+        ->latest()
+        ->first();
 
- public function placeOrder(Request $request, $id)
+    $stripeKey = config('services.stripe.key');
+
+    return view('patient.pharmacy-order', compact('pharmacy', 'patient', 'order', 'stripeKey'));
+}
+
+
+public function placeOrder(Request $request, $id)
 {
     $pharmacy = Pharmacy::where('status', 'approved')->findOrFail($id);
     $patient  = Auth::user()->patient;
     if (!$patient) return back()->withError('Patient profile not found.');
 
-    $request->validate([
-        'prescription_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        'delivery_type'     => 'required|in:delivery,pickup',
-        'delivery_address'  => 'required_if:delivery_type,delivery|nullable|string|max:500',
-        'delivery_method'   => 'nullable|in:uber,pickme,own_delivery',   // ✅ own_delivery
-        'payment_method'    => 'required|in:cash_on_delivery,online',    // ✅ cash_on_delivery
-    ]);
+    // ── Order type & cart ──────────────────────────────────────────────────
+    $orderType = $request->input('order_type', 'prescription_only');
+    $cartItems = [];
+
+    if (in_array($orderType, ['cart_otc', 'cart_rx'])) {
+        $cartItems = json_decode($request->input('cart_data', '[]'), true) ?? [];
+        if (empty($cartItems)) {
+            return back()->withError('Cart is empty. Please add medicines.')->withInput();
+        }
+    }
+
+    // Prescription required for: prescription_only, cart_rx
+    $prescriptionRequired = in_array($orderType, ['prescription_only', 'cart_rx']);
+
+    // ── Validation ─────────────────────────────────────────────────────────
+    $rules = [
+        'delivery_type'    => 'required|in:delivery,pickup',
+        'delivery_address' => 'required_if:delivery_type,delivery|nullable|string|max:500',
+        'delivery_method'  => 'nullable|in:uber,pickme,own_delivery',
+        'payment_method'   => 'required|in:cash_on_delivery,online',
+        'order_type'       => 'required|in:prescription_only,cart_otc,cart_rx',
+        'cart_data'        => 'nullable|string',
+        'prescription_file'=> $prescriptionRequired
+                                ? 'required|file|mimes:pdf,jpg,jpeg,png|max:5120'
+                                : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    ];
+
+    $request->validate($rules);
 
     DB::beginTransaction();
     try {
-        $path       = $request->file('prescription_file')->store('prescriptions', 'public');
         $isDelivery = $request->delivery_type === 'delivery';
 
+        // ── Prescription file ───────────────────────────────────────────────
+        // prescription_file column is NOT NULL in DB → use empty string for OTC
+        $prescPath = '';
+        if ($request->hasFile('prescription_file')) {
+            $prescPath = $request->file('prescription_file')->store('prescriptions', 'public');
+        }
+
+        // ── delivery_address NOT NULL in DB ────────────────────────────────
+        $deliveryAddress = $isDelivery
+            ? ($request->delivery_address ?? '')
+            : 'PICKUP';
+
+        // ── Create order ────────────────────────────────────────────────────
         $order = PharmacyOrder::create([
             'patient_id'        => $patient->id,
             'pharmacy_id'       => $pharmacy->id,
-            'prescription_file' => $path,
+            'prescription_file' => $prescPath,
             'status'            => 'pending',
             'total_amount'      => 0.00,
             'delivery_fee'      => 0.00,
-            'payment_method'    => $request->payment_method,  // → 'cash_on_delivery' or 'online'
+            'payment_method'    => $request->payment_method,
             'payment_status'    => 'unpaid',
-            'delivery_address'  => $isDelivery ? $request->delivery_address : 'PICKUP',
+            'delivery_address'  => $deliveryAddress,
             'delivery_method'   => $isDelivery ? $request->delivery_method : null,
         ]);
 
+        // ── Save cart items ─────────────────────────────────────────────────
+        // prescription_order_items: medication_id, medication_name, quantity, price, subtotal
+        $dbTotal = 0;
+        if (!empty($cartItems)) {
+            foreach ($cartItems as $item) {
+                $medicine = \App\Models\Medicine::where('id', $item['id'])
+                    ->where('pharmacy_id', $pharmacy->id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($medicine) {
+                    $qty      = intval($item['qty'] ?? 1);
+                    $price    = $medicine->price;   // use DB price for security
+                    $subtotal = $price * $qty;
+                    $dbTotal += $subtotal;
+
+                    // Use the relationship defined in PharmacyOrder model
+                    $order->items()->create([
+                        'medication_id'   => $medicine->id,
+                        'medication_name' => $medicine->name,
+                        'quantity'        => $qty,
+                        'price'           => $price,
+                        'subtotal'        => $subtotal,
+                    ]);
+                }
+            }
+
+            $order->update(['total_amount' => $dbTotal]);
+        }
+
+        // ── Notify ──────────────────────────────────────────────────────────
         PharmacyNotificationService::newOrderSubmitted(
             $order->load(['patient.user', 'pharmacy'])
         );
 
         DB::commit();
 
+        // ── Success message ─────────────────────────────────────────────────
+        $msg = match($orderType) {
+            'cart_otc' => 'Order placed! The pharmacy will prepare your medicines shortly.',
+            'cart_rx'  => 'Order submitted! The pharmacy will verify your prescription and prepare medicines.',
+            default    => 'Prescription submitted! The pharmacy will verify and contact you.',
+        };
+
         if ($request->payment_method === 'online') {
-            return redirect()->route('patient.pharmacies.track', $pharmacy->id)
-                ->withSuccess('Prescription submitted! Pay online after pharmacy confirms your order.');
+            $msg .= ' You can pay online after the pharmacy confirms your order.';
         }
 
         return redirect()->route('patient.pharmacies.track', $pharmacy->id)
-            ->withSuccess('Prescription submitted! The pharmacy will verify and contact you.');
+            ->withSuccess($msg);
 
     } catch (\Exception $e) {
         DB::rollBack();
-        Log::error('Pharmacy order error: ' . $e->getMessage() . ' | Line: ' . $e->getLine());
-        return back()->withError('Failed to place order. Please try again.')->withInput();
+        Log::error('Pharmacy order error: ' . $e->getMessage()
+            . ' | File: ' . $e->getFile()
+            . ' | Line: ' . $e->getLine());
+        return back()->withError('Failed to place order: ' . $e->getMessage())->withInput();
     }
 }
 

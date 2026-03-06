@@ -3,134 +3,114 @@
 namespace App\Http\Controllers\Pharmacy;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PharmacyOrderInvoiceMail;
+use App\Models\Medicine;
+use App\Models\Patient;
+use App\Models\PharmacyOrder;
+use App\Models\PrescriptionOrderItem;
+use App\Models\User;
+use App\Services\PharmacyNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use App\Models\PharmacyOrder;       // prescription_orders table
-use App\Models\Medicine;             // medications table
-use App\Models\Patient;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class PharmacyOrderController extends Controller
 {
-    /* ─────────────────────────────────────────
-     |  HELPER: Auth pharmacy guard
-     ─────────────────────────────────────────*/
-    private function pharmacy()
-    {
-        return Auth::user()->pharmacy;
-    }
-
-    private function authorizeOrder(PharmacyOrder $order): void
-    {
-        if ($order->pharmacy_id !== $this->pharmacy()->id) {
-            abort(403, 'Unauthorized action.');
-        }
-    }
-
-    /* ─────────────────────────────────────────
-     |  INDEX  – orders list with filters
-     ─────────────────────────────────────────*/
+    // ═══════════════════════════════════════════════════════════
+    // INDEX
+    // ═══════════════════════════════════════════════════════════
     public function index(Request $request)
     {
-        $pharmacy = $this->pharmacy();
+        $pharmacy = Auth::user()->pharmacy;
 
-        $query = DB::table('prescription_orders as po')
-            ->join('patients as pt', 'pt.id', '=', 'po.patient_id')
-            ->where('po.pharmacy_id', $pharmacy->id)
-            ->select(
-                'po.*',
-                DB::raw("CONCAT(pt.first_name,' ',pt.last_name) as patient_name"),
-                'pt.profile_image as patient_image',
-                'pt.phone as patient_phone'
+        $query = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
+            ->with(['patient.user', 'items.medication']);
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('order_type')) {
+            match ($request->order_type) {
+                'has_items'  => $query->whereHas('items'),
+                'presc_only' => $query->whereDoesntHave('items'),
+                'cart_otc'   => $query->whereHas('items')
+                    ->whereDoesntHave('items', fn($q) =>
+                        $q->whereHas('medication', fn($m) =>
+                            $m->where('requires_prescription', true)
+                        )
+                    ),
+                'cart_rx' => $query->whereHas('items', fn($q) =>
+                    $q->whereHas('medication', fn($m) =>
+                        $m->where('requires_prescription', true)
+                    )
+                ),
+                default => null,
+            };
+        }
+
+        if ($request->filled('search')) {
+            $s = '%' . $request->search . '%';
+            $query->where(fn($q) =>
+                $q->where('order_number', 'like', $s)
+                  ->orWhereHas('patient', fn($p) =>
+                      $p->where('first_name', 'like', $s)
+                        ->orWhere('last_name', 'like', $s)
+                  )
             );
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('po.status', $request->status);
         }
 
-        // Payment filter
         if ($request->filled('payment_status')) {
-            $query->where('po.payment_status', $request->payment_status);
+            $query->where('payment_status', $request->payment_status);
         }
-
-        // Date filter
         if ($request->filled('date_from')) {
-            $query->whereDate('po.order_date', '>=', $request->date_from);
+            $query->whereDate('created_at', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
-            $query->whereDate('po.order_date', '<=', $request->date_to);
+            $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Search
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('po.order_number', 'like', "%{$s}%")
-                  ->orWhere(DB::raw("CONCAT(pt.first_name,' ',pt.last_name)"), 'like', "%{$s}%")
-                  ->orWhere('pt.phone', 'like', "%{$s}%");
-            });
+        $orders = $query->latest()->paginate(20)->withQueryString();
+
+        $counts = [];
+        foreach (['pending','verified','processing','ready','dispatched','delivered','cancelled'] as $st) {
+            $counts[$st] = PharmacyOrder::where('pharmacy_id', $pharmacy->id)
+                ->where('status', $st)->count();
         }
-
-        $orders = $query->orderByDesc('po.order_date')->paginate(20)->withQueryString();
-
-        // Status counts for badges
-        $counts = DB::table('prescription_orders')
-            ->where('pharmacy_id', $pharmacy->id)
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status');
 
         return view('pharmacy.orders.index', compact('orders', 'counts'));
     }
 
-    /* ─────────────────────────────────────────
-     |  SHOW  – order details
-     ─────────────────────────────────────────*/
+    // ═══════════════════════════════════════════════════════════
+    // SHOW
+    // ═══════════════════════════════════════════════════════════
     public function show(PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
+        $this->authOrder($order);
 
-        // Eager load items with medication details
-        $items = DB::table('prescription_order_items as oi')
-            ->leftJoin('medications as m', 'm.id', '=', 'oi.medication_id')
-            ->where('oi.order_id', $order->id)
-            ->select('oi.*', 'm.category', 'm.dosage', 'm.manufacturer', 'm.requires_prescription')
+        $pharmacy = Auth::user()->pharmacy;
+        $order->load(['patient.user', 'items.medication', 'payment']);
+
+        $medicines = Medicine::where('pharmacy_id', $pharmacy->id)
+            ->where('is_active', true)
+            ->where('stock_status', '!=', 'out_of_stock')
+            ->orderBy('name')
             ->get();
 
-        $patient = DB::table('patients as pt')
-            ->join('users as u', 'u.id', '=', 'pt.user_id')
-            ->where('pt.id', $order->patient_id)
-            ->select('pt.*', 'u.email', 'u.status as user_status')
-            ->first();
-
-        // Payment record if exists
-        $payment = DB::table('payments')
-            ->where('related_type', 'prescription_order')
-            ->where('related_id', $order->id)
-            ->first();
-
-        return view('pharmacy.orders.show', compact('order', 'items', 'patient', 'payment'));
+        return view('pharmacy.orders.show', compact('order', 'medicines'));
     }
 
-    /* ─────────────────────────────────────────
-     |  CREATE  – manual order form
-     ─────────────────────────────────────────*/
+    // ═══════════════════════════════════════════════════════════
+    // CREATE
+    // ═══════════════════════════════════════════════════════════
     public function create()
     {
-        $pharmacy = $this->pharmacy();
-
-        $patients = DB::table('patients as pt')
-            ->join('users as u', 'u.id', '=', 'pt.user_id')
-            ->where('u.status', 'active')
-            ->select('pt.id', 'pt.first_name', 'pt.last_name', 'pt.phone', 'u.email')
-            ->orderBy('pt.first_name')
-            ->get();
-
-        $medicines = DB::table('medications')
-            ->where('pharmacy_id', $pharmacy->id)
+        $pharmacy  = Auth::user()->pharmacy;
+        $patients  = Patient::with('user')->get();
+        $medicines = Medicine::where('pharmacy_id', $pharmacy->id)
             ->where('is_active', true)
             ->where('stock_quantity', '>', 0)
             ->orderBy('name')
@@ -139,286 +119,559 @@ class PharmacyOrderController extends Controller
         return view('pharmacy.orders.create', compact('patients', 'medicines'));
     }
 
-    /* ─────────────────────────────────────────
-     |  STORE  – save new manual order
-     ─────────────────────────────────────────*/
+    // ═══════════════════════════════════════════════════════════
+    // STORE
+    // ═══════════════════════════════════════════════════════════
     public function store(Request $request)
     {
-        $pharmacy = $this->pharmacy();
+        $pharmacy = Auth::user()->pharmacy;
 
         $request->validate([
-            'patient_id'        => 'required|exists:patients,id',
-            'prescription_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delivery_address'  => 'required|string|max:500',
-            'delivery_method'   => 'nullable|in:uber,pickme,own_delivery',
-            'delivery_fee'      => 'nullable|numeric|min:0',
-            'payment_method'    => 'required|in:cash_on_delivery,online',
-            'pharmacist_notes'  => 'nullable|string|max:1000',
-            'items'             => 'required|array|min:1',
+            'patient_id'            => 'required|exists:patients,id',
+            'prescription_file'     => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delivery_address'      => 'required|string|max:500',
+            'delivery_method'       => 'nullable|in:uber,pickme,own_delivery',
+            'delivery_fee'          => 'nullable|numeric|min:0',
+            'payment_method'        => 'required|in:cash_on_delivery,online',
+            'items'                 => 'required|array|min:1',
             'items.*.medication_id' => 'required|exists:medications,id',
             'items.*.quantity'      => 'required|integer|min:1',
             'items.*.price'         => 'required|numeric|min:0',
         ]);
 
-        // Upload prescription
-        $prescriptionPath = $request->file('prescription_file')
-            ->store('prescriptions', 'public');
-
-        // Calculate totals
-        $subtotal    = 0;
-        $deliveryFee = $request->delivery_fee ?? 0;
-
-        foreach ($request->items as $item) {
-            $subtotal += $item['quantity'] * $item['price'];
-        }
-        $totalAmount = $subtotal + $deliveryFee;
-
-        // Generate order number
-        $orderNumber = 'RX' . strtoupper(uniqid());
-
         DB::beginTransaction();
         try {
-            // Insert prescription_orders
-            $orderId = DB::table('prescription_orders')->insertGetId([
-                'order_number'     => $orderNumber,
-                'patient_id'       => $request->patient_id,
-                'pharmacy_id'      => $pharmacy->id,
-                'prescription_file'=> $prescriptionPath,
-                'order_date'       => now(),
-                'status'           => 'pending',
-                'total_amount'     => $totalAmount,
-                'delivery_fee'     => $deliveryFee,
-                'payment_method'   => $request->payment_method,
-                'payment_status'   => 'unpaid',
-                'delivery_address' => $request->delivery_address,
-                'delivery_method'  => $request->delivery_method,
-                'pharmacist_notes' => $request->pharmacist_notes,
-                'created_at'       => now(),
-                'updated_at'       => now(),
+            $prescPath = $request->hasFile('prescription_file')
+                ? $request->file('prescription_file')->store('prescriptions', 'public')
+                : '';
+
+            $totalAmount = collect($request->items)
+                ->sum(fn($i) => $i['quantity'] * $i['price']);
+
+            $order = PharmacyOrder::create([
+                'patient_id'        => $request->patient_id,
+                'pharmacy_id'       => $pharmacy->id,
+                'prescription_file' => $prescPath,
+                'delivery_address'  => $request->delivery_address,
+                'delivery_method'   => $request->delivery_method,
+                'delivery_fee'      => $request->delivery_fee ?? 0,
+                'payment_method'    => $request->payment_method,
+                'total_amount'      => $totalAmount,
+                'status'            => 'verified',
+                'payment_status'    => 'unpaid',
             ]);
 
-            // Insert items & decrease stock
             foreach ($request->items as $item) {
-                $med = DB::table('medications')->find($item['medication_id']);
-
-                DB::table('prescription_order_items')->insert([
-                    'order_id'        => $orderId,
-                    'medication_id'   => $item['medication_id'],
+                $med = Medicine::findOrFail($item['medication_id']);
+                PrescriptionOrderItem::create([
+                    'order_id'        => $order->id,
+                    'medication_id'   => $med->id,
                     'medication_name' => $med->name,
                     'quantity'        => $item['quantity'],
                     'price'           => $item['price'],
                     'subtotal'        => $item['quantity'] * $item['price'],
-                    'created_at'      => now(),
                 ]);
-
-                // Decrease stock in medications table
-                $newQty = max(0, $med->stock_quantity - $item['quantity']);
-                $newStatus = $newQty <= 0 ? 'out_of_stock' : ($newQty <= 10 ? 'low_stock' : 'in_stock');
-                DB::table('medications')
-                    ->where('id', $item['medication_id'])
-                    ->update([
-                        'stock_quantity' => $newQty,
-                        'stock_status'   => $newStatus,
-                        'updated_at'     => now(),
-                    ]);
+                $med->decreaseStock((int) $item['quantity']);
             }
 
+            $order->load(['patient.user', 'pharmacy', 'items.medication']);
+
+            PharmacyNotificationService::newOrderSubmitted($order);
+            PharmacyNotificationService::statusChanged($order, 'verified');
+
+            $this->notifyPatient(
+                $order,
+                'order_placed',
+                'New Order Created',
+                $pharmacy->name . ' has created an order for you. Order #' .
+                $order->order_number . ' — LKR ' . number_format($totalAmount, 2) . '.'
+            );
+
+            $this->sendInvoiceEmail($order, 'verified');
+
             DB::commit();
+
+            return redirect()->route('pharmacy.orders.show', $order->id)
+                ->withSuccess('Order #' . $order->order_number . ' created. Patient notified & invoice emailed.');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Order creation failed: ' . $e->getMessage());
+            Log::error('Store order error: ' . $e->getMessage());
+            return back()->withError('Failed to create order: ' . $e->getMessage())->withInput();
         }
-
-        return redirect()->route('pharmacy.orders.show', $orderId)
-            ->with('success', 'Order #' . $orderNumber . ' created successfully.');
     }
 
-    /* ─────────────────────────────────────────
-     |  UPDATE STATUS
-     ─────────────────────────────────────────*/
-    public function updateStatus(Request $request, PharmacyOrder $order)
+    // ═══════════════════════════════════════════════════════════
+    // SET AMOUNT
+    // ═══════════════════════════════════════════════════════════
+    public function setAmount(Request $request, PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
+        $this->authOrder($order);
 
         $request->validate([
-            'status'           => 'required|in:pending,verified,processing,ready,dispatched,delivered,cancelled',
-            'tracking_number'  => 'nullable|string|max:100',
-            'pharmacist_notes' => 'nullable|string|max:1000',
+            'total_amount' => 'required|numeric|min:0',
+            'delivery_fee' => 'nullable|numeric|min:0',
         ]);
 
-        $updateData = [
-            'status'           => $request->status,
-            'pharmacist_notes' => $request->pharmacist_notes ?? $order->pharmacist_notes,
-            'updated_at'       => now(),
-        ];
+        $order->update([
+            'total_amount' => $request->total_amount,
+            'delivery_fee' => $request->delivery_fee ?? 0,
+        ]);
 
-        if ($request->filled('tracking_number')) {
-            $updateData['tracking_number'] = $request->tracking_number;
-        }
+        $order->load(['patient.user', 'pharmacy']);
 
-        // Auto-mark paid on delivery (COD)
-        if ($request->status === 'delivered' && $order->payment_method === 'cash_on_delivery') {
-            $updateData['payment_status'] = 'paid';
-        }
+        $grand = (float)$request->total_amount + (float)($request->delivery_fee ?? 0);
 
-        DB::table('prescription_orders')
-            ->where('id', $order->id)
-            ->update($updateData);
+        PharmacyNotificationService::statusChanged($order, $order->status);
 
-        return back()->with('success', 'Order status updated to "' . ucfirst($request->status) . '" successfully.');
+        $this->notifyPatient(
+            $order,
+            'amount_confirmed',
+            'Order Amount Confirmed',
+            'Your order #' . $order->order_number . ' amount has been confirmed: LKR ' .
+            number_format($grand, 2) . '. ' .
+            ($order->payment_method === 'online' ? 'You can now pay online.' : 'Please pay on delivery.')
+        );
+
+        return back()->withSuccess(
+            'Amount set for Order #' . $order->order_number .
+            ' — LKR ' . number_format($request->total_amount, 2)
+        );
     }
 
-    /* ─────────────────────────────────────────
-     |  QUICK STATUS ACTIONS
-     ─────────────────────────────────────────*/
-    public function verify(PharmacyOrder $order)
+    // ═══════════════════════════════════════════════════════════
+    // VERIFY
+    // ═══════════════════════════════════════════════════════════
+    public function verify(Request $request, PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
-        DB::table('prescription_orders')->where('id', $order->id)
-            ->update(['status' => 'verified', 'updated_at' => now()]);
-        return back()->with('success', 'Prescription verified successfully.');
+        $this->authOrder($order);
+
+        if ($order->status !== 'pending') {
+            return back()->withError('Only pending orders can be verified.');
+        }
+
+        $request->validate([
+            'items'                 => 'required|array|min:1',
+            'items.*.type'          => 'required|in:medicine,other',
+            'items.*.medication_id' => 'nullable|exists:medications,id',
+            'items.*.medicine_name' => 'required|string|max:255',
+            'items.*.quantity'      => 'required|integer|min:1',
+            'items.*.price'         => 'required|numeric|min:0.01',
+            'delivery_fee'          => 'nullable|numeric|min:0',
+            'pharmacist_notes'      => 'nullable|string|max:1000',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $totalAmount = collect($request->items)
+                ->sum(fn($i) => (int)$i['quantity'] * (float)$i['price']);
+            $deliveryFee = (float)($request->delivery_fee ?? 0);
+
+            $order->update([
+                'status'           => 'verified',
+                'total_amount'     => $totalAmount,
+                'delivery_fee'     => $deliveryFee,
+                'pharmacist_notes' => $request->pharmacist_notes,
+            ]);
+
+            $order->items()->delete();
+
+            foreach ($request->items as $item) {
+                $isDb     = $item['type'] === 'medicine' && !empty($item['medication_id']);
+                $medicine = $isDb ? Medicine::find($item['medication_id']) : null;
+                $medName  = $medicine ? $medicine->name : $item['medicine_name'];
+
+                PrescriptionOrderItem::create([
+                    'order_id'        => $order->id,
+                    'medication_id'   => $isDb ? $item['medication_id'] : null,
+                    'medication_name' => $medName,
+                    'quantity'        => $item['quantity'],
+                    'price'           => $item['price'],
+                    'subtotal'        => (int)$item['quantity'] * (float)$item['price'],
+                ]);
+
+                if ($isDb && $medicine) {
+                    $medicine->decreaseStock((int) $item['quantity']);
+                }
+            }
+
+            $order->load(['patient.user', 'pharmacy', 'items.medication']);
+
+            PharmacyNotificationService::statusChanged($order, 'verified');
+
+            $this->notifyPatient(
+                $order,
+                'order_verified',
+                'Prescription Verified',
+                'Your prescription for Order #' . $order->order_number . ' has been verified by ' .
+                $order->pharmacy->name . '. Total: LKR ' .
+                number_format($totalAmount + $deliveryFee, 2) . '. ' .
+                ($order->payment_method === 'online'
+                    ? 'Please proceed to pay online.'
+                    : 'Pay LKR ' . number_format($totalAmount + $deliveryFee, 2) . ' on delivery.')
+            );
+
+            $this->sendInvoiceEmail($order, 'verified');
+
+            DB::commit();
+
+            return back()->withSuccess(
+                'Order #' . $order->order_number . ' verified! Patient notified & invoice emailed. Total: LKR ' .
+                number_format($totalAmount + $deliveryFee, 2)
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Verify order error: ' . $e->getMessage());
+            return back()->withError('Failed to verify order: ' . $e->getMessage());
+        }
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // PROCESS
+    // ═══════════════════════════════════════════════════════════
     public function process(PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
-        DB::table('prescription_orders')->where('id', $order->id)
-            ->update(['status' => 'processing', 'updated_at' => now()]);
-        return back()->with('success', 'Order is now being processed.');
+        $this->authOrder($order);
+        $order->markAsProcessing();
+        $order->load(['patient.user', 'pharmacy']);
+
+        PharmacyNotificationService::statusChanged($order, 'processing');
+        $this->notifyPatient(
+            $order,
+            'order_processing',
+            'Order Being Prepared',
+            'Your order #' . $order->order_number . ' is now being prepared by ' .
+            $order->pharmacy->name . '. We\'ll notify you when it\'s ready.'
+        );
+
+        return back()->withSuccess('Order #' . $order->order_number . ' marked as processing.');
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // READY
+    // ═══════════════════════════════════════════════════════════
     public function ready(PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
-        DB::table('prescription_orders')->where('id', $order->id)
-            ->update(['status' => 'ready', 'updated_at' => now()]);
-        return back()->with('success', 'Order is ready for pickup/dispatch.');
+        $this->authOrder($order);
+        $order->markAsReady();
+        $order->load(['patient.user', 'pharmacy']);
+
+        $isPickup = $order->delivery_address === 'PICKUP';
+
+        PharmacyNotificationService::statusChanged($order, 'ready');
+        $this->notifyPatient(
+            $order,
+            'order_ready',
+            'Order Ready!',
+            'Your order #' . $order->order_number . ' is ready. ' .
+            ($isPickup
+                ? 'Please visit ' . $order->pharmacy->name . ' to collect your medicines.'
+                : 'Your medicines will be dispatched shortly.')
+        );
+
+        return back()->withSuccess('Order #' . $order->order_number . ' is ready for delivery/pickup.');
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // DISPATCH
+    // ═══════════════════════════════════════════════════════════
     public function markDispatch(Request $request, PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
+        $this->authOrder($order);
+
         $request->validate(['tracking_number' => 'required|string|max:100']);
-        DB::table('prescription_orders')->where('id', $order->id)
-            ->update([
-                'status'          => 'dispatched',
-                'tracking_number' => $request->tracking_number,
-                'updated_at'      => now(),
-            ]);
-        return back()->with('success', 'Order dispatched. Tracking: ' . $request->tracking_number);
+
+        $order->markAsDispatched($request->tracking_number);
+        $order->load(['patient.user', 'pharmacy']);
+
+        PharmacyNotificationService::statusChanged($order, 'dispatched');
+        $this->notifyPatient(
+            $order,
+            'order_dispatched',
+            'Order Dispatched!',
+            'Your order #' . $order->order_number . ' is on its way! Tracking: ' .
+            $request->tracking_number .
+            ($order->delivery_method
+                ? '. Via ' . ucfirst(str_replace('_', ' ', $order->delivery_method)) . '.'
+                : '.')
+        );
+
+        return back()->withSuccess(
+            'Order #' . $order->order_number . ' dispatched. Tracking: ' . $request->tracking_number
+        );
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // DELIVER
+    // ═══════════════════════════════════════════════════════════
     public function deliver(PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
-        $updateData = ['status' => 'delivered', 'updated_at' => now()];
+        $this->authOrder($order);
+        $order->markAsDelivered();
+
         if ($order->payment_method === 'cash_on_delivery') {
-            $updateData['payment_status'] = 'paid';
+            $order->update(['payment_status' => 'paid']);
         }
-        DB::table('prescription_orders')->where('id', $order->id)->update($updateData);
-        return back()->with('success', 'Order marked as delivered.');
+
+        $order->load(['patient.user', 'pharmacy', 'items.medication']);
+
+        PharmacyNotificationService::statusChanged($order, 'delivered');
+        $this->notifyPatient(
+            $order,
+            'order_delivered',
+            'Order Delivered!',
+            'Your order #' . $order->order_number . ' has been delivered successfully. ' .
+            ($order->payment_method === 'cash_on_delivery'
+                ? 'Payment received. Thank you!'
+                : ($order->payment_status === 'paid'
+                    ? 'Payment confirmed. Thank you!'
+                    : 'Please complete payment if not done.')) .
+            ' Please leave a review for ' . $order->pharmacy->name . '.'
+        );
+
+        $this->sendInvoiceEmail($order, 'delivered');
+
+        return back()->withSuccess(
+            'Order #' . $order->order_number . ' delivered! Patient notified & receipt emailed.'
+        );
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // CANCEL
+    // ═══════════════════════════════════════════════════════════
     public function cancel(Request $request, PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
+        $this->authOrder($order);
 
-        if (in_array($order->status, ['delivered', 'cancelled'])) {
-            return back()->with('error', 'This order cannot be cancelled.');
+        if (!$order->canBeCancelled()) {
+            return back()->withError('This order cannot be cancelled at this stage.');
         }
 
         $request->validate(['cancelled_reason' => 'required|string|max:500']);
 
         DB::beginTransaction();
         try {
-            DB::table('prescription_orders')->where('id', $order->id)->update([
-                'status'           => 'cancelled',
-                'cancelled_reason' => $request->cancelled_reason,
-                'updated_at'       => now(),
-            ]);
+            $order->cancel($request->cancelled_reason);
 
-            // Restore stock
-            $items = DB::table('prescription_order_items')
-                ->where('order_id', $order->id)
-                ->get();
-
-            foreach ($items as $item) {
-                if ($item->medication_id) {
-                    $med = DB::table('medications')->find($item->medication_id);
-                    if ($med) {
-                        $newQty    = $med->stock_quantity + $item->quantity;
-                        $newStatus = $newQty <= 0 ? 'out_of_stock' : ($newQty <= 10 ? 'low_stock' : 'in_stock');
-                        DB::table('medications')->where('id', $item->medication_id)->update([
-                            'stock_quantity' => $newQty,
-                            'stock_status'   => $newStatus,
-                            'updated_at'     => now(),
-                        ]);
-                    }
+            foreach ($order->items as $item) {
+                if ($item->medication) {
+                    $item->medication->increaseStock($item->quantity);
                 }
             }
 
+            $order->load(['patient.user', 'pharmacy']);
+
+            PharmacyNotificationService::statusChanged($order, 'cancelled');
+            $this->notifyPatient(
+                $order,
+                'order_cancelled',
+                'Order Cancelled',
+                'Your order #' . $order->order_number . ' has been cancelled by ' .
+                $order->pharmacy->name . '. Reason: ' . $request->cancelled_reason
+            );
+
             DB::commit();
+
+            return back()->withSuccess(
+                'Order #' . $order->order_number . ' cancelled. Patient notified. Stock restored.'
+            );
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Cancellation failed: ' . $e->getMessage());
+            Log::error('Cancel order error: ' . $e->getMessage());
+            return back()->withError('Cancel failed: ' . $e->getMessage());
         }
-
-        return back()->with('success', 'Order cancelled successfully.');
     }
 
-    /* ─────────────────────────────────────────
-     |  DOWNLOAD PRESCRIPTION
-     ─────────────────────────────────────────*/
+    // ═══════════════════════════════════════════════════════════
+    // UPDATE STATUS — Generic
+    // ═══════════════════════════════════════════════════════════
+    public function updateStatus(Request $request, PharmacyOrder $order)
+    {
+        $this->authOrder($order);
+
+        $request->validate([
+            'status'           => 'required|in:pending,verified,processing,ready,dispatched,delivered,cancelled',
+            'total_amount'     => 'nullable|numeric|min:0',
+            'delivery_fee'     => 'nullable|numeric|min:0',
+            'tracking_number'  => 'nullable|string|max:100',
+            'pharmacist_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $updateData = [
+            'status'           => $request->status,
+            'tracking_number'  => $request->tracking_number  ?? $order->tracking_number,
+            'pharmacist_notes' => $request->pharmacist_notes ?? $order->pharmacist_notes,
+        ];
+
+        if ($request->filled('total_amount')) $updateData['total_amount'] = $request->total_amount;
+        if ($request->filled('delivery_fee'))  $updateData['delivery_fee'] = $request->delivery_fee;
+
+        if ($request->status === 'delivered' &&
+            $order->payment_method === 'cash_on_delivery') {
+            $updateData['payment_status'] = 'paid';
+        }
+
+        $order->update($updateData);
+        $order->load(['patient.user', 'pharmacy', 'items.medication']);
+
+        PharmacyNotificationService::statusChanged($order, $request->status);
+
+        // ── Notification config per status ──────────────────────
+        $notifMap = [
+            'verified' => [
+                'title'   => 'Prescription Verified',
+                'message' => 'Your prescription for Order #' . $order->order_number .
+                             ' has been verified. Total: LKR ' .
+                             number_format(($order->total_amount ?? 0) + ($order->delivery_fee ?? 0), 2) . '.' .
+                             ($order->payment_method === 'online' ? ' Please pay online.' : ''),
+            ],
+            'processing' => [
+                'title'   => 'Order Being Prepared',
+                'message' => 'Your order #' . $order->order_number .
+                             ' is being prepared by ' . $order->pharmacy->name . '.',
+            ],
+            'ready' => [
+                'title'   => 'Order Ready!',
+                'message' => 'Your order #' . $order->order_number . ' is ready for ' .
+                             ($order->delivery_address === 'PICKUP' ? 'pickup.' : 'dispatch.'),
+            ],
+            'dispatched' => [
+                'title'   => 'Order Dispatched!',
+                'message' => 'Your order #' . $order->order_number . ' is on the way!' .
+                             ($order->tracking_number
+                                 ? ' Tracking: ' . $order->tracking_number . '.'
+                                 : ''),
+            ],
+            'delivered' => [
+                'title'   => 'Order Delivered!',
+                'message' => 'Your order #' . $order->order_number . ' has been delivered. Thank you!',
+            ],
+            'cancelled' => [
+                'title'   => 'Order Cancelled',
+                'message' => 'Your order #' . $order->order_number . ' has been cancelled.',
+            ],
+        ];
+
+        if (isset($notifMap[$request->status])) {
+            $this->notifyPatient(
+                $order,
+                'order_' . $request->status,
+                $notifMap[$request->status]['title'],
+                $notifMap[$request->status]['message']
+            );
+        }
+
+        if (in_array($request->status, ['verified', 'delivered'])) {
+            $this->sendInvoiceEmail($order, $request->status);
+        }
+
+        return back()->withSuccess(
+            'Order #' . $order->order_number . ' updated to ' .
+            ucfirst($request->status) . '. Patient notified.'
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // DOWNLOAD PRESCRIPTION
+    // ═══════════════════════════════════════════════════════════
     public function downloadPrescription(PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
+        $this->authOrder($order);
 
         if (!$order->prescription_file) {
-            return back()->with('error', 'No prescription file available.');
+            return back()->withError('No prescription file available.');
         }
 
         return Storage::disk('public')->download($order->prescription_file);
     }
 
-    /* ─────────────────────────────────────────
-     |  PRINT INVOICE
-     ─────────────────────────────────────────*/
+    // ═══════════════════════════════════════════════════════════
+    // PRINT INVOICE
+    // ═══════════════════════════════════════════════════════════
     public function printInvoice(PharmacyOrder $order)
     {
-        $this->authorizeOrder($order);
-
-        $items = DB::table('prescription_order_items as oi')
-            ->leftJoin('medications as m', 'm.id', '=', 'oi.medication_id')
-            ->where('oi.order_id', $order->id)
-            ->select('oi.*', 'm.dosage', 'm.category')
-            ->get();
-
-        $patient = DB::table('patients as pt')
-            ->join('users as u', 'u.id', '=', 'pt.user_id')
-            ->where('pt.id', $order->patient_id)
-            ->select('pt.*', 'u.email')
-            ->first();
-
-        $pharmacy = $this->pharmacy();
-
-        return view('pharmacy.orders.invoice', compact('order', 'items', 'patient', 'pharmacy'));
+        $this->authOrder($order);
+        $order->load(['patient.user', 'items.medication', 'pharmacy']);
+        return view('pharmacy.orders.invoice', compact('order'));
     }
 
-    /* ─────────────────────────────────────────
-     |  AJAX: Get medicine price
-     ─────────────────────────────────────────*/
-    public function getMedicinePrice(Request $request)
-    {
-        $med = DB::table('medications')
-            ->where('id', $request->id)
-            ->where('pharmacy_id', $this->pharmacy()->id)
-            ->select('id', 'name', 'price', 'stock_quantity', 'dosage', 'requires_prescription')
-            ->first();
+    // ═══════════════════════════════════════════════════════════
+    // PRIVATE — Patient DB Notification
+    // Table columns: notifiable_type, notifiable_id, type,
+    //                title, message, related_type, related_id,
+    //                is_read, read_at, created_at, updated_at
+    // ═══════════════════════════════════════════════════════════
+    private function notifyPatient(
+        PharmacyOrder $order,
+        string $type,
+        string $title,
+        string $message
+    ): void {
+        try {
+            $user = $order->patient?->user;
 
-        if (!$med) {
-            return response()->json(['success' => false], 404);
+            if (!$user) {
+                Log::warning('Notification skipped — no user for Order #' . $order->order_number);
+                return;
+            }
+
+            DB::table('notifications')->insert([
+                'notifiable_type' => User::class,        // App\Models\User
+                'notifiable_id'   => $user->id,
+                'type'            => $type,
+                'title'           => $title,
+                'message'         => $message,
+                'related_type'    => 'pharmacy_order',
+                'related_id'      => $order->id,
+                'is_read'         => false,
+                'read_at'         => null,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+
+            Log::info('Notification [' . $type . '] → user_id:' . $user->id .
+                      ' | Order #' . $order->order_number);
+
+        } catch (\Exception $e) {
+            // Non-blocking
+            Log::error('Notification failed [Order #' . $order->order_number . ']: ' .
+                       $e->getMessage());
         }
+    }
 
-        return response()->json(['success' => true, 'medicine' => $med]);
+    // ═══════════════════════════════════════════════════════════
+    // PRIVATE — Invoice Email (verified + delivered only)
+    // ═══════════════════════════════════════════════════════════
+    private function sendInvoiceEmail(PharmacyOrder $order, string $eventType): void
+    {
+        try {
+            $email = $order->patient?->user?->email;
+
+            if (!$email) {
+                Log::warning('Invoice email skipped — no email for Order #' . $order->order_number);
+                return;
+            }
+
+            Mail::to($email)->send(new PharmacyOrderInvoiceMail($order, $eventType));
+
+            Log::info('Invoice email [' . $eventType . '] → ' . $email .
+                      ' | Order #' . $order->order_number);
+
+        } catch (\Exception $e) {
+            Log::error('Invoice email failed [Order #' . $order->order_number .
+                       '] [' . $eventType . ']: ' . $e->getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PRIVATE — Authorization
+    // ═══════════════════════════════════════════════════════════
+    private function authOrder(PharmacyOrder $order): void
+    {
+        if ($order->pharmacy_id !== Auth::user()->pharmacy->id) {
+            abort(403, 'Unauthorized access to this order.');
+        }
     }
 }

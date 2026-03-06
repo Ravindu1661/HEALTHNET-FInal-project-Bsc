@@ -1,4 +1,5 @@
 @include('partials.header')
+
 <style>
 .pt-header{background:linear-gradient(135deg,#004d40 0%,#00796b 100%);padding:6rem 0 2.5rem;color:#fff;position:relative;overflow:hidden}
 .pt-header::before{content:'';position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&w=2070&q=80') center/cover;opacity:.07;z-index:0}
@@ -8,10 +9,14 @@
 .pt-card{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.07);overflow:hidden;margin-bottom:1.5rem}
 .pt-card-header{padding:1rem 1.5rem;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:.5rem}
 .pt-card-body{padding:1.5rem}
+
+/* Filter Bar */
 .lo-filter-bar{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;background:#fff;border-radius:12px;padding:.9rem 1.2rem;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:1.5rem}
 .lo-filter-label{font-size:.82rem;font-weight:700;color:#00796b;display:flex;align-items:center;gap:.4rem;margin-right:.3rem}
 .lo-fbtn{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .9rem;border-radius:20px;background:#f0fdf4;color:#555;font-size:.8rem;font-weight:600;text-decoration:none;transition:all .3s;border:1.5px solid transparent}
 .lo-fbtn.active,.lo-fbtn:hover{background:#00796b;color:#fff;border-color:#00796b}
+
+/* Order Cards */
 .lo-card{background:#fff;border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.07);margin-bottom:1rem;overflow:hidden;border-left:4px solid #a5d6a7;transition:all .3s}
 .lo-card:hover{box-shadow:0 6px 20px rgba(0,121,107,.12);transform:translateY(-2px)}
 .lo-card.status-pending{border-left-color:#fbbf24}
@@ -30,6 +35,8 @@
 .lo-meta-item i{color:#00796b}
 .lo-amount{font-size:1rem;font-weight:700;color:#00796b}
 .lo-amount-label{font-size:.76rem;color:#888}
+
+/* Buttons */
 .lo-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:20px;font-size:.8rem;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:all .3s}
 .lo-btn-track{background:linear-gradient(135deg,#00796b,#004d40);color:#fff}
 .lo-btn-track:hover{filter:brightness(1.1);color:#fff;transform:translateY(-1px)}
@@ -37,9 +44,20 @@
 .lo-btn-pay:hover{filter:brightness(1.1);color:#fff;transform:translateY(-1px)}
 .lo-btn-cancel{background:#fff;color:#dc2626;border:1.5px solid #fca5a5 !important}
 .lo-btn-cancel:hover{background:#fee2e2;color:#dc2626;border-color:#f87171 !important}
+
+/* Pills */
 .s-pill,.p-pill{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .8rem;border-radius:14px;font-size:.72rem;font-weight:700}
-.s-pill.pending{background:#fef3c7;color:#92400e}.s-pill.verified{background:#e0f2fe;color:#0369a1}.s-pill.processing{background:#ede9fe;color:#4c1d95}.s-pill.ready{background:#dcfce7;color:#166534}.s-pill.dispatched{background:#e0f2f1;color:#004d40}.s-pill.delivered{background:#bbf7d0;color:#14532d}.s-pill.cancelled{background:#fee2e2;color:#991b1b}
-.p-pill.paid{background:#dcfce7;color:#166534}.p-pill.unpaid{background:#fee2e2;color:#991b1b}
+.s-pill.pending{background:#fef3c7;color:#92400e}
+.s-pill.verified{background:#e0f2fe;color:#0369a1}
+.s-pill.processing{background:#ede9fe;color:#4c1d95}
+.s-pill.ready{background:#dcfce7;color:#166534}
+.s-pill.dispatched{background:#e0f2f1;color:#004d40}
+.s-pill.delivered{background:#bbf7d0;color:#14532d}
+.s-pill.cancelled{background:#fee2e2;color:#991b1b}
+.p-pill.paid{background:#dcfce7;color:#166534}
+.p-pill.unpaid{background:#fee2e2;color:#991b1b}
+
+/* Timeline */
 .tl{position:relative;padding-left:2.5rem}
 .tl::before{content:'';position:absolute;left:12px;top:0;bottom:0;width:2px;background:#e0f2f1}
 .tl-step{position:relative;margin-bottom:1.5rem}
@@ -49,55 +67,71 @@
 @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,160,0,.2)}50%{box-shadow:0 0 0 8px rgba(255,160,0,.1)}}
 .tl-label{font-weight:700;font-size:.9rem}
 .tl-desc{font-size:.8rem;color:#888}
+
+/* Empty state */
 .empty-state{text-align:center;padding:3rem}
 .empty-state i{font-size:3rem;color:#b2dfdb;display:block;margin-bottom:1rem}
 .empty-state h4{color:#00796b;font-weight:700;margin-bottom:.5rem}
 .empty-state p{color:#aaa;font-size:.9rem}
+
+/* Pagination */
 .lo-pagination .page-link{border-radius:8px!important;border:2px solid #e9ecef;color:#00796b;font-weight:600;padding:.45rem .85rem;font-size:.82rem;transition:all .2s}
 .lo-pagination .page-link:hover,.lo-pagination .page-item.active .page-link{background:#00796b;border-color:#00796b;color:#fff}
+
+/* Payment badge inline */
+.pay-method-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .65rem;border-radius:12px;font-size:.7rem;font-weight:700;background:#e0f2fe;color:#0369a1}
+.pay-method-badge.cod{background:#f0fdf4;color:#166534}
+.pay-method-badge.online{background:#e0f2fe;color:#0369a1}
+
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 </style>
 
-{{-- ═══════════════════════════════════════ --}}
-{{-- HEADER                                  --}}
-{{-- ═══════════════════════════════════════ --}}
+{{-- ══ HEADER ══ --}}
 <section class="pt-header">
     <div class="container">
         <a href="{{ route('patient.pharmacies.show', $pharmacy->id) }}"
-           style="color:rgba(255,255,255,.85);font-size:.85rem;display:inline-flex;align-items:center;gap:.4rem;margin-bottom:.9rem;text-decoration:none">
+           style="color:rgba(255,255,255,.85);font-size:.85rem;display:inline-flex;
+                  align-items:center;gap:.4rem;margin-bottom:.9rem;text-decoration:none">
             <i class="fas fa-arrow-left"></i> Back to Profile
         </a>
         <div class="d-flex align-items-center gap-3">
-            <img src="{{ $pharmacy->profile_image ? asset('storage/'.$pharmacy->profile_image) : asset('images/default-pharmacy.png') }}"
-                 style="width:60px;height:60px;border-radius:12px;object-fit:cover;border:3px solid rgba(255,255,255,.8)"
+            <img src="{{ $pharmacy->profile_image
+                            ? asset('storage/'.$pharmacy->profile_image)
+                            : asset('images/default-pharmacy.png') }}"
+                 style="width:60px;height:60px;border-radius:12px;object-fit:cover;
+                        border:3px solid rgba(255,255,255,.8)"
                  onerror="this.src='{{ asset('images/default-pharmacy.png') }}'">
             <div>
                 <h1 style="font-size:1.8rem;font-weight:700;margin:0">Track Your Orders</h1>
                 <p style="opacity:.85;font-size:.9rem;margin:0">
-                    <i class="fas fa-store me-1"></i>{{ $pharmacy->name }} &bull; {{ $pharmacy->city ?? '' }}
+                    <i class="fas fa-store me-1"></i>{{ $pharmacy->name }}
+                    @if($pharmacy->city) &bull; {{ $pharmacy->city }} @endif
                 </p>
             </div>
         </div>
     </div>
 </section>
 
-{{-- ═══════════════════════════════════════ --}}
-{{-- BODY                                    --}}
-{{-- ═══════════════════════════════════════ --}}
+{{-- ══ BODY ══ --}}
 <section class="pt-body">
     <div class="container">
 
         {{-- Flash Messages --}}
         @foreach(['success','error','info'] as $t)
             @if(session($t))
-            <div style="background:{{ $t==='success'?'#dcfce7':($t==='error'?'#fee2e2':'#e0f2fe') }};border-left:5px solid {{ $t==='success'?'#059669':($t==='error'?'#dc2626':'#0891b2') }};border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;font-size:.88rem;font-weight:500">
-                <i class="fas fa-{{ $t==='success'?'check-circle':($t==='error'?'exclamation-circle':'info-circle') }}" style="flex-shrink:0;font-size:1.1rem"></i>
+            <div style="background:{{ $t==='success'?'#dcfce7':($t==='error'?'#fee2e2':'#e0f2fe') }};
+                        border-left:5px solid {{ $t==='success'?'#059669':($t==='error'?'#dc2626':'#0891b2') }};
+                        border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1rem;
+                        display:flex;align-items:center;gap:.7rem;font-size:.88rem;font-weight:500"
+                 id="flashMsg">
+                <i class="fas fa-{{ $t==='success'?'check-circle':($t==='error'?'exclamation-circle':'info-circle') }}"
+                   style="flex-shrink:0;font-size:1.1rem"></i>
                 {{ session($t) }}
             </div>
             @endif
         @endforeach
 
-        {{-- ═══ FILTER BAR ═══ --}}
+        {{-- ══ FILTER BAR ══ --}}
         <div class="lo-filter-bar">
             <span class="lo-filter-label"><i class="fas fa-filter"></i> Filter</span>
             <a href="{{ route('patient.pharmacies.track', $pharmacy->id) }}"
@@ -129,16 +163,17 @@
 
         <div class="row g-4">
 
-            {{-- ═══════════════════════════════════════ --}}
-            {{-- ORDER LIST                              --}}
-            {{-- ═══════════════════════════════════════ --}}
+            {{-- ══════════════════════════════ --}}
+            {{-- ORDER LIST                     --}}
+            {{-- ══════════════════════════════ --}}
             <div class="{{ $orderView ? 'col-lg-5' : 'col-lg-12' }}">
 
-                {{-- Latest orders label --}}
                 @if($orders->count() && $orders->currentPage() === 1)
-                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;font-size:.8rem;font-weight:700;color:#00796b">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;
+                            font-size:.8rem;font-weight:700;color:#00796b">
                     <i class="fas fa-clock"></i> Showing latest orders first
-                    <span style="background:#e0f2f1;color:#00796b;padding:.15rem .6rem;border-radius:10px;font-size:.72rem">
+                    <span style="background:#e0f2f1;color:#00796b;padding:.15rem .6rem;
+                                 border-radius:10px;font-size:.72rem">
                         {{ $orders->total() }} total
                     </span>
                 </div>
@@ -146,19 +181,38 @@
 
                 @forelse($orders as $order)
                 @php
-                    $isLatest    = $loop->first && $orders->currentPage() === 1;
-                    $statusIcons = ['pending'=>'clock','verified'=>'check','processing'=>'cog','ready'=>'box-open','dispatched'=>'truck','delivered'=>'check-circle','cancelled'=>'times-circle'];
-                    $icon        = $statusIcons[$order->status] ?? 'pills';
-                    $label       = ucwords(str_replace('_', ' ', $order->status));
-                    $canPay      = $order->payment_status === 'unpaid'
-                                && ($order->total_amount ?? 0) > 0
-                                && in_array($order->status, ['verified','processing','ready']);
-                    $canCancel   = $order->status === 'pending';
+                    $isLatest     = $loop->first && $orders->currentPage() === 1;
+                    $statusIcons  = [
+                        'pending'    => 'clock',
+                        'verified'   => 'check',
+                        'processing' => 'cog',
+                        'ready'      => 'box-open',
+                        'dispatched' => 'truck',
+                        'delivered'  => 'check-circle',
+                        'cancelled'  => 'times-circle',
+                    ];
+                    $icon    = $statusIcons[$order->status] ?? 'pills';
+                    $label   = ucwords(str_replace('_', ' ', $order->status));
+
+                    // ── Payment/Pay logic ──────────────────────────────────
+                    $isOtcOnlinePaid   = $order->payment_method === 'online'
+                                      && $order->payment_status === 'paid'
+                                      && $order->status === 'pending';
+
+                    $canPay = $order->payment_status === 'unpaid'
+                           && ($order->total_amount ?? 0) > 0
+                           && $order->payment_method === 'online'
+                           && in_array($order->status, ['verified','processing','ready']);
+
+                    $canCancel = $order->status === 'pending'
+                              && $order->payment_status !== 'paid'; // paid OTC cannot cancel from here
                 @endphp
 
-                {{-- Latest badge --}}
                 @if($isLatest)
-                <div style="font-size:.75rem;font-weight:700;color:#fff;background:linear-gradient(135deg,#00796b,#004d40);display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .75rem;border-radius:12px 12px 0 0;margin-bottom:-1px">
+                <div style="font-size:.75rem;font-weight:700;color:#fff;
+                            background:linear-gradient(135deg,#00796b,#004d40);
+                            display:inline-flex;align-items:center;gap:.35rem;
+                            padding:.2rem .75rem;border-radius:12px 12px 0 0;margin-bottom:-1px">
                     <i class="fas fa-star"></i> Latest Order
                 </div>
                 @endif
@@ -179,14 +233,26 @@
                                         <i class="fas fa-{{ $order->delivery_address === 'PICKUP' ? 'store' : 'truck' }}"></i>
                                         {{ $order->delivery_address === 'PICKUP' ? 'Pickup' : 'Home Delivery' }}
                                     </span>
-                                    @if($order->payment_method)
                                     <span class="lo-meta-item">
                                         <i class="fas fa-credit-card"></i>
-                                        {{ $order->payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'Online Pay' }}
+                                        <span class="pay-method-badge {{ $order->payment_method === 'cash_on_delivery' ? 'cod' : 'online' }}">
+                                            {{ $order->payment_method === 'cash_on_delivery' ? 'COD' : 'Online' }}
+                                        </span>
                                     </span>
-                                    @endif
                                 </div>
+
+                                {{-- OTC Online Paid notice --}}
+                                @if($isOtcOnlinePaid)
+                                <div style="margin-top:.45rem;display:inline-flex;align-items:center;
+                                            gap:.35rem;background:#dcfce7;color:#166534;
+                                            border-radius:8px;padding:.25rem .65rem;font-size:.72rem;
+                                            font-weight:700">
+                                    <i class="fas fa-check-circle"></i>
+                                    Payment received — awaiting pharmacy processing
+                                </div>
+                                @endif
                             </div>
+
                             <div class="text-end">
                                 <span class="s-pill {{ $order->status }}">
                                     <i class="fas fa-{{ $icon }}"></i> {{ $label }}
@@ -203,12 +269,16 @@
 
                     <div class="lo-card-footer">
                         <div>
-                            <div class="lo-amount-label"><i class="fas fa-receipt me-1"></i>Total</div>
+                            <div class="lo-amount-label">
+                                <i class="fas fa-receipt me-1"></i>Total
+                            </div>
                             <div class="lo-amount">
                                 @if(($order->total_amount ?? 0) > 0)
                                     LKR {{ number_format($order->total_amount + $order->delivery_fee, 2) }}
                                 @else
-                                    <span style="font-size:.78rem;color:#888">Pending confirmation</span>
+                                    <span style="font-size:.78rem;color:#888">
+                                        Pending confirmation
+                                    </span>
                                 @endif
                             </div>
                         </div>
@@ -224,8 +294,7 @@
                             </a>
                             @endif
                             @if($canCancel)
-                            <button type="button"
-                                class="lo-btn lo-btn-cancel"
+                            <button type="button" class="lo-btn lo-btn-cancel"
                                 onclick="openCancelModal('{{ $order->id }}','{{ $order->order_number }}')">
                                 <i class="fas fa-times-circle"></i> Cancel
                             </button>
@@ -239,9 +308,14 @@
                     <div class="empty-state">
                         <i class="fas fa-prescription-bottle-alt"></i>
                         <h4>No orders found</h4>
-                        <p>{{ request('status') ? 'No ' . request('status') . ' orders found.' : 'You have no orders with this pharmacy yet.' }}</p>
+                        <p>{{ request('status')
+                                ? 'No ' . request('status') . ' orders found.'
+                                : 'You have no orders with this pharmacy yet.' }}</p>
                         <a href="{{ route('patient.pharmacies.order.form', $pharmacy->id) }}"
-                           style="background:linear-gradient(135deg,#00796b,#004d40);color:#fff;padding:.7rem 1.8rem;border-radius:25px;text-decoration:none;font-weight:700;font-size:.9rem;display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem">
+                           style="background:linear-gradient(135deg,#00796b,#004d40);color:#fff;
+                                  padding:.7rem 1.8rem;border-radius:25px;text-decoration:none;
+                                  font-weight:700;font-size:.9rem;display:inline-flex;
+                                  align-items:center;gap:.5rem;margin-top:.5rem">
                             <i class="fas fa-prescription"></i> Place New Order
                         </a>
                     </div>
@@ -250,30 +324,52 @@
 
                 @if($orders->hasPages())
                 <div class="d-flex justify-content-center mt-3">
-                    <ul class="pagination lo-pagination">{{ $orders->withQueryString()->links() }}</ul>
+                    <ul class="pagination lo-pagination">
+                        {{ $orders->withQueryString()->links() }}
+                    </ul>
                 </div>
                 @endif
             </div>
 
-            {{-- ═══════════════════════════════════════ --}}
-            {{-- ORDER DETAIL PANEL                      --}}
-            {{-- ═══════════════════════════════════════ --}}
+            {{-- ══════════════════════════════ --}}
+            {{-- ORDER DETAIL PANEL            --}}
+            {{-- ══════════════════════════════ --}}
             @if($orderView)
             @php
                 $steps = [
-                    ['pending',    'clock',        'Order Submitted',       'Prescription uploaded and waiting for pharmacy review'],
-                    ['verified',   'check',         'Prescription Verified', 'Pharmacy has validated your prescription and set the price'],
-                    ['processing', 'cog',           'Being Processed',       'Pharmacy is preparing your medicines'],
-                    ['ready',      'box-open',      'Ready',                 'Your order is packed and ready'],
-                    ['dispatched', 'truck',          'Dispatched',            'Your order is on its way'],
-                    ['delivered',  'check-circle',  'Delivered',             'Your medicines have been delivered'],
+                    ['pending',    'clock',       'Order Submitted',       'Prescription uploaded and waiting for pharmacy review'],
+                    ['verified',   'check',        'Prescription Verified', 'Pharmacy has validated your prescription and set the price'],
+                    ['processing', 'cog',          'Being Processed',       'Pharmacy is preparing your medicines'],
+                    ['ready',      'box-open',     'Ready',                 'Your order is packed and ready'],
+                    ['dispatched', 'truck',         'Dispatched',            'Your order is on its way'],
+                    ['delivered',  'check-circle', 'Delivered',             'Your medicines have been delivered'],
                 ];
                 $stepOrder  = ['pending','verified','processing','ready','dispatched','delivered'];
                 $currentIdx = array_search($orderView->status, $stepOrder);
-                $canPay     = $orderView->payment_status === 'unpaid'
-                           && ($orderView->total_amount ?? 0) > 0
-                           && in_array($orderView->status, ['verified','processing','ready']);
+
+                // ── Pay logic for detail panel ─────────────────────────────
+                $isOtcPaid = $orderView->payment_method === 'online'
+                          && $orderView->payment_status === 'paid';
+
+                $canPayDetail = $orderView->payment_status === 'unpaid'
+                             && ($orderView->total_amount ?? 0) > 0
+                             && $orderView->payment_method === 'online'
+                             && in_array($orderView->status, ['verified','processing','ready']);
+
+                $canCancelDetail = $orderView->status === 'pending'
+                                && $orderView->payment_status !== 'paid';
+
+                $statusIcons = [
+                    'pending'    => 'clock',
+                    'verified'   => 'check',
+                    'processing' => 'cog',
+                    'ready'      => 'box-open',
+                    'dispatched' => 'truck',
+                    'delivered'  => 'check-circle',
+                    'cancelled'  => 'times-circle',
+                ];
             @endphp
+
             <div class="col-lg-7">
                 <div class="pt-card" style="position:sticky;top:1rem">
                     <div class="pt-card-header"
@@ -283,46 +379,83 @@
                     </div>
                     <div class="pt-card-body">
 
-                        {{-- Status & Payment pills --}}
+                        {{-- Status & Payment Pills --}}
                         <div class="d-flex gap-2 mb-3 flex-wrap">
-                            @php $oi = ['pending'=>'clock','verified'=>'check','processing'=>'cog','ready'=>'box-open','dispatched'=>'truck','delivered'=>'check-circle','cancelled'=>'times-circle']; @endphp
                             <span class="s-pill {{ $orderView->status }}">
-                                <i class="fas fa-{{ $oi[$orderView->status] ?? 'pills' }}"></i>
+                                <i class="fas fa-{{ $statusIcons[$orderView->status] ?? 'pills' }}"></i>
                                 {{ ucwords(str_replace('_',' ',$orderView->status)) }}
                             </span>
                             <span class="p-pill {{ $orderView->payment_status === 'paid' ? 'paid' : 'unpaid' }}">
                                 <i class="fas fa-{{ $orderView->payment_status === 'paid' ? 'check-circle' : 'clock' }}"></i>
                                 {{ ucfirst($orderView->payment_status) }}
                             </span>
+                            <span class="pay-method-badge {{ $orderView->payment_method === 'cash_on_delivery' ? 'cod' : 'online' }}">
+                                <i class="fas fa-{{ $orderView->payment_method === 'cash_on_delivery' ? 'money-bill-wave' : 'credit-card' }}"></i>
+                                {{ $orderView->payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'Online Payment' }}
+                            </span>
                         </div>
 
-                        {{-- Amount + Pay --}}
-                        @if(($orderView->total_amount ?? 0) > 0)
-                        <div style="background:linear-gradient(135deg,#e0f2f1,#b2dfdb);border-radius:12px;padding:1rem 1.3rem;margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem">
+                        {{-- OTC Paid Pending Notice --}}
+                        @if($isOtcPaid && $orderView->status === 'pending')
+                        <div style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);
+                                    border:1.5px solid #86efac;border-radius:12px;
+                                    padding:.9rem 1.1rem;margin-bottom:1.2rem;
+                                    display:flex;align-items:center;gap:.7rem">
+                            <div style="width:38px;height:38px;background:#16a34a;border-radius:50%;
+                                        display:flex;align-items:center;justify-content:center;
+                                        flex-shrink:0">
+                                <i class="fas fa-check" style="color:#fff;font-size:.85rem"></i>
+                            </div>
                             <div>
-                                <div style="font-size:.78rem;color:#555;font-weight:600">Total Amount Due</div>
+                                <div style="font-weight:700;color:#14532d;font-size:.88rem">
+                                    Payment Confirmed!
+                                </div>
+                                <div style="font-size:.78rem;color:#166534;margin-top:.15rem">
+                                    Your payment has been received.
+                                    The pharmacy will begin processing your order shortly.
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Amount Box --}}
+                        @if(($orderView->total_amount ?? 0) > 0)
+                        <div style="background:linear-gradient(135deg,#e0f2f1,#b2dfdb);
+                                    border-radius:12px;padding:1rem 1.3rem;margin-bottom:1.2rem;
+                                    display:flex;justify-content:space-between;
+                                    align-items:center;flex-wrap:wrap;gap:.8rem">
+                            <div>
+                                <div style="font-size:.78rem;color:#555;font-weight:600">
+                                    Total Amount
+                                </div>
                                 <div style="font-size:1.5rem;font-weight:800;color:#00796b">
                                     LKR {{ number_format($orderView->total_amount + $orderView->delivery_fee, 2) }}
                                 </div>
-                                @if($orderView->delivery_fee > 0)
+                                @if(($orderView->delivery_fee ?? 0) > 0)
                                 <div style="font-size:.76rem;color:#555">
-                                    Includes delivery: LKR {{ number_format($orderView->delivery_fee, 2) }}
+                                    Includes delivery:
+                                    LKR {{ number_format($orderView->delivery_fee, 2) }}
                                 </div>
                                 @endif
                             </div>
-                            @if($canPay)
+                            @if($canPayDetail)
                             <a href="{{ route('patient.pharmacies.payment', $orderView->id) }}"
-                               class="lo-btn lo-btn-pay" style="padding:.6rem 1.4rem;font-size:.9rem">
+                               class="lo-btn lo-btn-pay"
+                               style="padding:.6rem 1.4rem;font-size:.9rem">
                                 <i class="fas fa-credit-card"></i> Pay Now
                             </a>
                             @elseif($orderView->payment_status === 'paid')
-                            <span style="background:#dcfce7;color:#166534;padding:.5rem 1rem;border-radius:20px;font-weight:700;font-size:.85rem">
-                                <i class="fas fa-check-circle me-1"></i>Paid
+                            <span style="background:#dcfce7;color:#166534;padding:.5rem 1rem;
+                                         border-radius:20px;font-weight:700;font-size:.85rem;
+                                         display:inline-flex;align-items:center;gap:.4rem">
+                                <i class="fas fa-check-circle"></i> Paid
                             </span>
                             @endif
                         </div>
                         @else
-                        <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#92400e;font-weight:500">
+                        <div style="background:#fef3c7;border-left:4px solid #f59e0b;
+                                    border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem;
+                                    font-size:.85rem;color:#92400e;font-weight:500">
                             <i class="fas fa-info-circle me-1"></i>
                             The pharmacy will confirm the amount after reviewing your prescription.
                         </div>
@@ -330,7 +463,8 @@
 
                         {{-- Timeline --}}
                         @if($orderView->status !== 'cancelled')
-                        <div style="font-size:.82rem;font-weight:700;color:#00796b;margin-bottom:.9rem">
+                        <div style="font-size:.82rem;font-weight:700;color:#00796b;
+                                    margin-bottom:.9rem">
                             <i class="fas fa-route me-1"></i>Order Progress
                         </div>
                         <div class="tl">
@@ -349,7 +483,9 @@
                                          style="{{ $active ? 'color:#00796b' : ($done ? 'color:#333' : 'color:#aaa') }}">
                                         {{ $lbl }}
                                         @if($active)
-                                        <span style="font-size:.7rem;background:#ffa000;color:#fff;padding:.1rem .5rem;border-radius:8px;margin-left:.4rem">Current</span>
+                                        <span style="font-size:.7rem;background:#ffa000;color:#fff;
+                                                     padding:.1rem .5rem;border-radius:8px;
+                                                     margin-left:.4rem">Current</span>
                                         @endif
                                     </div>
                                     <div class="tl-desc">{{ $desc }}</div>
@@ -357,11 +493,16 @@
                             </div>
                             @endforeach
                         </div>
+
                         @else
-                        <div style="background:#fee2e2;border-left:4px solid #f87171;border-radius:8px;padding:1rem;color:#991b1b;font-weight:600">
-                            <i class="fas fa-times-circle me-1"></i>This order has been cancelled.
+                        {{-- Cancelled State --}}
+                        <div style="background:#fee2e2;border-left:4px solid #f87171;
+                                    border-radius:8px;padding:1rem;color:#991b1b;font-weight:600">
+                            <i class="fas fa-times-circle me-1"></i>
+                            This order has been cancelled.
                             @if($orderView->cancelled_reason)
-                            <div style="font-size:.82rem;font-weight:400;margin-top:.4rem;color:#b91c1c">
+                            <div style="font-size:.82rem;font-weight:400;margin-top:.4rem;
+                                        color:#b91c1c">
                                 Reason: {{ $orderView->cancelled_reason }}
                             </div>
                             @endif
@@ -371,11 +512,14 @@
                         {{-- Order Items --}}
                         @if($orderView->items->count())
                         <div style="margin-top:1.3rem">
-                            <div style="font-size:.82rem;font-weight:700;color:#00796b;margin-bottom:.6rem">
+                            <div style="font-size:.82rem;font-weight:700;color:#00796b;
+                                        margin-bottom:.6rem">
                                 <i class="fas fa-list-alt me-1"></i>Ordered Medicines
                             </div>
                             @foreach($orderView->items as $item)
-                            <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #f0f4f0;font-size:.84rem">
+                            <div style="display:flex;justify-content:space-between;
+                                        align-items:center;padding:.5rem 0;
+                                        border-bottom:1px solid #f0f4f0;font-size:.84rem">
                                 <div>
                                     <div style="font-weight:600">{{ $item->medication_name }}</div>
                                     @if(isset($item->dosage) && $item->dosage)
@@ -383,53 +527,97 @@
                                     @endif
                                 </div>
                                 <div style="text-align:right">
-                                    <div style="font-weight:700;color:#00796b">LKR {{ number_format($item->price, 2) }}</div>
-                                    <div style="font-size:.74rem;color:#888">Qty: {{ $item->quantity }}</div>
+                                    <div style="font-weight:700;color:#00796b">
+                                        LKR {{ number_format($item->price, 2) }}
+                                    </div>
+                                    <div style="font-size:.74rem;color:#888">
+                                        Qty: {{ $item->quantity }}
+                                    </div>
                                 </div>
                             </div>
                             @endforeach
+
+                            {{-- Items subtotal --}}
+                            @php $itemsTotal = $orderView->items->sum(fn($i) => $i->price * $i->quantity) @endphp
+                            <div style="display:flex;justify-content:space-between;
+                                        padding:.6rem 0;font-size:.84rem;font-weight:700">
+                                <span style="color:#555">Items Subtotal</span>
+                                <span style="color:#00796b">
+                                    LKR {{ number_format($itemsTotal, 2) }}
+                                </span>
+                            </div>
+                            @if(($orderView->delivery_fee ?? 0) > 0)
+                            <div style="display:flex;justify-content:space-between;
+                                        padding:.3rem 0;font-size:.82rem;color:#888">
+                                <span>Delivery Fee</span>
+                                <span>LKR {{ number_format($orderView->delivery_fee, 2) }}</span>
+                            </div>
+                            @endif
                         </div>
                         @endif
 
                         {{-- Order Details --}}
-                        <div style="background:#f8fafc;border-radius:10px;padding:.9rem;margin-top:1rem">
-                            <div style="font-size:.82rem;font-weight:700;color:#00796b;margin-bottom:.5rem">
+                        <div style="background:#f8fafc;border-radius:10px;padding:.9rem;
+                                    margin-top:1rem">
+                            <div style="font-size:.82rem;font-weight:700;color:#00796b;
+                                        margin-bottom:.5rem">
                                 <i class="fas fa-info-circle me-1"></i>Order Details
                             </div>
                             <div style="font-size:.83rem;color:#555;line-height:2">
                                 <div>
-                                    <i class="fas fa-calendar-alt me-2" style="color:#00796b;width:16px"></i>
+                                    <i class="fas fa-calendar-alt me-2"
+                                       style="color:#00796b;width:16px"></i>
                                     <strong>Placed:</strong>
                                     {{ optional($orderView->created_at)->format('d M Y, h:i A') }}
                                 </div>
                                 <div>
-                                    <i class="fas fa-{{ $orderView->delivery_address === 'PICKUP' ? 'store' : 'truck' }} me-2" style="color:#00796b;width:16px"></i>
+                                    <i class="fas fa-{{ $orderView->delivery_address === 'PICKUP' ? 'store' : 'truck' }} me-2"
+                                       style="color:#00796b;width:16px"></i>
                                     <strong>Delivery:</strong>
-                                    {{ $orderView->delivery_address === 'PICKUP' ? 'Pickup at store' : $orderView->delivery_address }}
+                                    {{ $orderView->delivery_address === 'PICKUP'
+                                        ? 'Pickup at store'
+                                        : $orderView->delivery_address }}
                                     @if($orderView->delivery_method)
-                                        ({{ ucfirst($orderView->delivery_method) }})
+                                        ({{ ucfirst(str_replace('_',' ',$orderView->delivery_method)) }})
                                     @endif
+                                </div>
+                                <div>
+                                    <i class="fas fa-credit-card me-2"
+                                       style="color:#00796b;width:16px"></i>
+                                    <strong>Payment:</strong>
+                                    {{ $orderView->payment_method === 'cash_on_delivery'
+                                        ? 'Cash on Delivery'
+                                        : 'Online (Stripe)' }}
+                                    — <strong>{{ ucfirst($orderView->payment_status) }}</strong>
                                 </div>
                                 @if($orderView->prescription_file)
                                 <div>
-                                    <i class="fas fa-file-medical me-2" style="color:#00796b;width:16px"></i>
+                                    <i class="fas fa-file-medical me-2"
+                                       style="color:#00796b;width:16px"></i>
                                     <strong>Prescription:</strong>
-                                    <a href="{{ asset('storage/' . $orderView->prescription_file) }}"
+                                    <a href="{{ asset('storage/'.$orderView->prescription_file) }}"
                                        target="_blank"
                                        style="color:#00796b;font-weight:600;text-decoration:none">
-                                        View File <i class="fas fa-external-link-alt" style="font-size:.7rem"></i>
+                                        View File
+                                        <i class="fas fa-external-link-alt"
+                                           style="font-size:.7rem"></i>
                                     </a>
                                 </div>
                                 @endif
                             </div>
                         </div>
 
-                        {{-- Cancel button — detail panel --}}
-                        @if($orderView->status === 'pending')
-                        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #f0f4f0">
+                        {{-- Cancel Button --}}
+                        @if($canCancelDetail)
+                        <div style="margin-top:1rem;padding-top:1rem;
+                                    border-top:1px solid #f0f4f0">
                             <button type="button"
                                 onclick="openCancelModal('{{ $orderView->id }}','{{ $orderView->order_number }}')"
-                                style="width:100%;padding:.75rem;background:#fff;border:2px solid #fca5a5;border-radius:10px;color:#dc2626;font-weight:700;font-size:.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:all .3s"
+                                style="width:100%;padding:.75rem;background:#fff;
+                                       border:2px solid #fca5a5;border-radius:10px;
+                                       color:#dc2626;font-weight:700;font-size:.86rem;
+                                       cursor:pointer;display:flex;align-items:center;
+                                       justify-content:center;gap:.5rem;transition:all .3s"
                                 onmouseover="this.style.background='#fee2e2'"
                                 onmouseout="this.style.background='#fff'">
                                 <i class="fas fa-times-circle"></i> Cancel This Order
@@ -437,10 +625,11 @@
                         </div>
                         @endif
 
-                        {{-- Close panel --}}
+                        {{-- Close Panel --}}
                         <div class="text-center mt-3">
                             <a href="{{ route('patient.pharmacies.track', $pharmacy->id) }}"
-                               style="color:#aaa;font-size:.83rem;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem">
+                               style="color:#aaa;font-size:.83rem;text-decoration:none;
+                                      display:inline-flex;align-items:center;gap:.4rem">
                                 <i class="fas fa-times"></i> Close Detail View
                             </a>
                         </div>
@@ -455,7 +644,13 @@
         {{-- Place New Order CTA --}}
         <div style="text-align:center;margin-top:1.5rem">
             <a href="{{ route('patient.pharmacies.order.form', $pharmacy->id) }}"
-               style="background:linear-gradient(135deg,#00796b,#004d40);color:#fff;padding:.8rem 2.2rem;border-radius:25px;text-decoration:none;font-weight:700;font-size:.92rem;display:inline-flex;align-items:center;gap:.6rem;box-shadow:0 4px 14px rgba(0,121,107,.3);transition:all .3s">
+               style="background:linear-gradient(135deg,#00796b,#004d40);color:#fff;
+                      padding:.8rem 2.2rem;border-radius:25px;text-decoration:none;
+                      font-weight:700;font-size:.92rem;display:inline-flex;
+                      align-items:center;gap:.6rem;
+                      box-shadow:0 4px 14px rgba(0,121,107,.3);transition:all .3s"
+               onmouseover="this.style.filter='brightness(1.1)'"
+               onmouseout="this.style.filter='brightness(1)'">
                 <i class="fas fa-prescription"></i> Place New Order
             </a>
         </div>
@@ -463,71 +658,87 @@
     </div>
 </section>
 
-{{-- ═══════════════════════════════════════════════════════ --}}
-{{-- CANCEL ORDER MODAL                                      --}}
-{{-- ═══════════════════════════════════════════════════════ --}}
+{{-- ══ CANCEL MODAL ══ --}}
 <div id="cancelModal"
-     style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:18px;padding:2rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative;animation:slideUp .3s ease">
+     style="display:none;position:fixed;inset:0;z-index:9999;
+            background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
+            align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:18px;padding:2rem;max-width:440px;
+                width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);
+                position:relative;animation:slideUp .3s ease">
 
-        {{-- Icon --}}
         <div style="text-align:center;margin-bottom:1.2rem">
-            <div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .8rem">
-                <i class="fas fa-exclamation-triangle" style="font-size:1.6rem;color:#dc2626"></i>
+            <div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;
+                        display:flex;align-items:center;justify-content:center;
+                        margin:0 auto .8rem">
+                <i class="fas fa-exclamation-triangle"
+                   style="font-size:1.6rem;color:#dc2626"></i>
             </div>
             <h5 style="font-weight:800;color:#1a1a1a;margin:0">Cancel Order?</h5>
             <p style="color:#888;font-size:.85rem;margin:.4rem 0 0">
-                Order <strong>#<span id="cancelOrderNum"></span></strong> will be permanently cancelled.
+                Order <strong>#<span id="cancelOrderNum"></span></strong>
+                will be permanently cancelled.
             </p>
         </div>
 
-        {{-- Form --}}
         <form id="cancelForm" method="POST">
             @csrf
             <div style="margin-bottom:1.2rem">
-                <label style="font-size:.83rem;font-weight:600;color:#444;display:block;margin-bottom:.4rem">
+                <label style="font-size:.83rem;font-weight:600;color:#444;
+                               display:block;margin-bottom:.4rem">
                     Reason for cancellation
                     <span style="color:#aaa;font-weight:400">(optional)</span>
                 </label>
                 <textarea name="cancelled_reason" rows="3"
-                    style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:.7rem .9rem;font-size:.85rem;resize:none;outline:none;transition:border .2s"
-                    placeholder="e.g. Found medicines elsewhere, wrong prescription uploaded..."
+                    style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;
+                           padding:.7rem .9rem;font-size:.85rem;resize:none;outline:none;
+                           transition:border .2s"
+                    placeholder="e.g. Found medicines elsewhere, wrong prescription..."
                     onfocus="this.style.borderColor='#00796b'"
                     onblur="this.style.borderColor='#e5e7eb'"></textarea>
             </div>
 
-            {{-- Warning --}}
-            <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:8px;padding:.7rem .9rem;font-size:.8rem;color:#92400e;margin-bottom:1.3rem;display:flex;gap:.5rem;align-items:flex-start">
+            <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:8px;
+                        padding:.7rem .9rem;font-size:.8rem;color:#92400e;margin-bottom:1.3rem;
+                        display:flex;gap:.5rem;align-items:flex-start">
                 <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:.15rem"></i>
-                <span>This action <strong>cannot be undone</strong>. Only <strong>pending</strong> orders can be cancelled.</span>
+                <span>
+                    This action <strong>cannot be undone</strong>.
+                    Only <strong>pending</strong> orders can be cancelled.
+                </span>
             </div>
 
-            {{-- Buttons --}}
             <div style="display:flex;gap:.7rem">
                 <button type="button" onclick="closeCancelModal()"
-                    style="flex:1;padding:.75rem;border:2px solid #e5e7eb;border-radius:10px;background:#fff;color:#555;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s"
+                    style="flex:1;padding:.75rem;border:2px solid #e5e7eb;border-radius:10px;
+                           background:#fff;color:#555;font-weight:700;font-size:.88rem;
+                           cursor:pointer;transition:all .2s"
                     onmouseover="this.style.borderColor='#aaa'"
                     onmouseout="this.style.borderColor='#e5e7eb'">
                     <i class="fas fa-arrow-left me-1"></i> Keep Order
                 </button>
                 <button type="submit"
-                    style="flex:1;padding:.75rem;border:none;border-radius:10px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s"
+                    style="flex:1;padding:.75rem;border:none;border-radius:10px;
+                           background:linear-gradient(135deg,#dc2626,#b91c1c);
+                           color:#fff;font-weight:700;font-size:.88rem;
+                           cursor:pointer;transition:all .2s"
                     onmouseover="this.style.filter='brightness(1.1)'"
                     onmouseout="this.style.filter='brightness(1)'">
-                    <i class="fas fa-times-circle me-1"></i> Yes, Cancel Order
+                    <i class="fas fa-times-circle me-1"></i> Yes, Cancel
                 </button>
             </div>
         </form>
 
-        {{-- Close X --}}
         <button onclick="closeCancelModal()"
-            style="position:absolute;top:.8rem;right:.9rem;background:none;border:none;font-size:1.3rem;color:#aaa;cursor:pointer;line-height:1">
+            style="position:absolute;top:.8rem;right:.9rem;background:none;
+                   border:none;font-size:1.3rem;color:#aaa;cursor:pointer;line-height:1">
             &times;
         </button>
     </div>
 </div>
 
 <script>
+// ── Cancel Modal ──────────────────────────────────────────────────────────────
 function openCancelModal(orderId, orderNum) {
     document.getElementById('cancelOrderNum').textContent = orderNum;
     document.getElementById('cancelForm').action =
@@ -550,6 +761,16 @@ document.addEventListener('keydown', e => {
 document.getElementById('cancelModal').addEventListener('click', function(e) {
     if (e.target === this) closeCancelModal();
 });
+
+// ── Auto-dismiss flash messages ───────────────────────────────────────────────
+const flash = document.getElementById('flashMsg');
+if (flash) {
+    setTimeout(() => {
+        flash.style.transition = 'opacity .5s';
+        flash.style.opacity = '0';
+        setTimeout(() => flash.remove(), 500);
+    }, 6000);
+}
 </script>
 
 @include('partials.footer')

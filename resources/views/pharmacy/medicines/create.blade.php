@@ -1,233 +1,297 @@
 @extends('pharmacy.layouts.master')
-
 @section('title', 'Add Medicine')
-@section('page-title', 'Add Medicine')
-@section('page-subtitle', 'Add a new medicine to your pharmacy')
+@section('page-title', 'Medicines')
 
 @section('content')
 
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-        <h6 class="fw-bold text-dark mb-0" style="font-size:14px">
-            <i class="fas fa-plus-circle me-2 text-primary"></i>Add New Medicine
-        </h6>
-        <small class="text-muted">Fields marked <span class="text-danger">*</span> are required</small>
-    </div>
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
     <a href="{{ route('pharmacy.medicines.index') }}"
-       class="btn btn-outline-secondary btn-sm" style="font-size:12px">
-        <i class="fas fa-arrow-left me-1"></i>Back to Medicines
+       class="btn btn-sm btn-outline-secondary rounded-pill">
+        <i class="bi bi-arrow-left me-1"></i>Back
     </a>
+    <h5 class="fw-bold mb-0">Add New Medicine</h5>
 </div>
 
-<form action="{{ route('pharmacy.medicines.store') }}" method="POST" id="createMedicineForm">
+@if($errors->any())
+<div class="alert alert-danger border-0 shadow-sm mb-3">
+    <ul class="mb-0 ps-3">
+        @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+    </ul>
+</div>
+@endif
+
+@php
+$predefinedCategories = [
+    'Antibiotics',
+    'Analgesics / Pain Relief',
+    'Antipyretics',
+    'Antihistamines',
+    'Antacids / Gastrointestinal',
+    'Antidiabetics',
+    'Antihypertensives',
+    'Cardiovascular',
+    'Vitamins & Supplements',
+    'Dermatology / Skin Care',
+    'Eye & Ear Drops',
+    'Respiratory / Asthma',
+    'Hormones & Endocrine',
+    'Neurological / CNS',
+    'Antifungals',
+    'Antivirals',
+    'Antiseptics',
+    'Contraceptives',
+    'Oncology',
+    'Vaccines & Immunology',
+    'Surgical Supplies',
+    'Pediatric',
+    'Dental',
+    'Other',
+];
+// Merge with pharmacy-specific categories
+$allCategories = collect($predefinedCategories)
+    ->merge($categories)
+    ->unique()
+    ->sort()
+    ->values();
+@endphp
+
+<form action="{{ route('pharmacy.medicines.store') }}" method="POST">
     @csrf
+
     <div class="row g-3">
 
-        {{-- Left --}}
+        {{-- ===== LEFT ===== --}}
         <div class="col-lg-8">
-            <div class="card mb-3">
+
+            {{-- Basic Info --}}
+            <div class="dashboard-card mb-3">
                 <div class="card-header">
-                    <h6><i class="fas fa-pills me-2 text-primary"></i>Medicine Information</h6>
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-capsule me-2 text-primary"></i>Basic Information
+                    </h6>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
 
-                        {{-- name --}}
-                        <div class="col-md-8">
-                            <label class="form-label" style="font-size:12px;font-weight:600">
+                        {{-- Name --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold form-label-sm">
                                 Medicine Name <span class="text-danger">*</span>
                             </label>
-                            <input type="text" name="name" value="{{ old('name') }}"
-                                   class="form-control form-control-sm @error('name') is-invalid @enderror"
-                                   placeholder="e.g. Paracetamol 500mg"
-                                   style="font-size:12px" autofocus>
-                            @error('name')
-                            <div class="invalid-feedback" style="font-size:11px">{{ $message }}</div>
-                            @enderror
+                            <input type="text" name="name"
+                                   class="form-control @error('name') is-invalid @enderror"
+                                   value="{{ old('name') }}"
+                                   placeholder="e.g. Amoxicillin" required>
+                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- category --}}
-                        <div class="col-md-4">
-                            <label class="form-label" style="font-size:12px;font-weight:600">
+                        {{-- Generic Name --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold form-label-sm">Generic Name</label>
+                            <input type="text" name="generic_name"
+                                   class="form-control @error('generic_name') is-invalid @enderror"
+                                   value="{{ old('generic_name') }}"
+                                   placeholder="e.g. Amoxicillin Trihydrate">
+                            @error('generic_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        {{-- Category --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold form-label-sm">
                                 Category <span class="text-danger">*</span>
                             </label>
-                            <input type="text" name="category" value="{{ old('category') }}"
-                                   class="form-control form-control-sm @error('category') is-invalid @enderror"
-                                   placeholder="e.g. Analgesic"
-                                   style="font-size:12px" list="categoryList">
-                            <datalist id="categoryList">
-                                @foreach(['Analgesic','Antibiotic','Antiviral','Antifungal','Antidiabetic',
-                                          'Antihypertensive','Antihistamine','Antacid','Vitamins & Supplements',
-                                          'Cardiovascular','Respiratory','Gastrointestinal','Dermatology',
-                                          'Ophthalmology','Neurology','Oncology','Hormonal','Other'] as $cat)
-                                    <option value="{{ $cat }}">
+                            <select name="category"
+                                    class="form-select @error('category') is-invalid @enderror"
+                                    onchange="handleCategoryChange(this)" required>
+                                <option value="">-- Select Category --</option>
+                                @foreach($allCategories as $cat)
+                                    <option value="{{ $cat }}"
+                                        {{ old('category') === $cat ? 'selected' : '' }}>
+                                        {{ $cat }}
+                                    </option>
                                 @endforeach
-                            </datalist>
-                            @error('category')
-                            <div class="invalid-feedback" style="font-size:11px">{{ $message }}</div>
-                            @enderror
+                                <option value="__custom__"
+                                    {{ old('category') && !$allCategories->contains(old('category')) ? 'selected' : '' }}>
+                                    + Enter Custom Category
+                                </option>
+                            </select>
+                            <input type="text" id="customCategoryInput"
+                                   class="form-control mt-2 @error('category') is-invalid @enderror"
+                                   placeholder="Type custom category..."
+                                   style="display:none"
+                                   value="{{ old('category') && !$allCategories->contains(old('category')) ? old('category') : '' }}">
+                            @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- generic_name --}}
+                        {{-- Manufacturer --}}
                         <div class="col-md-6">
-                            <label class="form-label" style="font-size:12px;font-weight:600">Generic Name</label>
-                            <input type="text" name="generic_name" value="{{ old('generic_name') }}"
-                                   class="form-control form-control-sm @error('generic_name') is-invalid @enderror"
-                                   placeholder="e.g. Acetaminophen" style="font-size:12px">
-                            @error('generic_name')
-                            <div class="invalid-feedback" style="font-size:11px">{{ $message }}</div>
-                            @enderror
+                            <label class="form-label fw-semibold form-label-sm">Manufacturer</label>
+                            <input type="text" name="manufacturer"
+                                   class="form-control"
+                                   value="{{ old('manufacturer') }}"
+                                   placeholder="e.g. ABC Pharma Ltd">
                         </div>
 
-                        {{-- manufacturer --}}
+                        {{-- Dosage --}}
                         <div class="col-md-6">
-                            <label class="form-label" style="font-size:12px;font-weight:600">Manufacturer</label>
-                            <input type="text" name="manufacturer" value="{{ old('manufacturer') }}"
-                                   class="form-control form-control-sm @error('manufacturer') is-invalid @enderror"
-                                   placeholder="e.g. Hemas Pharmaceuticals" style="font-size:12px">
-                            @error('manufacturer')
-                            <div class="invalid-feedback" style="font-size:11px">{{ $message }}</div>
-                            @enderror
+                            <label class="form-label fw-semibold form-label-sm">Dosage / Strength</label>
+                            <input type="text" name="dosage"
+                                   class="form-control"
+                                   value="{{ old('dosage') }}"
+                                   placeholder="e.g. 500mg, 10ml, 5mg/5ml">
                         </div>
 
-                        {{-- dosage --}}
-                        <div class="col-md-6">
-                            <label class="form-label" style="font-size:12px;font-weight:600">Dosage</label>
-                            <input type="text" name="dosage" value="{{ old('dosage') }}"
-                                   class="form-control form-control-sm @error('dosage') is-invalid @enderror"
-                                   placeholder="e.g. 500mg, 1 tablet twice daily"
-                                   style="font-size:12px">
-                            @error('dosage')
-                            <div class="invalid-feedback" style="font-size:11px">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- price --}}
-                        <div class="col-md-3">
-                            <label class="form-label" style="font-size:12px;font-weight:600">
-                                Price (Rs.) <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-light" style="font-size:11px">Rs.</span>
-                                <input type="number" name="price" value="{{ old('price') }}"
-                                       step="0.01" min="0"
-                                       class="form-control form-control-sm @error('price') is-invalid @enderror"
-                                       placeholder="0.00" style="font-size:12px">
-                            </div>
-                            @error('price')
-                            <div class="text-danger mt-1" style="font-size:11px">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- stock_quantity --}}
-                        <div class="col-md-3">
-                            <label class="form-label" style="font-size:12px;font-weight:600">
-                                Stock Quantity <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" name="stock_quantity"
-                                       value="{{ old('stock_quantity', 0) }}"
-                                       min="0"
-                                       class="form-control form-control-sm @error('stock_quantity') is-invalid @enderror"
-                                       placeholder="0" style="font-size:12px"
-                                       oninput="updateStockPreview(this.value)">
-                                <span class="input-group-text bg-light" style="font-size:11px">units</span>
-                            </div>
-                            @error('stock_quantity')
-                            <div class="text-danger mt-1" style="font-size:11px">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- description --}}
+                        {{-- Description --}}
                         <div class="col-12">
-                            <label class="form-label" style="font-size:12px;font-weight:600">Description</label>
+                            <label class="form-label fw-semibold form-label-sm">Description</label>
                             <textarea name="description" rows="3"
-                                      class="form-control form-control-sm @error('description') is-invalid @enderror"
-                                      placeholder="Medicine description, uses, side effects, storage..."
-                                      style="font-size:12px">{{ old('description') }}</textarea>
-                            @error('description')
-                            <div class="invalid-feedback" style="font-size:11px">{{ $message }}</div>
-                            @enderror
+                                      class="form-control"
+                                      placeholder="Optional description or usage notes...">{{ old('description') }}</textarea>
                         </div>
 
                     </div>
                 </div>
             </div>
-        </div>
 
-        {{-- Right --}}
-        <div class="col-lg-4">
-
-            {{-- Stock Preview --}}
-            <div class="card mb-3">
+            {{-- Pricing & Stock --}}
+            <div class="dashboard-card">
                 <div class="card-header">
-                    <h6><i class="fas fa-boxes me-2 text-warning"></i>Stock Preview</h6>
-                </div>
-                <div class="card-body text-center py-3">
-                    <div id="stockPreviewBadge">
-                        <span class="badge bg-secondary fs-6 px-3 py-2">
-                            <i class="fas fa-box me-1"></i>
-                            <span id="stockPreviewQty">0</span> units
-                        </span>
-                    </div>
-                    <div class="mt-2">
-                        <span id="stockStatusBadge" class="badge bg-secondary" style="font-size:11px">
-                            Unknown
-                        </span>
-                    </div>
-                    <small class="text-muted d-block mt-2" style="font-size:10px">
-                        Stock status is auto-calculated<br>
-                        0 → Out of Stock &nbsp;|&nbsp; 1–9 → Low Stock &nbsp;|&nbsp; 10+ → In Stock
-                    </small>
-                </div>
-            </div>
-
-            {{-- Options --}}
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h6><i class="fas fa-sliders-h me-2 text-info"></i>Options</h6>
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-boxes me-2 text-warning"></i>Pricing & Stock
+                    </h6>
                 </div>
                 <div class="card-body">
-                    {{-- requires_prescription --}}
-                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div class="row g-3">
+
+                        {{-- Price --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold form-label-sm">
+                                Unit Price (LKR) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="bi bi-currency-exchange text-secondary"></i>
+                                </span>
+                                <input type="number" name="price" step="0.01" min="0"
+                                       class="form-control @error('price') is-invalid @enderror"
+                                       value="{{ old('price', '0.00') }}"
+                                       placeholder="0.00" required>
+                                <span class="input-group-text bg-white text-muted">LKR</span>
+                            </div>
+                            @error('price')<div class="text-danger mt-1" style="font-size:.8rem">{{ $message }}</div>@enderror
+                        </div>
+
+                        {{-- Stock --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold form-label-sm">
+                                Initial Stock Quantity <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="bi bi-boxes text-secondary"></i>
+                                </span>
+                                <input type="number" name="stock_quantity" min="0"
+                                       class="form-control @error('stock_quantity') is-invalid @enderror"
+                                       value="{{ old('stock_quantity', 0) }}"
+                                       oninput="updateStockPreview(this.value)"
+                                       required>
+                                <span class="input-group-text bg-white text-muted">units</span>
+                            </div>
+                            @error('stock_quantity')<div class="text-danger mt-1" style="font-size:.8rem">{{ $message }}</div>@enderror
+
+                            {{-- Stock Status Preview --}}
+                            <div class="mt-2 p-2 rounded d-flex align-items-center gap-2"
+                                 id="stockPreview"
+                                 style="background:#f8fafc;border:1px solid #e5e7eb;font-size:.78rem">
+                                <span id="stockPreviewBadge" class="badge bg-secondary">Out of Stock</span>
+                                <span id="stockPreviewText" class="text-muted">
+                                    0 = Out of Stock &nbsp;|&nbsp; 1–10 = Low Stock &nbsp;|&nbsp; 11+ = In Stock
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {{-- ===== RIGHT ===== --}}
+        <div class="col-lg-4">
+
+            {{-- Settings --}}
+            <div class="dashboard-card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-toggle-on me-2 text-success"></i>Settings
+                    </h6>
+                </div>
+                <div class="card-body d-flex flex-column gap-3">
+
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded"
+                         style="background:#f8fafc;border:1px solid #e5e7eb">
                         <div>
-                            <div class="fw-semibold" style="font-size:12px">Requires Prescription</div>
-                            <div class="text-muted" style="font-size:11px">Patient needs a prescription to buy</div>
+                            <div class="fw-semibold" style="font-size:.88rem">Active</div>
+                            <small class="text-muted">Visible to patients</small>
                         </div>
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox"
-                                   name="requires_prescription" id="rxSwitch"
-                                   value="1" style="width:36px;height:18px"
-                                   {{ old('requires_prescription', true) ? 'checked' : '' }}>
+                                   name="is_active" value="1"
+                                   {{ old('is_active', true) ? 'checked' : '' }}
+                                   style="width:2.5em;height:1.3em">
                         </div>
                     </div>
-                    {{-- is_active --}}
-                    <div class="d-flex justify-content-between align-items-center py-2">
+
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded"
+                         style="background:#f8fafc;border:1px solid #e5e7eb">
                         <div>
-                            <div class="fw-semibold" style="font-size:12px">Active / Visible</div>
-                            <div class="text-muted" style="font-size:11px">Medicine visible to patients</div>
+                            <div class="fw-semibold" style="font-size:.88rem">Requires Prescription</div>
+                            <small class="text-muted">Patient must upload Rx</small>
                         </div>
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox"
-                                   name="is_active" id="activeSwitch"
-                                   value="1" style="width:36px;height:18px"
-                                   {{ old('is_active', true) ? 'checked' : '' }}>
+                                   name="requires_prescription" value="1"
+                                   {{ old('requires_prescription', true) ? 'checked' : '' }}
+                                   style="width:2.5em;height:1.3em">
                         </div>
+                    </div>
+
+                </div>
+            </div>
+
+            {{-- Category Quick Reference --}}
+            <div class="dashboard-card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-tag me-2 text-info"></i>Category Reference
+                    </h6>
+                </div>
+                <div class="card-body p-2">
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach($predefinedCategories as $cat)
+                            @if($cat !== 'Other')
+                            <span class="badge bg-light text-dark border"
+                                  style="font-size:.72rem;cursor:pointer;padding:.3rem .6rem"
+                                  onclick="selectCategory('{{ $cat }}')">
+                                {{ $cat }}
+                            </span>
+                            @endif
+                        @endforeach
+                    </div>
+                    <div class="mt-2" style="font-size:.73rem;color:#9ca3af">
+                        <i class="bi bi-hand-index me-1"></i>Click a badge to quick-select
                     </div>
                 </div>
             </div>
 
             {{-- Submit --}}
-            <div class="card">
-                <div class="card-body d-flex flex-column gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm w-100"
-                            style="font-size:12px" id="submitBtn">
-                        <i class="fas fa-plus-circle me-1"></i>Add Medicine
+            <div class="dashboard-card">
+                <div class="card-body d-grid gap-2">
+                    <button type="submit" class="btn btn-primary rounded-pill fw-semibold py-2">
+                        <i class="bi bi-plus-circle me-1"></i>Add Medicine
                     </button>
                     <a href="{{ route('pharmacy.medicines.index') }}"
-                       class="btn btn-outline-secondary btn-sm w-100" style="font-size:12px">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </a>
+                       class="btn btn-light rounded-pill text-center">Cancel</a>
                 </div>
             </div>
 
@@ -239,33 +303,69 @@
 
 @push('scripts')
 <script>
-function updateStockPreview(qty) {
-    qty = parseInt(qty) || 0;
-    const qtyEl    = document.getElementById('stockPreviewQty');
-    const statusEl = document.getElementById('stockStatusBadge');
-    qtyEl.textContent = qty;
-    // DB enum: out_of_stock | low_stock | in_stock
-    if (qty <= 0) {
-        statusEl.className   = 'badge bg-danger';
-        statusEl.textContent = 'Out of Stock';
-    } else if (qty < 10) {
-        statusEl.className   = 'badge bg-warning text-dark';
-        statusEl.textContent = 'Low Stock';
+// Category select
+function handleCategoryChange(sel) {
+    var customInput = document.getElementById('customCategoryInput');
+    if (sel.value === '__custom__') {
+        customInput.style.display = 'block';
+        customInput.setAttribute('name', 'category');
+        sel.removeAttribute('name');
+        customInput.focus();
     } else {
-        statusEl.className   = 'badge bg-success';
-        statusEl.textContent = 'In Stock';
+        customInput.style.display = 'none';
+        customInput.removeAttribute('name');
+        sel.setAttribute('name', 'category');
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const qty = document.querySelector('input[name="stock_quantity"]').value;
-    updateStockPreview(qty);
-});
+function selectCategory(cat) {
+    var sel = document.querySelector('select[name="category"]');
+    if (!sel) {
+        sel = document.querySelector('select');
+    }
+    if (sel) {
+        for (var i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === cat) {
+                sel.selectedIndex = i;
+                sel.setAttribute('name', 'category');
+                document.getElementById('customCategoryInput').style.display = 'none';
+                document.getElementById('customCategoryInput').removeAttribute('name');
+                break;
+            }
+        }
+    }
+}
 
-document.getElementById('createMedicineForm').addEventListener('submit', function () {
-    const btn = document.getElementById('submitBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
-    btn.disabled  = true;
-});
+// Stock preview
+function updateStockPreview(val) {
+    var qty    = parseInt(val) || 0;
+    var badge  = document.getElementById('stockPreviewBadge');
+    var text   = document.getElementById('stockPreviewText');
+
+    if (qty <= 0) {
+        badge.className = 'badge bg-danger';
+        badge.textContent = 'Out of Stock';
+        text.textContent = 'This medicine will not be available for orders.';
+    } else if (qty <= 10) {
+        badge.className = 'badge bg-warning text-dark';
+        badge.textContent = 'Low Stock (' + qty + ')';
+        text.textContent = 'Low stock warning will be shown.';
+    } else {
+        badge.className = 'badge bg-success';
+        badge.textContent = 'In Stock (' + qty + ')';
+        text.textContent = 'Medicine is available for patient orders.';
+    }
+}
+
+// Init on page load
+updateStockPreview({{ old('stock_quantity', 0) }});
+
+// Handle pre-selected custom category on validation fail
+(function() {
+    var sel = document.querySelector('select[name="category"]');
+    if (sel && sel.value === '__custom__') {
+        handleCategoryChange(sel);
+    }
+})();
 </script>
 @endpush

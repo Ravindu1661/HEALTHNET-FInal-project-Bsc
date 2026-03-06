@@ -121,26 +121,32 @@ Route::prefix('pharmacy')->name('pharmacy.')->middleware(['auth'])->group(functi
     // ORDERS MANAGEMENT
     // ============================================
     Route::prefix('orders')->name('orders.')->group(function () {
-        Route::get('/', [PharmacyOrderController::class, 'index'])->name('index');
-        Route::get('/create', [PharmacyOrderController::class, 'create'])->name('create');
-        Route::post('/store', [PharmacyOrderController::class, 'store'])->name('store');
-        Route::get('/{order}', [PharmacyOrderController::class, 'show'])->name('show');
+        Route::get('/',        [PharmacyOrderController::class, 'index'])->name('index');
+        Route::get('/create',  [PharmacyOrderController::class, 'create'])->name('create');
+        Route::post('/store',  [PharmacyOrderController::class, 'store'])->name('store');
 
         // Order Status Actions
-        Route::post('/{order}/verify', [PharmacyOrderController::class, 'verify'])->name('verify');
-        Route::post('/{order}/process', [PharmacyOrderController::class, 'process'])->name('process');
-        Route::post('/{order}/ready', [PharmacyOrderController::class, 'ready'])->name('ready');
+        Route::post('/{order}/verify',   [PharmacyOrderController::class, 'verify'])->name('verify');
+        Route::post('/{order}/process',  [PharmacyOrderController::class, 'process'])->name('process');
+        Route::post('/{order}/ready',    [PharmacyOrderController::class, 'ready'])->name('ready');
         Route::post('/{order}/dispatch', [PharmacyOrderController::class, 'markDispatch'])->name('dispatch');
-        Route::post('/{order}/deliver', [PharmacyOrderController::class, 'deliver'])->name('deliver');
-        Route::post('/{order}/cancel', [PharmacyOrderController::class, 'cancel'])->name('cancel');
+        Route::post('/{order}/deliver',  [PharmacyOrderController::class, 'deliver'])->name('deliver');
+        Route::post('/{order}/cancel',   [PharmacyOrderController::class, 'cancel'])->name('cancel');
 
-        // Update Status (Generic)
+        // Generic Status Update (from modal)
         Route::post('/{order}/update-status', [PharmacyOrderController::class, 'updateStatus'])->name('update-status');
+
+        // Set Amount (from modal)
+        Route::post('/{order}/set-amount', [PharmacyOrderController::class, 'setAmount'])->name('set-amount');
+
+        // Single Order View
+        Route::get('/{order}', [PharmacyOrderController::class, 'show'])->name('show');
 
         // Download & Print
         Route::get('/{order}/download-prescription', [PharmacyOrderController::class, 'downloadPrescription'])->name('download-prescription');
-        Route::get('/{order}/print-invoice', [PharmacyOrderController::class, 'printInvoice'])->name('print-invoice');
+        Route::get('/{order}/print-invoice',         [PharmacyOrderController::class, 'printInvoice'])->name('print-invoice');
     });
+
 
     // ============================================
     // INVENTORY MANAGEMENT
