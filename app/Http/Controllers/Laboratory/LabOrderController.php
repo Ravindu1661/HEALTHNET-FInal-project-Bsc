@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-
+use App\Notifications\LabReportReadyNotification;
+use Illuminate\Support\Facades\Log;
 class LabOrderController extends Controller
 {
     private function getLab(): Laboratory
@@ -78,40 +79,80 @@ class LabOrderController extends Controller
         return back()->with('success', 'Marked as Processing!');
     }
 
-    public function markComplete(Request $request, LabOrder $order)
-    {
-        $lab = $this->getLab();
-        abort_if($order->laboratory_id !== $lab->id, 403);
+   public function markComplete(Request $request, LabOrder $order)
+{
+    $lab = $this->getLab();
+    abort_if($order->laboratory_id !== $lab->id, 403);
 
-        $reportPath = $order->report_file;
-        if ($request->hasFile('report_file')) {
-            $request->validate(['report_file' => 'file|mimes:pdf|max:10240']);
-            $reportPath = $request->file('report_file')
-                ->store('lab-reports/'.$lab->id, 'public');
-        }
+    $reportPath = $order->report_file;
 
-        $order->update([
-            'status'             => 'completed',
-            'report_file'        => $reportPath,
-            'report_uploaded_at' => now(),
+    if ($request->hasFile('report_file')) {
+        $request->validate([
+            'report_file' => 'file|mimes:pdf|max:10240'
         ]);
 
-        $this->notify($order, 'Report Ready', '✅ Your lab report for Order #'.$order->order_number.' is ready! Login to download.');
-        return back()->with('success', 'Order completed and report uploaded!');
+        $reportPath = $request->file('report_file')
+            ->store('lab-reports/' . $lab->id, 'public');
     }
 
-    public function uploadReport(Request $request, LabOrder $order)
-    {
-        $lab = $this->getLab();
-        abort_if($order->laboratory_id !== $lab->id, 403);
-        $request->validate(['report_file' => 'required|file|mimes:pdf|max:10240']);
+    $order->update([
+        'status'             => 'completed',
+        'report_file'        => $reportPath,
+        'report_uploaded_at' => now(),
+    ]);
 
-        $path = $request->file('report_file')->store('lab-reports/'.$lab->id, 'public');
-        $order->update(['report_file' => $path, 'report_uploaded_at' => now()]);
+    $this->notify($order, 'Report Ready', '✅ Your lab report for Order #' . $order->order_number . ' is ready! Login to download.');
 
-        $this->notify($order, 'Report Uploaded', '📄 Lab report for Order #'.$order->order_number.' has been uploaded.');
-        return back()->with('success', 'Report uploaded!');
+    // Email notification
+    try {
+        $order->loadMissing(['patient.user']);
+
+        if ($order->report_file && $order->patient && $order->patient->user && $order->patient->user->email) {
+            $order->patient->user->notify(
+                new LabReportReadyNotification($order, $lab->name ?? 'HealthNet Laboratory')
+            );
+        }
+    } catch (\Exception $e) {
+        Log::warning('Lab report email send failed: ' . $e->getMessage());
     }
+
+    return back()->with('success', 'Order completed, report uploaded, and email sent!');
+}
+
+   public function uploadReport(Request $request, LabOrder $order)
+{
+    $lab = $this->getLab();
+    abort_if($order->laboratory_id !== $lab->id, 403);
+
+    $request->validate([
+        'report_file' => 'required|file|mimes:pdf|max:10240'
+    ]);
+
+    $path = $request->file('report_file')->store('lab-reports/' . $lab->id, 'public');
+
+    $order->update([
+        'report_file'        => $path,
+        'report_uploaded_at' => now()
+    ]);
+
+    // Existing in-app notification
+    $this->notify($order, 'Report Uploaded', '📄 Lab report for Order #' . $order->order_number . ' has been uploaded.');
+
+    // Email notification
+    try {
+        $order->loadMissing(['patient.user']);
+
+        if ($order->patient && $order->patient->user && $order->patient->user->email) {
+            $order->patient->user->notify(
+                new LabReportReadyNotification($order, $lab->name ?? 'HealthNet Laboratory')
+            );
+        }
+    } catch (\Exception $e) {
+        Log::warning('Lab report email send failed: ' . $e->getMessage());
+    }
+
+    return back()->with('success', 'Report uploaded and email sent to patient!');
+}
 
     public function cancel(Request $request, LabOrder $order)
     {

@@ -1072,36 +1072,79 @@
                         </div>
 
                         <!-- Form -->
-                        <div class="contact-form-react">
-                            <h3 class="form-title">Send us a Message</h3>
-                            <form class="contact-form-inner" onsubmit="event.preventDefault();">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <input type="text" class="form-control-react" placeholder="Your Name" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <input type="email" class="form-control-react" placeholder="Email Address" required>
-                                    </div>
-                                    <div class="col-12">
-                                        <input type="text" class="form-control-react" placeholder="Subject" required>
-                                    </div>
-                                    <div class="col-12">
-                                        <textarea class="form-control-react textarea-react" rows="4" placeholder="How can we help you?" required></textarea>
-                                    </div>
-                                    <div class="col-12">
-                                        <button type="submit" class="btn-submit-react">
-                                            Send Message <i class="fas fa-paper-plane ms-2"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
+                                <!-- Form -->
+          <div class="contact-form-react">
+            <h3 class="form-title">Send us a Message</h3>
+
+            <!-- Success Message Alert (Initially Hidden) -->
+            <div id="contactSuccessMessage" class="alert alert-success d-none mb-3" style="border-radius: 10px; font-size: 0.9rem;" role="alert">
+              <i class="fas fa-check-circle me-2"></i> Your message has been sent successfully! We will get back to you soon.
+            </div>
+
+            <!-- Added id="contactForm" and updated onsubmit function -->
+            <form id="contactForm" class="contact-form-inner" onsubmit="handleContactSubmit(event)">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <input type="text" class="form-control-react" placeholder="Your Name" required>
+                </div>
+                <div class="col-md-6">
+                  <input type="email" class="form-control-react" placeholder="Email Address" required>
+                </div>
+                <div class="col-12">
+                  <input type="text" class="form-control-react" placeholder="Subject" required>
+                </div>
+                <div class="col-12">
+                  <textarea class="form-control-react textarea-react" rows="4" placeholder="How can we help you?" required></textarea>
+                </div>
+                <div class="col-12">
+                  <!-- Updated button with id for changing text during submission -->
+                  <button type="submit" id="submitBtn" class="btn-submit-react">
+                    Send Message <i class="fas fa-paper-plane ms-2"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
+<script>
+  function handleContactSubmit(event) {
+      event.preventDefault(); // Prevent page reload
+
+      const submitBtn = document.getElementById('submitBtn');
+      const successAlert = document.getElementById('contactSuccessMessage');
+      const form = document.getElementById('contactForm');
+
+      // Change button state to show loading
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'Sending... <i class="fas fa-spinner fa-spin ms-2"></i>';
+      submitBtn.disabled = true;
+
+      // Simulate network request delay (Optional: you can remove setTimeout for instant message)
+      setTimeout(() => {
+          // Show success message
+          successAlert.classList.remove('d-none');
+
+          // Reset form fields
+          form.reset();
+
+          // Revert button state
+          submitBtn.innerHTML = originalBtnText;
+          submitBtn.disabled = false;
+
+          // Automatically hide success message after 5 seconds
+          setTimeout(() => {
+              successAlert.classList.add('d-none');
+          }, 5000);
+
+      }, 1000); // 1 second fake delay to show spinner
+  }
+</script>
 
     <!-- Footer -->
     <footer class="footer">

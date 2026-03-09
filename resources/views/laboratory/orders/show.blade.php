@@ -407,34 +407,46 @@
         </form>
     </div>
 </div>
-
-{{-- Upload Report Modal (for already-completed orders) --}}
+{{-- Upload Report Modal --}}
 <div id="uploadReportModal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                <i class="fas fa-upload text-purple-600"></i> Upload Lab Report
-            </h3>
-            <button onclick="document.getElementById('uploadReportModal').classList.add('hidden')"
+            <h3 class="font-bold text-gray-900">Upload Lab Report</h3>
+            <button type="button"
+                    onclick="document.getElementById('uploadReportModal').classList.add('hidden')"
                     class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form method="POST" action="{{ route('laboratory.orders.upload-report', $order) }}"
-              enctype="multipart/form-data" class="p-6 space-y-4">
+
+        <form action="{{ route('laboratory.orders.upload-report', $order) }}"
+              method="POST"
+              enctype="multipart/form-data"
+              class="p-6 space-y-4">
             @csrf
+
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Report File (PDF)</label>
-                <input type="file" name="reportfile" accept=".pdf" required
-                       class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
-                <p class="text-xs text-gray-400 mt-1">PDF only. Max 10MB.</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Upload Report File (PDF)
+                </label>
+                <input type="file"
+                       name="report_file"
+                       accept=".pdf"
+                       required
+                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                @error('report_file')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+                <p class="text-xs text-gray-400 mt-1">Max 10MB. PDF only.</p>
             </div>
+
             <div class="flex gap-3 pt-2">
                 <button type="submit"
                         class="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-semibold hover:bg-purple-700 transition">
-                    <i class="fas fa-upload mr-2"></i> Upload
+                    <i class="fas fa-upload mr-2"></i> Upload Report
                 </button>
-                <button type="button" onclick="document.getElementById('uploadReportModal').classList.add('hidden')"
+                <button type="button"
+                        onclick="document.getElementById('uploadReportModal').classList.add('hidden')"
                         class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold hover:bg-gray-200 transition">
                     Cancel
                 </button>
