@@ -103,68 +103,91 @@ class DoctorScheduleController extends Controller
             compact('schedules', 'stats', 'workplaces', 'doctor'));
     }
 
-    // ══════════════════════════════════════════
-    //  CREATE
-    // ══════════════════════════════════════════
-    public function create()
-    {
-        $doctor     = $this->getDoctor();
-        $workplaces = $this->workplacesQuery($doctor->id)->get();
-        $days       = ['monday','tuesday','wednesday',
-                       'thursday','friday','saturday','sunday'];
+// ══════════════════════════════════════════
+//  CREATE
+// ══════════════════════════════════════════
+public function create()
+{
+    $doctor     = $this->getDoctor();
+    $workplaces = $this->workplacesQuery($doctor->id)->get();
 
-        return view('doctor.schedule.create',
-            compact('workplaces', 'days', 'doctor'));
-    }
+    return view('doctor.schedule.create',
+        compact('workplaces', 'doctor'));
+}
 
-    // ══════════════════════════════════════════
-    //  STORE
-    // ══════════════════════════════════════════
-    public function store(Request $request)
-    {
-        $doctor = $this->getDoctor();
+// ══════════════════════════════════════════
+//  STORE  ← multi-day loop
+// ══════════════════════════════════════════
+public function store(Request $request)
+{
+    $doctor = $this->getDoctor();
 
-        $request->validate([
-            'day_of_week'      => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
-            'start_time'       => 'required',
-            'end_time'         => 'required|after:start_time',
-            'max_appointments' => 'required|integer|min:1|max:100',
-            'consultation_fee' => 'nullable|numeric|min:0',
-            'workplace_id'     => 'nullable|integer',
-            'workplace_type'   => 'nullable|in:hospital,medical_centre,private', // ✅ FIXED
-        ]);
+    $request->validate([
+        'days_of_week'     => 'required|array|min:1',
+        'days_of_week.*'   => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+        'start_time'       => 'required',
+        'end_time'         => 'required|after:start_time',
+        'max_appointments' => 'required|integer|min:1|max:100',
+        'consultation_fee' => 'nullable|numeric|min:0',
+        'workplace_id'     => 'nullable|integer',
+        'workplace_type'   => 'nullable|in:hospital,medical_centre,private',
+    ]);
 
+    $inserted  = 0;
+    $skipped   = 0;
+
+    foreach ($request->days_of_week as $day) {
+
+        // Duplicate check per day
         $exists = DB::table('doctor_schedules')
-            ->where('doctor_id',   $doctor->id)
-            ->where('day_of_week', $request->day_of_week)
-            ->where('start_time',  $request->start_time)
-            ->where('workplace_id',$request->workplace_id)
+            ->where('doctor_id',    $doctor->id)
+            ->where('day_of_week',  $day)
+            ->where('start_time',   $request->start_time)
+            ->where('workplace_id', $request->workplace_id)
             ->exists();
 
         if ($exists) {
-            return back()->withInput()->withErrors([
-                'day_of_week' => 'A schedule already exists for this day and time.'
-            ]);
+            $skipped++;
+            continue;
         }
 
         DB::table('doctor_schedules')->insert([
             'doctor_id'        => $doctor->id,
-            'day_of_week'      => $request->day_of_week,
+            'day_of_week'      => $day,
             'start_time'       => $request->start_time,
             'end_time'         => $request->end_time,
             'max_appointments' => $request->max_appointments,
             'consultation_fee' => $request->consultation_fee
                                     ?? $doctor->consultation_fee,
-            'workplace_id'     => $request->workplace_id,
+            'workplace_id'     => $request->workplace_id ?: null,
             'workplace_type'   => $request->workplace_type ?? 'private',
             'is_active'        => 1,
             'created_at'       => now(),
             'updated_at'       => now(),
         ]);
 
-        return redirect()->route('doctor.schedule.index')
-            ->with('success', 'Schedule created successfully!');
+        $inserted++;
     }
+
+    // Nothing inserted (all duplicates)
+    if ($inserted === 0) {
+        return back()->withInput()->withErrors([
+            'days_of_week' => 'All selected days already have a schedule for this time slot.'
+        ]);
+    }
+
+    // Partial insert message
+    $message = $inserted > 1
+        ? "{$inserted} schedules created successfully!"
+        : "Schedule created successfully!";
+
+    if ($skipped > 0) {
+        $message .= " ({$skipped} day(s) skipped — already existed.)";
+    }
+
+    return redirect()->route('doctor.schedule.index')
+        ->with('success', $message);
+}
 
     // ══════════════════════════════════════════
     //  EDIT

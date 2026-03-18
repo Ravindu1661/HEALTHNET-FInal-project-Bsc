@@ -461,7 +461,7 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     // Find Doctors Routes
     Route::get('/doctors', [FindDoctorsController::class, 'index'])->name('doctors');
     Route::get('/doctors/{id}', [FindDoctorsController::class, 'show'])->name('doctors.show');
-    Route::post('/doctors/{id}/review', [FindDoctorsController::class, 'storeReview'])->name('patient.doctors.review.store');
+    Route::post('/doctors/{id}/review', [FindDoctorsController::class, 'storeReview'])->name('doctors.review.store');
     // Hospitals Routes (Patient facing)
     Route::get('/hospitals', [PatientHospitalController::class, 'index'])->name('hospitals');
     Route::get('/hospitals/{id}', [PatientHospitalController::class, 'show'])->name('hospitals.show');

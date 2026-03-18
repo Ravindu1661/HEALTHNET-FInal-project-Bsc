@@ -29,7 +29,7 @@
 .day-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:.4rem; }
 .day-btn { border:1.5px solid #e8edf5; border-radius:10px;
     padding:.5rem .2rem; text-align:center; cursor:pointer;
-    transition:all .15s; background:#fff; }
+    transition:all .15s; background:#fff; user-select:none; }
 .day-btn:hover { border-color:#b8d0ff; background:#f8faff; }
 .day-btn.active { border-color:#0d6efd; background:#0d6efd; color:#fff; }
 .day-btn .day-short { font-size:.72rem; font-weight:800; display:block; }
@@ -62,10 +62,13 @@
         <div class="form-card">
             <div class="fc-title">
                 <i class="fas fa-calendar-week"></i>Day of Week *
+                <span style="font-size:.7rem;font-weight:500;color:#888;margin-left:auto">
+                    Click to select / deselect days
+                </span>
             </div>
 
             @php
-                $selectedDay = old('day_of_week', '');
+                $selectedDays = old('days_of_week', []);
                 $dayMap = [
                     'monday'    => ['Mon','Monday'],
                     'tuesday'   => ['Tue','Tuesday'],
@@ -79,18 +82,28 @@
 
             <div class="day-grid">
                 @foreach($dayMap as $val => $labels)
-                <div class="day-btn {{ $selectedDay === $val ? 'active':'' }}"
-                     onclick="selectDay('{{ $val }}', this)">
+                <div class="day-btn {{ in_array($val, $selectedDays) ? 'active' : '' }}"
+                     onclick="toggleDay('{{ $val }}', this)">
                     <span class="day-short">{{ $labels[0] }}</span>
                     <span class="day-full">{{ $labels[1] }}</span>
+                    <input type="checkbox"
+                           name="days_of_week[]"
+                           value="{{ $val }}"
+                           style="display:none"
+                           {{ in_array($val, $selectedDays) ? 'checked' : '' }}>
                 </div>
                 @endforeach
             </div>
 
-            <input type="hidden" name="day_of_week" id="dayInput"
-                   value="{{ old('day_of_week', '') }}">
+            {{-- Selected days preview --}}
+            <div id="selectedDaysPreview" style="display:none;margin-top:.75rem;
+                 padding:.5rem .8rem;background:#f0f5ff;border-radius:8px;
+                 font-size:.78rem;color:#0d6efd;font-weight:600">
+                <i class="fas fa-check-circle me-1"></i>
+                Selected: <span id="selectedDaysList"></span>
+            </div>
 
-            @error('day_of_week')
+            @error('days_of_week')
             <div class="text-danger mt-2" style="font-size:.75rem">
                 <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
             </div>
@@ -218,8 +231,7 @@
 
         {{-- Submit --}}
         <div class="form-card">
-            <button type="submit" id="submitBtn"
-                    class="btn btn-primary w-100 mb-2">
+            <button type="submit" class="btn btn-primary w-100 mb-2">
                 <i class="fas fa-save me-2"></i>Save Schedule
             </button>
             <a href="{{ route('doctor.schedule.index') }}"
@@ -237,7 +249,8 @@
             </div>
             <ul style="font-size:.73rem;color:#555;margin:0;padding-left:1rem;
                 line-height:1.8">
-                <li>Weekly repeating schedule</li>
+                <li>Multiple days can be selected at once</li>
+                <li>Each day creates a separate schedule</li>
                 <li>Patients book within your time slot</li>
                 <li>Toggle active/inactive anytime</li>
                 <li>Fee overrides your default fee</li>
@@ -252,11 +265,26 @@
 
 @push('scripts')
 <script>
-// ── Day Selection ──────────────────────────────────
-function selectDay(val, el) {
-    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('dayInput').value = val;
+// ── Day Toggle (multi-select) ──────────────────────
+function toggleDay(val, el) {
+    el.classList.toggle('active');
+    const cb = el.querySelector('input[type="checkbox"]');
+    if (cb) cb.checked = el.classList.contains('active');
+    updateDaysPreview();
+}
+
+function updateDaysPreview() {
+    const activeEls = document.querySelectorAll('.day-btn.active');
+    const names = [...activeEls].map(b => b.querySelector('.day-full').textContent.trim());
+    const preview  = document.getElementById('selectedDaysPreview');
+    const listSpan = document.getElementById('selectedDaysList');
+
+    if (names.length > 0) {
+        listSpan.textContent = names.join(', ');
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
 }
 
 // ── Workplace Selection ────────────────────────────
@@ -266,7 +294,6 @@ function selectWorkplace(id, type, el) {
     document.getElementById('hiddenWpId').value   = id;
     document.getElementById('hiddenWpType').value = type;
 
-    // Radio check
     const radio = el.querySelector('input[type="radio"]');
     if (radio) radio.checked = true;
 }
@@ -298,10 +325,14 @@ document.querySelector('[name="end_time"]').addEventListener('change', calcDurat
 
 // ── Validate before submit ─────────────────────────
 document.querySelector('form').addEventListener('submit', function(e) {
-    if (!document.getElementById('dayInput').value) {
+    const checked = document.querySelectorAll('.day-btn.active');
+    if (checked.length === 0) {
         e.preventDefault();
-        alert('Please select a day of the week.');
+        alert('Please select at least one day of the week.');
     }
 });
+
+// Init preview (for old() values after validation fail)
+updateDaysPreview();
 </script>
 @endpush
