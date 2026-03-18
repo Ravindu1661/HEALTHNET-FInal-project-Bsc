@@ -64,3 +64,17 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+
+## ##Cache Clear + Restart
+
+php artisan config:clear
+php artisan cache:clear  
+php artisan view:clear
+
+php artisan serve --host=0.0.0.0 --port=8000
+
+## ngrok — header සමඟ
+
+ngrok http 8000 --request-header-add "ngrok-skip-browser-warning: 1"

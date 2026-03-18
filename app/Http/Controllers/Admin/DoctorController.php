@@ -340,48 +340,139 @@ class DoctorController extends Controller
     public function approveWorkplace($workplaceId)
     {
         try {
-            $workplace = DoctorWorkplace::findOrFail($workplaceId);
+            $workplace = \App\Models\DoctorWorkplace::with(['doctor', 'hospital', 'medicalCentre'])
+                ->findOrFail($workplaceId);
+
+            if ($workplace->status === 'approved') {
+                return response()->json(['success' => false, 'message' => 'Already approved.'], 422);
+            }
 
             $workplace->update([
-                'status' => 'approved',
+                'status'      => 'approved',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
 
+            // ── Data ──────────────────────────────────────────────
+            $doctor       = $workplace->doctor;
+            $doctorName   = $doctor ? trim($doctor->first_name . ' ' . $doctor->last_name) : 'Doctor';
+            $doctorUserId = $doctor?->user_id;
+
+            $workplaceName = 'Unknown';
+            $providerUserId = null;
+            if ($workplace->workplace_type === 'hospital' && $workplace->hospital) {
+                $workplaceName  = $workplace->hospital->name;
+                $providerUserId = $workplace->hospital->user_id;
+            } elseif ($workplace->workplace_type === 'medical_centre' && $workplace->medicalCentre) {
+                $workplaceName  = $workplace->medicalCentre->name;
+                $providerUserId = $workplace->medicalCentre->user_id;
+            }
+            $workplaceType = $workplace->workplace_type === 'hospital' ? 'Hospital' : 'Medical Centre';
+
+            // ── 1. Doctor ට Notification ──────────────────────────
+            if ($doctorUserId) {
+                \Illuminate\Support\Facades\DB::table('notifications')->insert([
+                    'notifiable_type' => \App\Models\User::class,
+                    'notifiable_id'   => $doctorUserId,
+                    'type'            => 'workplace_approved',
+                    'title'           => '✅ Workplace Request Approved',
+                    'message'         => 'Your request to join ' . $workplaceName
+                                       . ' (' . $workplaceType . ') has been approved by Admin.'
+                                       . ' You can now add schedules for this location.',
+                    'related_type'    => 'doctor_workplace',
+                    'related_id'      => $workplace->id,
+                    'is_read'         => false,
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ]);
+            }
+
+            // ── 2. Hospital / Medical Centre ට Notification ───────
+            if ($providerUserId) {
+                \Illuminate\Support\Facades\DB::table('notifications')->insert([
+                    'notifiable_type' => \App\Models\User::class,
+                    'notifiable_id'   => $providerUserId,
+                    'type'            => 'workplace_approved',
+                    'title'           => '✅ Doctor Approved for Your ' . $workplaceType,
+                    'message'         => 'Dr. ' . $doctorName
+                                       . ' has been approved to join ' . $workplaceName
+                                       . ' by Admin. They can now practice at your facility.',
+                    'related_type'    => 'doctor_workplace',
+                    'related_id'      => $workplace->id,
+                    'is_read'         => false,
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Workplace approved successfully!'
+                'message' => 'Workplace approved successfully! Doctor has been notified.',
             ]);
+
         } catch (\Exception $e) {
             \Log::error('Workplace approval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to approve workplace!'
+                'message' => 'Failed to approve workplace: ' . $e->getMessage(),
             ], 500);
         }
     }
-
     /**
      * Reject doctor workplace
      */
-    public function rejectWorkplace($workplaceId)
+   public function rejectWorkplace(\Illuminate\Http\Request $request, $workplaceId)
     {
         try {
-            $workplace = DoctorWorkplace::findOrFail($workplaceId);
+            $workplace = \App\Models\DoctorWorkplace::with(['doctor', 'hospital', 'medicalCentre'])
+                ->findOrFail($workplaceId);
 
             $workplace->update([
                 'status' => 'rejected',
             ]);
 
+            // ── Data ──────────────────────────────────────────────
+            $doctor       = $workplace->doctor;
+            $doctorName   = $doctor ? trim($doctor->first_name . ' ' . $doctor->last_name) : 'Doctor';
+            $doctorUserId = $doctor?->user_id;
+
+            $workplaceName = 'Unknown';
+            if ($workplace->workplace_type === 'hospital' && $workplace->hospital) {
+                $workplaceName = $workplace->hospital->name;
+            } elseif ($workplace->workplace_type === 'medical_centre' && $workplace->medicalCentre) {
+                $workplaceName = $workplace->medicalCentre->name;
+            }
+            $workplaceType = $workplace->workplace_type === 'hospital' ? 'Hospital' : 'Medical Centre';
+            $reason        = $request->input('reason', 'Does not meet requirements.');
+
+            // ── Doctor ට Notification ──────────────────────────
+            if ($doctorUserId) {
+                \Illuminate\Support\Facades\DB::table('notifications')->insert([
+                    'notifiable_type' => \App\Models\User::class,
+                    'notifiable_id'   => $doctorUserId,
+                    'type'            => 'workplace_rejected',
+                    'title'           => '❌ Workplace Request Rejected',
+                    'message'         => 'Your request to join ' . $workplaceName
+                                       . ' (' . $workplaceType . ') has been rejected.'
+                                       . ' Reason: ' . $reason,
+                    'related_type'    => 'doctor_workplace',
+                    'related_id'      => $workplace->id,
+                    'is_read'         => false,
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Workplace rejected!'
+                'message' => 'Workplace rejected. Doctor has been notified.',
             ]);
+
         } catch (\Exception $e) {
             \Log::error('Workplace rejection error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reject workplace!'
+                'message' => 'Failed to reject workplace.',
             ], 500);
         }
     }

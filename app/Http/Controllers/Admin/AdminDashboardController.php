@@ -22,20 +22,20 @@ class AdminDashboardController extends Controller
         $stats = [
             'total_users' => $this->safeCount(User::class),
             'users_change' => $this->calculatePercentageChange(User::class),
-            
+
             'total_doctors' => $this->safeCount(Doctor::class),
             'doctors_change' => $this->calculatePercentageChange(Doctor::class),
-            
+
             'total_hospitals' => $this->safeCount(Hospital::class),
             'hospitals_change' => $this->calculatePercentageChange(Hospital::class),
-            
+
             'total_laboratories' => $this->safeCount(Laboratory::class),
             'total_pharmacies' => $this->safeCount(Pharmacy::class),
             'total_medical_centres' => $this->safeCount(MedicalCentre::class),
-            
+
             'total_appointments' => DB::table('appointments')->count(),
             'appointments_change' => 0,
-            
+
             // FIXED: Use payment_status instead of status
             'total_revenue' => DB::table('payments')
                 ->where('payment_status', 'completed')
@@ -142,7 +142,7 @@ class AdminDashboardController extends Controller
                         'created_at' => Carbon::parse($doctor->created_at),
                     ];
                 });
-            
+
             $pendingApprovals = $pendingApprovals->merge($pendingDoctors);
 
         } catch (\Exception $e) {
@@ -165,7 +165,7 @@ class AdminDashboardController extends Controller
                         'created_at' => Carbon::parse($hospital->created_at),
                     ];
                 });
-            
+
             $pendingApprovals = $pendingApprovals->merge($pendingHospitals);
 
         } catch (\Exception $e) {
@@ -188,7 +188,7 @@ class AdminDashboardController extends Controller
                         'created_at' => Carbon::parse($lab->created_at),
                     ];
                 });
-            
+
             $pendingApprovals = $pendingApprovals->merge($pendingLaboratories);
 
         } catch (\Exception $e) {
@@ -211,7 +211,7 @@ class AdminDashboardController extends Controller
                         'created_at' => Carbon::parse($pharmacy->created_at),
                     ];
                 });
-            
+
             $pendingApprovals = $pendingApprovals->merge($pendingPharmacies);
 
         } catch (\Exception $e) {
@@ -234,7 +234,7 @@ class AdminDashboardController extends Controller
                         'created_at' => Carbon::parse($centre->created_at),
                     ];
                 });
-            
+
             $pendingApprovals = $pendingApprovals->merge($pendingMedicalCentres);
 
         } catch (\Exception $e) {
@@ -247,47 +247,54 @@ class AdminDashboardController extends Controller
     /**
      * Get admin notifications
      */
-    private function getAdminNotifications()
+
+private function getAdminNotifications()
     {
         try {
             $notifications = DB::table('notifications')
-                ->where('user_id', auth()->id())
+                ->where('notifiable_type', 'App\Models\User')   // ← FIX
+                ->where('notifiable_id', auth()->id())           // ← FIX (was user_id)
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get()
-                ->map(function($notification) {
-                    return (object)[
-                        'id' => $notification->id,
-                        'type' => $notification->type ?? 'general',
-                        'icon' => $this->getNotificationIcon($notification->type ?? 'general'),
-                        'title' => $notification->title ?? 'Notification',
-                        'message' => $notification->message ?? '',
-                        'is_read' => (bool)($notification->is_read ?? false),
+                ->map(function ($notification) {
+                    return (object) [
+                        'id'         => $notification->id,
+                        'type'       => $notification->type ?? 'general',
+                        'icon'       => $this->getNotificationIcon($notification->type ?? 'general'),
+                        'title'      => $notification->title ?? 'Notification',
+                        'message'    => $notification->message ?? '',
+                        'is_read'    => (bool) ($notification->is_read ?? false),
                         'created_at' => Carbon::parse($notification->created_at),
                     ];
                 });
 
             return $notifications;
+
         } catch (\Exception $e) {
-            \Log::error('Error fetching notifications: ' . $e->getMessage());
+            \Log::error('Error fetching admin notifications: ' . $e->getMessage());
             return collect();
         }
     }
 
     /**
      * Get icon for notification type
+     * ✅ Added workplace notification icons
      */
     private function getNotificationIcon($type)
     {
         $icons = [
-            'appointment' => 'calendar-check',
-            'payment' => 'money-bill-wave',
-            'prescription' => 'prescription',
-            'lab_report' => 'flask',
-            'labreport' => 'flask',
-            'reminder' => 'bell',
-            'announcement' => 'bullhorn',
-            'general' => 'info-circle',
+            'appointment'        => 'calendar-check',
+            'payment'            => 'money-bill-wave',
+            'prescription'       => 'prescription',
+            'lab_report'         => 'flask',
+            'labreport'          => 'flask',
+            'reminder'           => 'bell',
+            'announcement'       => 'bullhorn',
+            'workplace_request'  => 'hospital',       // ← NEW
+            'workplace_approved' => 'check-circle',   // ← NEW
+            'workplace_rejected' => 'times-circle',   // ← NEW
+            'general'            => 'info-circle',
         ];
 
         return $icons[$type] ?? 'bell';
@@ -309,7 +316,7 @@ class AdminDashboardController extends Controller
                     ->whereMonth('created_at', $currentMonth)
                     ->whereYear('created_at', $currentYear)
                     ->count();
-                
+
                 $lastCount = DB::table($model)
                     ->whereMonth('created_at', $lastMonth)
                     ->whereYear('created_at', $lastMonthYear)
@@ -318,7 +325,7 @@ class AdminDashboardController extends Controller
                 $currentCount = $model::whereMonth('created_at', $currentMonth)
                     ->whereYear('created_at', $currentYear)
                     ->count();
-                
+
                 $lastCount = $model::whereMonth('created_at', $lastMonth)
                     ->whereYear('created_at', $lastMonthYear)
                     ->count();
@@ -327,7 +334,7 @@ class AdminDashboardController extends Controller
             if ($lastCount == 0) {
                 return $currentCount > 0 ? 100 : 0;
             }
-            
+
             return round((($currentCount - $lastCount) / $lastCount) * 100, 1);
         } catch (\Exception $e) {
             \Log::error("Error calculating percentage change: " . $e->getMessage());

@@ -227,9 +227,10 @@ class MedicalCentreDashboardController extends Controller
     public function markNotificationRead(Request $request, $id)
     {
         try {
-            $this->notifQuery()
-                ->findOrFail($id)
-                ->update(['is_read' => true, 'read_at' => now()]);
+           $this->notifQuery()
+    ->where('id', $id)        // ← findOrFail() replace
+    ->first()
+    ->update(['is_read' => true, 'read_at' => now()]);
 
             return back()->with('success', 'Notification marked as read.');
 
@@ -261,9 +262,9 @@ class MedicalCentreDashboardController extends Controller
     public function deleteNotification(Request $request, $id)
     {
         try {
-            $this->notifQuery()
-                ->findOrFail($id)
-                ->delete();
+          $this->notifQuery()
+    ->where('id', $id)        // ← findOrFail() replace
+    ->delete();
 
             return back()->with('success', 'Notification deleted.');
 

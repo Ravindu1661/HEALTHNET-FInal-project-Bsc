@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\DoctorController;
 use App\Http\Controllers\Admin\HospitalController;
 use App\Http\Controllers\Admin\LaboratoryController;
@@ -1153,6 +1154,40 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::get('/', [AdminLogController::class, 'index'])->name('index');
         Route::get('/{id}', [AdminLogController::class, 'show'])->name('show');
     });
+
+
+
+    // ── Notifications ────────────────────────────────────────────
+    Route::get('notifications',
+        [AdminNotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::post('notifications/{id}/mark-read',
+        [AdminNotificationController::class, 'markRead'])
+        ->name('notifications.markRead');
+
+    Route::post('notifications/mark-all-read',
+        [AdminNotificationController::class, 'markAllRead'])
+        ->name('notifications.markAllRead');
+
+    Route::delete('notifications/{id}',
+        [AdminNotificationController::class, 'destroy'])
+        ->name('notifications.destroy');
+
+    Route::delete('notifications/clear-read',
+        [AdminNotificationController::class, 'destroyRead'])
+        ->name('notifications.destroyRead');
+
+    // AJAX routes (topbar badge refresh)
+    Route::get('notifications/latest',
+        [AdminNotificationController::class, 'latest'])
+        ->name('notifications.latest');
+
+    Route::get('notifications/count',
+        [AdminNotificationController::class, 'count'])
+        ->name('notifications.count');
+
+
 
     // ============================================
     // ANNOUNCEMENTS MANAGEMENT

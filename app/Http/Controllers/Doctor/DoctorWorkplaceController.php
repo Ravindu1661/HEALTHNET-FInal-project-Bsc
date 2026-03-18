@@ -94,15 +94,15 @@ class DoctorWorkplaceController extends Controller
     // ══════════════════════════════════════════════════════════════
     // STORE — Save new workplace
     // ══════════════════════════════════════════════════════════════
-    public function store(Request $request)
+   public function store(Request $request)
     {
         $doctor = $this->getDoctor();
         if ($doctor instanceof \Illuminate\Http\RedirectResponse) return $doctor;
 
         $request->validate([
-            'workplace_type' => 'required|in:hospital,medical_centre',
-            'workplace_id'   => 'required|integer',
-            'employment_type'=> 'required|in:permanent,temporary,visiting',
+            'workplace_type'  => 'required|in:hospital,medical_centre',
+            'workplace_id'    => 'required|integer',
+            'employment_type' => 'required|in:permanent,temporary,visiting',
         ]);
 
         // Check already exists
@@ -118,8 +118,7 @@ class DoctorWorkplaceController extends Controller
         }
 
         // Verify workplace exists and is approved
-        $table    = $request->workplace_type === 'hospital'
-                    ? 'hospitals' : 'medical_centres';
+        $table     = $request->workplace_type === 'hospital' ? 'hospitals' : 'medical_centres';
         $workplace = DB::table($table)
             ->where('id',     $request->workplace_id)
             ->where('status', 'approved')
@@ -130,7 +129,8 @@ class DoctorWorkplaceController extends Controller
                 ->with('error', 'Selected workplace is not available.');
         }
 
-        DB::table('doctor_workplaces')->insert([
+        // Insert workplace request
+        $workplaceRecordId = DB::table('doctor_workplaces')->insertGetId([
             'doctor_id'       => $doctor->id,
             'workplace_type'  => $request->workplace_type,
             'workplace_id'    => $request->workplace_id,
@@ -142,8 +142,55 @@ class DoctorWorkplaceController extends Controller
             'updated_at'      => now(),
         ]);
 
+        // ── Doctor full name ──────────────────────────────────
+        $doctorName     = trim($doctor->first_name . ' ' . $doctor->last_name);
+        $workplaceName  = $workplace->name ?? 'Unknown';
+        $workplaceType  = $request->workplace_type === 'hospital' ? 'Hospital' : 'Medical Centre';
+        $employmentType = ucfirst($request->employment_type);
+
+        // ── 1. Admin ලාට Notification ────────────────────────
+        $admins = DB::table('users')->where('user_type', 'admin')->pluck('id');
+        foreach ($admins as $adminId) {
+            DB::table('notifications')->insert([
+                'notifiable_type' => \App\Models\User::class,
+                'notifiable_id'   => $adminId,
+                'type'            => 'workplace_request',
+                'title'           => '🏥 New Workplace Request',
+                'message'         => 'Dr. ' . $doctorName
+                                   . ' has requested to join ' . $workplaceName
+                                   . ' (' . $workplaceType . ') as a ' . $employmentType . ' doctor.'
+                                   . ' Pending approval.',
+                'related_type'    => 'doctor_workplace',
+                'related_id'      => $workplaceRecordId,
+                'is_read'         => false,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+        }
+
+        // ── 2. Hospital / Medical Centre ට Notification ──────
+        $providerUserId = $workplace->user_id ?? null;
+        if ($providerUserId) {
+            DB::table('notifications')->insert([
+                'notifiable_type' => \App\Models\User::class,
+                'notifiable_id'   => $providerUserId,
+                'type'            => 'workplace_request',
+                'title'           => '👨‍⚕️ New Doctor Join Request',
+                'message'         => 'Dr. ' . $doctorName
+                                   . ' (' . ($doctor->specialization ?? 'General Practitioner') . ')'
+                                   . ' has requested to join your ' . $workplaceType
+                                   . ' as a ' . $employmentType . ' doctor.'
+                                   . ' Please review and approve from your Doctors panel.',
+                'related_type'    => 'doctor_workplace',
+                'related_id'      => $workplaceRecordId,
+                'is_read'         => false,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+        }
+
         return redirect()->route('doctor.workplaces.index')
-            ->with('success', 'Workplace added successfully! Waiting for admin approval.');
+            ->with('success', 'Workplace request submitted! Admin and ' . $workplaceName . ' have been notified. Awaiting approval.');
     }
 
     // ══════════════════════════════════════════════════════════════

@@ -210,7 +210,7 @@
             @endif
 
             {{-- Private Clinic --}}
-            <div class="wp-option {{ !old('workplace_id') ? 'selected':'' }}"
+            {{-- <div class="wp-option {{ !old('workplace_id') ? 'selected':'' }}"
                  onclick="selectWorkplace('', 'private', this)">
                 <input class="form-check-input" type="radio"
                        name="_wp_radio" id="wpPrivate"
@@ -219,7 +219,7 @@
                 <p class="wp-option-sub">
                     <i class="fas fa-user-md me-1"></i>Independent practice
                 </p>
-            </div>
+            </div> --}}
 
             <input type="hidden" name="workplace_id"
                    id="hiddenWpId"
