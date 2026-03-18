@@ -490,6 +490,10 @@ Route::middleware(['auth'])->prefix('patient')->name('patient.')->group(function
     ->name('appointments.cancel');
     Route::get('appointments/payment/callback', [PatientAppointmentController::class, 'paymentCallback'])
     ->name('appointments.payment.callback');
+Route::get('appointments/schedule-days', [PatientAppointmentController::class, 'getScheduleDays'])
+    ->name('appointments.getScheduleDays');
+Route::get('appointments/available-slots', [PatientAppointmentController::class, 'getAvailableSlots'])
+    ->name('appointments.getAvailableSlots');
 
     // Patient Laboratory Routes
     Route::get('/laboratories', [PatientLaboratoryController::class, 'index'])->name('laboratories');

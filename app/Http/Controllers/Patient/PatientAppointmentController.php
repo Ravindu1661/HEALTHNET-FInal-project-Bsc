@@ -38,7 +38,160 @@ class PatientAppointmentController extends Controller
 
         return view('patient.create-appointment', compact('doctor', 'workplaces'));
     }
+public function getScheduleDays(Request $request)
+    {
+        $doctorId    = $request->integer('doctor_id');
+        $wpId        = $request->integer('workplace_id');  // doctor_workplaces.id
 
+        if (!$doctorId || !$wpId) {
+            return response()->json(['success' => false, 'message' => 'Invalid parameters.']);
+        }
+
+        // doctor_workplaces row ලබා ගන්නවා — workplace_type + workplace_id දෙකම ලබා ගන්නවා
+        $workplace = DB::table('doctor_workplaces')
+            ->where('id', $wpId)
+            ->where('doctor_id', $doctorId)
+            ->first();
+
+        if (!$workplace) {
+            return response()->json(['success' => false, 'message' => 'Workplace not found.']);
+        }
+
+        // doctor_schedules table query — doctor_id + workplace_type + workplace_id match
+        $schedules = DB::table('doctor_schedules')
+            ->where('doctor_id', $doctorId)
+            ->where('workplace_type', $workplace->workplace_type)
+            ->where('workplace_id', $workplace->workplace_id)
+            ->where('is_active', 1)
+            ->select('day_of_week', 'start_time', 'end_time', 'max_appointments', 'consultation_fee')
+            ->orderBy('day_of_week')
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return response()->json(['success' => false, 'days' => [], 'message' => 'No active schedule found.']);
+        }
+
+        // Unique days
+        $days = $schedules->pluck('day_of_week')->unique()->values()->toArray();
+
+        // Schedule info text (e.g. "Mon, Wed, Fri • 09:00 AM – 05:00 PM")
+        $dayLabels = array_map(fn($d) => ucfirst(substr($d, 0, 3)), $days);
+        $firstSch  = $schedules->first();
+        $startFmt  = Carbon::createFromTimeString($firstSch->start_time)->format('h:i A');
+        $endFmt    = Carbon::createFromTimeString($firstSch->end_time)->format('h:i A');
+
+        $scheduleInfo = implode(', ', $dayLabels) . ' • ' . $startFmt . ' – ' . $endFmt
+            . ' • Max ' . $firstSch->max_appointments . ' appointments/session';
+
+        return response()->json([
+            'success'       => true,
+            'days'          => $days,
+            'schedules'     => $schedules,
+            'schedule_info' => $scheduleInfo,
+        ]);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AJAX — Get Available Time Slots for a given date
+    // GET /patient/appointments/available-slots
+    //     ?doctor_id=X&workplace_id=Y&date=YYYY-MM-DD
+    // ═══════════════════════════════════════════════════════════
+    public function getAvailableSlots(Request $request)
+    {
+        $doctorId = $request->integer('doctor_id');
+        $wpId     = $request->integer('workplace_id');  // doctor_workplaces.id
+        $date     = $request->get('date');              // YYYY-MM-DD
+
+        if (!$doctorId || !$wpId || !$date) {
+            return response()->json(['success' => false, 'message' => 'Invalid parameters.']);
+        }
+
+        // Validate date format
+        try {
+            $carbonDate = Carbon::createFromFormat('Y-m-d', $date);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format.']);
+        }
+
+        $dayOfWeek = strtolower($carbonDate->format('l')); // e.g. 'monday'
+
+        // doctor_workplaces row
+        $workplace = DB::table('doctor_workplaces')
+            ->where('id', $wpId)
+            ->where('doctor_id', $doctorId)
+            ->first();
+
+        if (!$workplace) {
+            return response()->json(['success' => false, 'message' => 'Workplace not found.']);
+        }
+
+        // Doctor schedule for this day + location
+        $schedule = DB::table('doctor_schedules')
+            ->where('doctor_id', $doctorId)
+            ->where('workplace_type', $workplace->workplace_type)
+            ->where('workplace_id', $workplace->workplace_id)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$schedule) {
+            return response()->json([
+                'success' => false,
+                'slots'   => [],
+                'message' => 'No schedule found for this day.',
+            ]);
+        }
+
+        // Already-booked appointments for this doctor on this date at this workplace
+        $bookedTimes = DB::table('appointments')
+            ->where('doctor_id', $doctorId)
+            ->where('appointment_date', $date)
+            ->where('workplace_type', $workplace->workplace_type)
+            ->where('workplace_id', $workplace->workplace_id)
+            ->whereNotIn('status', ['cancelled'])
+            ->pluck('appointment_time')
+            ->map(fn($t) => Carbon::createFromTimeString($t)->format('H:i'))
+            ->toArray();
+
+        // Generate 30-minute slots between start_time and end_time
+        $slots     = [];
+        $slotStep  = 30; // minutes per slot
+        $current   = Carbon::createFromTimeString($schedule->start_time);
+        $endTime   = Carbon::createFromTimeString($schedule->end_time);
+        $maxApt    = $schedule->max_appointments;
+        $slotCount = 0;
+
+        while ($current < $endTime && $slotCount < $maxApt) {
+            $timeStr = $current->format('H:i'); // 24h for DB
+            $label   = $current->format('h:i A'); // 12h for display
+
+            // Count how many booked for this exact slot
+            $bookedCount = count(array_filter($bookedTimes, fn($bt) => $bt === $timeStr));
+
+            $slots[] = [
+                'time'        => $timeStr,
+                'label'       => $label,
+                'booked'      => $bookedCount > 0,
+            ];
+
+            $current->addMinutes($slotStep);
+            $slotCount++;
+        }
+
+        if (empty($slots)) {
+            return response()->json(['success' => false, 'slots' => [], 'message' => 'No slots available.']);
+        }
+
+        return response()->json([
+            'success'  => true,
+            'slots'    => $slots,
+            'schedule' => [
+                'start'           => Carbon::createFromTimeString($schedule->start_time)->format('h:i A'),
+                'end'             => Carbon::createFromTimeString($schedule->end_time)->format('h:i A'),
+                'max_appointments'=> $schedule->max_appointments,
+            ],
+        ]);
+    }
     // ═══════════════════════════════════════════
     // STORE — Appointment Save → Payment Redirect
     // ═══════════════════════════════════════════

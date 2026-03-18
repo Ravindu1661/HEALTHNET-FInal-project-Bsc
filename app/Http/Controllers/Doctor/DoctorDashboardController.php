@@ -65,7 +65,7 @@ class DoctorDashboardController extends Controller
             })
             ->leftJoin('medical_centres', function ($join) {
                 $join->on('appointments.workplace_id', '=', 'medical_centres.id')
-                     ->where('appointments.workplace_type', '=', 'medicalcentre');
+                     ->where('appointments.workplace_type', '=', 'medical_centre');
             })
             ->where('appointments.doctor_id', $doctor->id)
             ->whereDate('appointments.appointment_date', $today)
@@ -158,7 +158,7 @@ class DoctorDashboardController extends Controller
             })
             ->leftJoin('medical_centres', function ($join) {
                 $join->on('doctor_workplaces.workplace_id', '=', 'medical_centres.id')
-                     ->where('doctor_workplaces.workplace_type', '=', 'medicalcentre');
+                     ->where('doctor_workplaces.workplace_type', '=', 'medical_centre');
             })
             ->where('doctor_workplaces.doctor_id', $doctor->id)
             ->where('doctor_workplaces.status', 'approved')
