@@ -179,7 +179,16 @@
         .table td { vertical-align: middle; color: #4a5568; }
 
         /* ══ Badges ═══════════════════════════════════════ */
-        .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+        .badge { color: #000 !important; }
+        .badge.bg-primary,
+        .badge.bg-success,
+        .badge.bg-danger,
+        .badge.bg-dark,
+        .badge.bg-secondary,
+        .badge.rounded-pill { color: #fff !important; }
+        .badge.bg-warning,
+        .badge.bg-light { color: #000 !important; }
+
 
         /* ══ Notification Panel ═══════════════════════════ */
         .notif-panel {

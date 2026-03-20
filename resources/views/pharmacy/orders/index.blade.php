@@ -12,7 +12,7 @@
 }
 .status-tab:hover { border-color: currentColor; }
 .order-row:hover { background: #f8fafc; }
-.badge-pill { border-radius: 20px; font-size: .72rem; font-weight: 600; padding: .28rem .7rem; }
+.badge-pill { border-radius: 20px; font-size: .72rem; font-weight: 600; padding: .28rem .7rem;   color: #ffffff !important; }
 .order-type-tag {
     display: inline-flex; align-items: center;
     font-size: .65rem; font-weight: 700;
