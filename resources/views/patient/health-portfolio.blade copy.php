@@ -1,10 +1,7 @@
 @include('partials.header')
 
 <style>
-:root{
-    --teal:#00796b;--teal-dark:#004d40;--teal-light:#e0f2f1;
-    --score-color: #22c55e;
-}
+:root{--teal:#00796b;--teal-dark:#004d40;--teal-light:#e0f2f1}
 
 /* ══ HERO ══ */
 .hp-hero{background:linear-gradient(135deg,#003d33 0%,#00695c 45%,#00897b 100%);
@@ -33,40 +30,6 @@
 .hp-card-title{font-size:.88rem;font-weight:700;color:var(--teal);
                padding-bottom:.65rem;border-bottom:2px solid var(--teal-light);
                margin-bottom:1.15rem;display:flex;align-items:center;gap:.5rem}
-
-/* ══ DUMMY DATA LOADER ══ */
-.dummy-loader-card{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-    border-radius:16px;padding:1.4rem 1.6rem;margin-bottom:1.2rem;
-    border:1px solid rgba(255,255,255,.08);position:relative;overflow:hidden}
-.dummy-loader-card::before{content:'';position:absolute;top:-40px;right:-40px;
-    width:120px;height:120px;border-radius:50%;
-    background:radial-gradient(circle,rgba(0,200,170,.2),transparent 70%)}
-.dummy-title{font-size:.88rem;font-weight:800;color:#e0f2f1;
-             display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem}
-.dummy-subtitle{font-size:.73rem;color:rgba(255,255,255,.5);margin-bottom:1rem}
-.dummy-profiles{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:1rem}
-.dp-btn{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);
-        color:rgba(255,255,255,.85);border-radius:10px;padding:.45rem .9rem;
-        font-size:.75rem;font-weight:700;cursor:pointer;transition:all .25s;
-        display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap}
-.dp-btn:hover{background:rgba(0,200,170,.2);border-color:rgba(0,200,170,.5);
-              color:#a7f3d0;transform:translateY(-1px)}
-.dp-btn.active{background:rgba(0,200,170,.25);border-color:#00c8aa;color:#a7f3d0}
-.dp-btn .dp-score{display:inline-flex;align-items:center;justify-content:center;
-                  width:24px;height:24px;border-radius:50%;font-size:.68rem;font-weight:900;margin-left:.1rem}
-.score-poor   .dp-score{background:#ef4444;color:#fff}
-.score-fair   .dp-score{background:#f59e0b;color:#fff}
-.score-good   .dp-score{background:#3b82f6;color:#fff}
-.score-excel  .dp-score{background:#22c55e;color:#fff}
-.load-dummy-btn{background:linear-gradient(135deg,#00c8aa,#00796b);
-                color:#fff;border:none;border-radius:10px;padding:.6rem 1.4rem;
-                font-weight:800;font-size:.82rem;cursor:pointer;
-                display:inline-flex;align-items:center;gap:.5rem;
-                transition:all .3s;box-shadow:0 3px 14px rgba(0,200,170,.3)}
-.load-dummy-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.load-dummy-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.dummy-note{font-size:.68rem;color:rgba(255,255,255,.4);margin-top:.65rem;
-            display:flex;align-items:center;gap:.3rem}
 
 /* ══ FORM ══ */
 .hf-label{display:block;font-size:.73rem;font-weight:700;color:#4b5563;margin-bottom:.28rem;
@@ -161,10 +124,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         text-decoration:none;transition:all .2s;display:inline-block}
 .hp-tab:hover{color:var(--teal)}
 .hp-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
-
-/* ══ FILL ANIMATION ══ */
-@keyframes fillPulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
-.filling{animation:fillPulse .6s ease infinite}
 </style>
 
 @php
@@ -177,8 +136,10 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         : asset('images/default-avatar.png');
     $hd = $healthData;
 
+    // Current date — Sri Lanka timezone
     $today = Carbon::now('Asia/Colombo');
 
+    // Vitals
     $sys = $hd?->blood_pressure_systolic  ?? $latestMetric?->blood_pressure_systolic  ?? null;
     $dia = $hd?->blood_pressure_diastolic ?? $latestMetric?->blood_pressure_diastolic ?? null;
     $hr  = $hd?->heart_rate               ?? $latestMetric?->heart_rate               ?? null;
@@ -187,6 +148,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
     $tmp = $hd?->temperature              ?? $latestMetric?->temperature              ?? null;
     $cho = $hd?->cholesterol_total        ?? null;
 
+    // Vital status helper
     $vStatus = function($type, $val) {
         if($val === null) return ['label'=>'No Data','class'=>'vs-info'];
         return match($type) {
@@ -286,11 +248,11 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <i class="fas fa-heartbeat me-1" style="color:#a7f3d0"></i>
             Overall Health Score
         </div>
-        <div class="score-ring-wrap" id="heroScoreRing">
+        <div class="score-ring-wrap">
             <svg width="155" height="155" viewBox="0 0 155 155">
                 <circle cx="77.5" cy="77.5" r="64" fill="none"
                         stroke="rgba(255,255,255,.12)" stroke-width="14"/>
-                <circle id="heroScoreCircle" cx="77.5" cy="77.5" r="64" fill="none"
+                <circle cx="77.5" cy="77.5" r="64" fill="none"
                         stroke="{{ $healthScore['color'] }}" stroke-width="14"
                         stroke-linecap="round"
                         stroke-dasharray="{{ round(2*M_PI*64) }}"
@@ -298,17 +260,18 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                         style="transition:stroke-dashoffset 1.5s ease"/>
             </svg>
             <div class="score-ring-center">
-                <div class="score-num" id="heroScoreNum" style="color:{{ $healthScore['color'] }}">
+                <div class="score-num" style="color:{{ $healthScore['color'] }}">
                     {{ $healthScore['score'] }}
                 </div>
-                <div class="score-lbl" id="heroScoreLbl" style="color:{{ $healthScore['color'] }}">
+                <div class="score-lbl" style="color:{{ $healthScore['color'] }}">
                     {{ $healthScore['level'] }}
                 </div>
                 <div style="font-size:.6rem;opacity:.6;margin-top:.2rem">/ 100 pts</div>
             </div>
         </div>
 
-        <div class="d-flex justify-content-center gap-1 flex-wrap mt-3" id="heroScoreBadges">
+        {{-- Score mini detail badges --}}
+        <div class="d-flex justify-content-center gap-1 flex-wrap mt-3">
             @php
             $detLabels=[
                 'profile'   =>'Profile',
@@ -321,10 +284,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             @endphp
             @foreach($healthScore['details'] as $k=>$det)
             <div style="background:rgba(255,255,255,.11);border-radius:8px;
-                        padding:.3rem .6rem;text-align:center;font-size:.66rem"
-                 data-key="{{ $k }}">
-                <div style="font-weight:900;font-size:.85rem"
-                     class="det-score">{{ $det['score'] }}/{{ $det['max'] }}</div>
+                        padding:.3rem .6rem;text-align:center;font-size:.66rem">
+                <div style="font-weight:900;font-size:.85rem">{{ $det['score'] }}/{{ $det['max'] }}</div>
                 <div style="opacity:.72">{{ $detLabels[$k] ?? $det['label'] }}</div>
             </div>
             @endforeach
@@ -333,20 +294,21 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 
     {{-- Col 3: BMI + Vitals --}}
     <div class="col-lg-4">
+        {{-- BMI --}}
         @if($bmi)
         <div style="background:rgba(255,255,255,.12);border-radius:14px;
-                    padding:1rem 1.2rem;margin-bottom:.8rem" id="heroBmiBlock">
+                    padding:1rem 1.2rem;margin-bottom:.8rem">
             <div style="font-size:.68rem;font-weight:700;opacity:.7;text-transform:uppercase;
                         letter-spacing:.06em;margin-bottom:.45rem">
                 Body Mass Index (BMI)
             </div>
             <div class="d-flex align-items-center gap-2 mb-2">
-                <span style="font-size:2rem;font-weight:900;color:{{ $bmiColor }}" id="heroBmiVal">{{ $bmi }}</span>
+                <span style="font-size:2rem;font-weight:900;color:{{ $bmiColor }}">{{ $bmi }}</span>
                 <div>
-                    <div style="font-weight:800;color:{{ $bmiColor }};font-size:.88rem" id="heroBmiCat">
+                    <div style="font-weight:800;color:{{ $bmiColor }};font-size:.88rem">
                         {{ $bmiCategory }}
                     </div>
-                    <div style="font-size:.7rem;opacity:.72" id="heroBmiMeta">
+                    <div style="font-size:.7rem;opacity:.72">
                         {{ $weight }} kg • {{ $height }} cm
                         @if($hd?->waist && $hd?->hip)
                         • WHR: {{ round($hd->waist / $hd->hip, 2) }}
@@ -358,7 +320,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                 <div class="bmi-needle" id="bmiNeedle" style="left:{{ $bmiPct }}%"></div>
             </div>
             <div class="bmi-zones">
-                <span>Under<br>&lt;18.5</span>
+                <span>Under<br><18.5</span>
                 <span>Normal<br>18.5–24.9</span>
                 <span>Over<br>25–29.9</span>
                 <span>Obese<br>≥30</span>
@@ -366,7 +328,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
         @else
         <div style="background:rgba(255,255,255,.1);border-radius:14px;padding:1.2rem;
-                    text-align:center;margin-bottom:.8rem;opacity:.8" id="heroBmiBlock">
+                    text-align:center;margin-bottom:.8rem;opacity:.8">
             <i class="fas fa-ruler" style="font-size:1.6rem;display:block;margin-bottom:.4rem"></i>
             <div style="font-size:.8rem;line-height:1.5">
                 Enter your <strong>weight & height</strong> below<br>to calculate your BMI
@@ -374,31 +336,34 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
         @endif
 
-        <div class="row g-2" id="heroVitals">
+        {{-- Vitals Summary --}}
+        <div class="row g-2">
             @foreach([
                 ['v'=>$sys?"$sys / $dia mmHg":'—','u'=>'Blood Pressure',
                  'c'=>$sys>=140?'#ef4444':($sys>=130?'#f59e0b':'#22c55e'),
-                 's'=>$vStatus('bp_sys',$sys),'key'=>'bp'],
+                 's'=>$vStatus('bp_sys',$sys)],
                 ['v'=>$hr?"$hr bpm":'—','u'=>'Heart Rate',
                  'c'=>($hr&&($hr>100||$hr<60))?'#f59e0b':'#22c55e',
-                 's'=>$vStatus('hr',$hr),'key'=>'hr'],
+                 's'=>$vStatus('hr',$hr)],
                 ['v'=>$bs?"$bs mg/dL":'—','u'=>'Blood Sugar',
                  'c'=>$bs>=126?'#ef4444':($bs>=100?'#f59e0b':'#22c55e'),
-                 's'=>$vStatus('bs',$bs),'key'=>'bs'],
+                 's'=>$vStatus('bs',$bs)],
                 ['v'=>$spo?"$spo% SpO₂":'—','u'=>'Oxygen Level',
                  'c'=>($spo&&$spo<95)?'#ef4444':'#22c55e',
-                 's'=>$vStatus('spo2',$spo),'key'=>'spo'],
+                 's'=>$vStatus('spo2',$spo)],
             ] as $v)
             <div class="col-6">
                 <div style="background:rgba(255,255,255,.12);border-radius:10px;
-                            padding:.65rem;text-align:center" data-vital="{{ $v['key'] }}">
-                    <div style="font-size:1rem;font-weight:900;color:{{ $v['c'] }}"
-                         class="vital-val">{{ $v['v'] }}</div>
+                            padding:.65rem;text-align:center">
+                    <div style="font-size:1rem;font-weight:900;color:{{ $v['c'] }}">
+                        {{ $v['v'] }}
+                    </div>
                     <div style="font-size:.63rem;opacity:.72;margin:.1rem 0">{{ $v['u'] }}</div>
                     <span style="display:inline-flex;align-items:center;padding:.12rem .45rem;
                           border-radius:20px;font-size:.62rem;font-weight:800;
-                          background:rgba(255,255,255,.18);color:#fff"
-                          class="vital-badge">{{ $v['s']['label'] }}</span>
+                          background:rgba(255,255,255,.18);color:#fff">
+                        {{ $v['s']['label'] }}
+                    </span>
                 </div>
             </div>
             @endforeach
@@ -427,72 +392,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 
 {{-- ══ MAIN ══ --}}
 <div class="col-lg-8">
-
-    {{-- ══ DUMMY DATA LOADER CARD ══ --}}
-    <div class="dummy-loader-card">
-        <div class="dummy-title">
-            <i class="fas fa-flask-vial" style="color:#00c8aa"></i>
-            Test with Sample Health Profiles
-            <span style="background:rgba(0,200,170,.2);color:#00c8aa;font-size:.62rem;
-                  padding:.15rem .5rem;border-radius:20px;font-weight:700;margin-left:.2rem">
-                DEMO
-            </span>
-        </div>
-        <div class="dummy-subtitle">
-            <i class="fas fa-info-circle me-1"></i>
-            Select a sample profile to auto-fill the form and preview how the health score changes
-        </div>
-        <div class="dummy-profiles">
-            <button class="dp-btn score-poor" data-profile="critical" onclick="selectDummyProfile('critical',this)">
-                <i class="fas fa-triangle-exclamation" style="color:#ef4444"></i>
-                Critical Patient
-                <span class="dp-score">18</span>
-            </button>
-            <button class="dp-btn score-fair" data-profile="fair" onclick="selectDummyProfile('fair',this)">
-                <i class="fas fa-circle-half-stroke" style="color:#f59e0b"></i>
-                Fair Health
-                <span class="dp-score">52</span>
-            </button>
-            <button class="dp-btn score-good" data-profile="good" onclick="selectDummyProfile('good',this)">
-                <i class="fas fa-thumbs-up" style="color:#3b82f6"></i>
-                Good Health
-                <span class="dp-score">68</span>
-            </button>
-            <button class="dp-btn score-excel" data-profile="excellent" onclick="selectDummyProfile('excellent',this)">
-                <i class="fas fa-star" style="color:#22c55e"></i>
-                Excellent
-                <span class="dp-score">91</span>
-            </button>
-            <button class="dp-btn score-fair" data-profile="diabetic" onclick="selectDummyProfile('diabetic',this)">
-                <i class="fas fa-droplet" style="color:#f59e0b"></i>
-                Diabetic (High Sugar)
-                <span class="dp-score">44</span>
-            </button>
-            <button class="dp-btn score-poor" data-profile="obese" onclick="selectDummyProfile('obese',this)">
-                <i class="fas fa-weight-scale" style="color:#ef4444"></i>
-                Obese + Hypertensive
-                <span class="dp-score">28</span>
-            </button>
-        </div>
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-            <button class="load-dummy-btn" id="loadDummyBtn" onclick="loadDummyData()" disabled>
-                <i class="fas fa-wand-magic-sparkles"></i>
-                <span id="loadDummyBtnText">Load Selected Profile</span>
-            </button>
-            <button onclick="clearDummySelection()"
-                    style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
-                           color:rgba(255,255,255,.6);border-radius:9px;padding:.55rem 1rem;
-                           font-size:.75rem;font-weight:700;cursor:pointer;transition:all .2s"
-                    onmouseover="this.style.background='rgba(255,255,255,.12)'"
-                    onmouseout="this.style.background='rgba(255,255,255,.07)'">
-                <i class="fas fa-rotate-left me-1"></i> Clear Form
-            </button>
-        </div>
-        <div class="dummy-note">
-            <i class="fas fa-shield-halved"></i>
-            This does NOT submit any data. Use the Save button below to actually save.
-        </div>
-    </div>
 
     {{-- ── Health Data Entry Form ── --}}
     <div class="hp-card">
@@ -541,15 +440,16 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     </div>
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Waist (cm)</label>
-                        <input type="number" name="waist" step="0.1" class="hf-input" id="inpWaist"
+                        <input type="number" name="waist" step="0.1" class="hf-input"
                                value="{{ old('waist',$hd?->waist) }}" placeholder="e.g. 80">
                     </div>
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Hip (cm)</label>
-                        <input type="number" name="hip" step="0.1" class="hf-input" id="inpHip"
+                        <input type="number" name="hip" step="0.1" class="hf-input"
                                value="{{ old('hip',$hd?->hip) }}" placeholder="e.g. 95">
                     </div>
                 </div>
+                {{-- Live BMI Calculator --}}
                 <div id="bmiPreview" style="display:none;margin-top:.8rem;padding:.65rem .9rem;
                      background:#f0fdf4;border-radius:9px;border:1.5px solid #a7f3d0;
                      font-size:.82rem;font-weight:600;color:#166534">
@@ -576,7 +476,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                             <span style="font-size:.62rem;font-weight:400;text-transform:none">(upper number)</span>
                         </label>
                         <input type="number" name="blood_pressure_systolic" min="60" max="250"
-                               class="hf-input" id="inpBpSys"
+                               class="hf-input"
                                value="{{ old('blood_pressure_systolic',$hd?->blood_pressure_systolic) }}"
                                placeholder="e.g. 120">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: 90–119</div>
@@ -586,7 +486,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                             <span style="font-size:.62rem;font-weight:400;text-transform:none">(lower number)</span>
                         </label>
                         <input type="number" name="blood_pressure_diastolic" min="40" max="150"
-                               class="hf-input" id="inpBpDia"
+                               class="hf-input"
                                value="{{ old('blood_pressure_diastolic',$hd?->blood_pressure_diastolic) }}"
                                placeholder="e.g. 80">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: 60–79</div>
@@ -594,7 +494,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Heart Rate (bpm)</label>
                         <input type="number" name="heart_rate" min="30" max="220"
-                               class="hf-input" id="inpHr"
+                               class="hf-input"
                                value="{{ old('heart_rate',$hd?->heart_rate) }}"
                                placeholder="e.g. 72">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: 60–100</div>
@@ -602,14 +502,14 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Body Temperature (°C)</label>
                         <input type="number" name="temperature" step="0.1" min="34" max="42"
-                               class="hf-input" id="inpTemp"
+                               class="hf-input"
                                value="{{ old('temperature',$hd?->temperature) }}"
                                placeholder="e.g. 36.6">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: 36.1–37.2</div>
                     </div>
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Fasting Blood Sugar (mg/dL)</label>
-                        <input type="number" name="blood_sugar" step="0.1" class="hf-input" id="inpBs"
+                        <input type="number" name="blood_sugar" step="0.1" class="hf-input"
                                value="{{ old('blood_sugar',$hd?->blood_sugar) }}"
                                placeholder="Before eating">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: 70–99</div>
@@ -618,22 +518,22 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                         <label class="hf-label">Post-Meal Sugar (mg/dL)
                             <span style="font-size:.62rem;font-weight:400;text-transform:none">(2 hrs after)</span>
                         </label>
-                        <input type="number" name="blood_sugar_pp" step="0.1" class="hf-input" id="inpBsPp"
+                        <input type="number" name="blood_sugar_pp" step="0.1" class="hf-input"
                                value="{{ old('blood_sugar_pp',$hd?->blood_sugar_pp) }}"
                                placeholder="After eating">
-                        <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: &lt;140</div>
+                        <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: <140</div>
                     </div>
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Total Cholesterol (mg/dL)</label>
-                        <input type="number" name="cholesterol_total" step="0.1" class="hf-input" id="inpChol"
+                        <input type="number" name="cholesterol_total" step="0.1" class="hf-input"
                                value="{{ old('cholesterol_total',$hd?->cholesterol_total) }}"
                                placeholder="e.g. 180">
-                        <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: &lt;200</div>
+                        <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: <200</div>
                     </div>
                     <div class="col-md-3 col-6">
                         <label class="hf-label">Oxygen Saturation (SpO₂ %)</label>
                         <input type="number" name="oxygen_saturation" min="50" max="100"
-                               class="hf-input" id="inpSpo"
+                               class="hf-input"
                                value="{{ old('oxygen_saturation',$hd?->oxygen_saturation) }}"
                                placeholder="e.g. 98">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Normal: 95–100%</div>
@@ -652,7 +552,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                 <div class="row g-3">
                     <div class="col-md-4 col-6">
                         <label class="hf-label">Smoking</label>
-                        <select name="smoking_status" class="hf-input" id="inpSmoke">
+                        <select name="smoking_status" class="hf-input">
                             <option value="">Select</option>
                             @foreach(['never'=>'Never smoked','former'=>'Ex-smoker','current'=>'Currently smoking'] as $v=>$l)
                             <option value="{{ $v }}" {{ old('smoking_status',$hd?->smoking_status)===$v?'selected':'' }}>{{ $l }}</option>
@@ -661,7 +561,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     </div>
                     <div class="col-md-4 col-6">
                         <label class="hf-label">Alcohol Use</label>
-                        <select name="alcohol_consumption" class="hf-input" id="inpAlcohol">
+                        <select name="alcohol_consumption" class="hf-input">
                             <option value="">Select</option>
                             @foreach(['none'=>'None','occasional'=>'Occasionally','moderate'=>'Moderately','heavy'=>'Heavily (daily)'] as $v=>$l)
                             <option value="{{ $v }}" {{ old('alcohol_consumption',$hd?->alcohol_consumption)===$v?'selected':'' }}>{{ $l }}</option>
@@ -670,7 +570,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     </div>
                     <div class="col-md-4 col-6">
                         <label class="hf-label">Exercise (per week)</label>
-                        <select name="exercise_frequency" class="hf-input" id="inpExercise">
+                        <select name="exercise_frequency" class="hf-input">
                             <option value="">Select</option>
                             @foreach(['none'=>'No exercise','1-2/week'=>'1–2 days','3-4/week'=>'3–4 days','5+/week'=>'5+ days (very active)'] as $v=>$l)
                             <option value="{{ $v }}" {{ old('exercise_frequency',$hd?->exercise_frequency)===$v?'selected':'' }}>{{ $l }}</option>
@@ -679,13 +579,13 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     </div>
                     <div class="col-md-4 col-6">
                         <label class="hf-label">Sleep Duration (hours/night)</label>
-                        <input type="number" name="sleep_hours" min="1" max="24" class="hf-input" id="inpSleep"
+                        <input type="number" name="sleep_hours" min="1" max="24" class="hf-input"
                                value="{{ old('sleep_hours',$hd?->sleep_hours) }}" placeholder="e.g. 7">
                         <div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Recommended: 7–9 hrs</div>
                     </div>
                     <div class="col-md-4 col-6">
                         <label class="hf-label">Diet Type</label>
-                        <select name="diet_type" class="hf-input" id="inpDiet">
+                        <select name="diet_type" class="hf-input">
                             <option value="">Select</option>
                             @foreach(['omnivore'=>'Mixed (meat & veg)','vegetarian'=>'Vegetarian','vegan'=>'Vegan','other'=>'Other'] as $v=>$l)
                             <option value="{{ $v }}" {{ old('diet_type',$hd?->diet_type)===$v?'selected':'' }}>{{ $l }}</option>
@@ -694,7 +594,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     </div>
                     <div class="col-md-4 col-6">
                         <label class="hf-label">Stress Level</label>
-                        <select name="stress_level" class="hf-input" id="inpStress">
+                        <select name="stress_level" class="hf-input">
                             <option value="">Select</option>
                             @foreach(['low'=>'Low — calm & relaxed','moderate'=>'Moderate — manageable','high'=>'High — often stressed','very_high'=>'Very High — overwhelmed'] as $v=>$l)
                             <option value="{{ $v }}" {{ old('stress_level',$hd?->stress_level)===$v?'selected':'' }}>{{ $l }}</option>
@@ -729,7 +629,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                             </span>
                             <label class="toggle-switch">
                                 <input type="checkbox" name="{{ $cond['name'] }}" value="1"
-                                       id="inp_{{ $cond['name'] }}"
                                        {{ old($cond['name'], $hd?->{$cond['name']}) ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
@@ -780,7 +679,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                             <span style="font-size:.81rem">{{ $fam['label'] }}</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" name="{{ $fam['name'] }}" value="1"
-                                       id="inp_{{ $fam['name'] }}"
                                        {{ old($fam['name'], $hd?->{$fam['name']}) ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
@@ -816,33 +714,63 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="hp-card-title">
             <i class="fas fa-stethoscope"></i> Vitals Analysis
         </div>
-        <div class="row g-3" id="vitalsAnalysisGrid">
+        <div class="row g-3">
             @php
             $vitalsDetail = [
-                ['label'=>'Blood Pressure','value'=>$sys?"$sys / $dia mmHg":'No data',
-                 'status'=>$vStatus('bp_sys',$sys),'normal'=>'90–119 / 60–79 mmHg',
-                 'icon'=>'fa-heart-pulse','color'=>'#ef4444',
-                 'explain'=>'High BP increases risk of stroke, heart attack and kidney damage. Normal is below 120/80 mmHg.'],
-                ['label'=>'Heart Rate','value'=>$hr?"$hr bpm":'No data',
-                 'status'=>$vStatus('hr',$hr),'normal'=>'60–100 bpm',
-                 'icon'=>'fa-wave-square','color'=>'#f59e0b',
-                 'explain'=>'Heart rate below 60 or above 100 may indicate an underlying condition. Athletes can have naturally lower rates.'],
-                ['label'=>'Fasting Blood Sugar','value'=>$bs?"$bs mg/dL":'No data',
-                 'status'=>$vStatus('bs',$bs),'normal'=>'70–99 mg/dL',
-                 'icon'=>'fa-droplet','color'=>'#3b82f6',
-                 'explain'=>'100–125 is pre-diabetic. 126+ may indicate diabetes. Consult an Endocrinologist for confirmation.'],
-                ['label'=>'Body Temperature','value'=>$tmp?"$tmp °C":'No data',
-                 'status'=>$vStatus('temp',$tmp),'normal'=>'36.1–37.2 °C',
-                 'icon'=>'fa-thermometer-half','color'=>'#f59e0b',
-                 'explain'=>'Above 38°C is a fever. 37.3–38°C is a mild fever. Paracetamol and rest are usually sufficient.'],
-                ['label'=>'Oxygen Saturation','value'=>$spo?"$spo %":'No data',
-                 'status'=>$vStatus('spo2',$spo),'normal'=>'95–100%',
-                 'icon'=>'fa-lungs','color'=>'#22c55e',
-                 'explain'=>'Below 95% may indicate a breathing problem. Below 90% is critical and requires immediate attention.'],
-                ['label'=>'Total Cholesterol','value'=>$cho?"$cho mg/dL":'No data',
-                 'status'=>$vStatus('chol',$cho),'normal'=>'< 200 mg/dL',
-                 'icon'=>'fa-vial','color'=>'#8b5cf6',
-                 'explain'=>'200–239 is borderline high. 240+ significantly raises your risk of heart disease and stroke.'],
+                [
+                    'label'  => 'Blood Pressure',
+                    'value'  => $sys ? "$sys / $dia mmHg" : 'No data',
+                    'status' => $vStatus('bp_sys', $sys),
+                    'normal' => '90–119 / 60–79 mmHg',
+                    'icon'   => 'fa-heart-pulse',
+                    'color'  => '#ef4444',
+                    'explain'=> 'High BP increases risk of stroke, heart attack and kidney damage. Normal is below 120/80 mmHg.',
+                ],
+                [
+                    'label'  => 'Heart Rate',
+                    'value'  => $hr ? "$hr bpm" : 'No data',
+                    'status' => $vStatus('hr', $hr),
+                    'normal' => '60–100 bpm',
+                    'icon'   => 'fa-wave-square',
+                    'color'  => '#f59e0b',
+                    'explain'=> 'Heart rate below 60 or above 100 may indicate an underlying condition. Athletes can have naturally lower rates.',
+                ],
+                [
+                    'label'  => 'Fasting Blood Sugar',
+                    'value'  => $bs ? "$bs mg/dL" : 'No data',
+                    'status' => $vStatus('bs', $bs),
+                    'normal' => '70–99 mg/dL',
+                    'icon'   => 'fa-droplet',
+                    'color'  => '#3b82f6',
+                    'explain'=> '100–125 is pre-diabetic. 126+ may indicate diabetes. Consult an Endocrinologist for confirmation.',
+                ],
+                [
+                    'label'  => 'Body Temperature',
+                    'value'  => $tmp ? "$tmp °C" : 'No data',
+                    'status' => $vStatus('temp', $tmp),
+                    'normal' => '36.1–37.2 °C',
+                    'icon'   => 'fa-thermometer-half',
+                    'color'  => '#f59e0b',
+                    'explain'=> 'Above 38°C is a fever. 37.3–38°C is a mild fever. Paracetamol and rest are usually sufficient.',
+                ],
+                [
+                    'label'  => 'Oxygen Saturation',
+                    'value'  => $spo ? "$spo %" : 'No data',
+                    'status' => $vStatus('spo2', $spo),
+                    'normal' => '95–100%',
+                    'icon'   => 'fa-lungs',
+                    'color'  => '#22c55e',
+                    'explain'=> 'Below 95% may indicate a breathing problem. Below 90% is critical and requires immediate attention.',
+                ],
+                [
+                    'label'  => 'Total Cholesterol',
+                    'value'  => $cho ? "$cho mg/dL" : 'No data',
+                    'status' => $vStatus('chol', $cho),
+                    'normal' => '< 200 mg/dL',
+                    'icon'   => 'fa-vial',
+                    'color'  => '#8b5cf6',
+                    'explain'=> '200–239 is borderline high. 240+ significantly raises your risk of heart disease and stroke.',
+                ],
             ];
             @endphp
             @foreach($vitalsDetail as $vd)
@@ -877,42 +805,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 
 {{-- ══ SIDEBAR ══ --}}
 <div class="col-lg-4">
-
-    {{-- ── Live Score Preview Card (shown after dummy load) ── --}}
-    <div class="hp-card" id="liveScoreCard" style="display:none;
-         border:2px solid var(--teal-light)">
-        <div class="hp-card-title">
-            <i class="fas fa-gauge-high"></i> Live Score Preview
-            <span style="margin-left:auto;background:#e0f2f1;color:var(--teal);
-                  font-size:.68rem;padding:.15rem .5rem;border-radius:10px;font-weight:700">
-                DEMO MODE
-            </span>
-        </div>
-        <div style="text-align:center;padding:.5rem 0 1rem">
-            <div style="position:relative;width:120px;height:120px;margin:0 auto">
-                <svg width="120" height="120" viewBox="0 0 120 120" style="transform:rotate(-90deg)">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="#e0f2f1" stroke-width="12"/>
-                    <circle id="previewCircle" cx="60" cy="60" r="50" fill="none"
-                            stroke="#22c55e" stroke-width="12" stroke-linecap="round"
-                            stroke-dasharray="314"
-                            stroke-dashoffset="314"
-                            style="transition:stroke-dashoffset 1.2s ease,stroke .4s ease"/>
-                </svg>
-                <div style="position:absolute;inset:0;display:flex;flex-direction:column;
-                            align-items:center;justify-content:center">
-                    <div id="previewScoreNum" style="font-size:1.9rem;font-weight:900;
-                                                     line-height:1;color:#22c55e">—</div>
-                    <div id="previewScoreLbl" style="font-size:.6rem;font-weight:700;
-                                                      text-transform:uppercase;color:#888">Score</div>
-                </div>
-            </div>
-            <div id="previewScoreLevel" style="font-size:1rem;font-weight:800;
-                 margin-top:.5rem;color:#1a1a1a"></div>
-            <div id="previewScoreNote" style="font-size:.76rem;color:#888;margin-top:.25rem;
-                 line-height:1.5;padding:0 .5rem"></div>
-        </div>
-        <div id="previewBreakdown" style="border-top:1px solid #f0f4f0;padding-top:.75rem"></div>
-    </div>
 
     {{-- ── Seasonal / Monthly Health Tips ── --}}
     <div class="seasonal-wrap"
@@ -951,46 +843,76 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="hp-card-title">
             <i class="fas fa-user-md"></i> Recommended Specialists
         </div>
+
         @php
         $neededSpecs = collect();
         $neededSpecs->push('Family Medicine');
         $neededSpecs->push('Internal Medicine');
-        if ($hd?->has_diabetes || ($bs ?? 0) >= 100) $neededSpecs->push('Endocrinology');
-        if ($hd?->has_hypertension || ($sys ?? 0) >= 130) $neededSpecs->push('Cardiology');
-        if ($hd?->has_heart_disease || ($cho ?? 0) >= 240) $neededSpecs->push('Cardiology');
-        if ($hd?->has_asthma || ($spo !== null && $spo < 95)) $neededSpecs->push('Pulmonology');
-        if ($hd?->has_kidney_disease) $neededSpecs->push('Nephrology');
-        if ($hd?->has_thyroid) $neededSpecs->push('Endocrinology');
+
+        if ($hd?->has_diabetes || ($bs ?? 0) >= 100)
+            $neededSpecs->push('Endocrinology');
+        if ($hd?->has_hypertension || ($sys ?? 0) >= 130)
+            $neededSpecs->push('Cardiology');
+        if ($hd?->has_heart_disease || ($cho ?? 0) >= 240)
+            $neededSpecs->push('Cardiology');
+        if ($hd?->has_asthma || ($spo !== null && $spo < 95))
+            $neededSpecs->push('Pulmonology');
+        if ($hd?->has_kidney_disease)
+            $neededSpecs->push('Nephrology');
+        if ($hd?->has_thyroid)
+            $neededSpecs->push('Endocrinology');
         if (in_array($bmiCategory, ['Overweight','Obese'])) {
             $neededSpecs->push('Endocrinology');
             $neededSpecs->push('Gastroenterology');
         }
-        if (in_array($hd?->stress_level, ['high','very_high'])) $neededSpecs->push('Psychiatry');
-        if ($hd?->family_cancer) $neededSpecs->push('Oncology');
-        if ($hd?->family_heart_disease || $hd?->family_hypertension) $neededSpecs->push('Cardiology');
-        if ($age && $age < 18) $neededSpecs->push('Pediatrics');
-        if ($patient->gender === 'female') $neededSpecs->push('Gynecology');
+        if (in_array($hd?->stress_level, ['high','very_high']))
+            $neededSpecs->push('Psychiatry');
+        if ($hd?->family_cancer)
+            $neededSpecs->push('Oncology');
+        if ($hd?->family_heart_disease || $hd?->family_hypertension)
+            $neededSpecs->push('Cardiology');
+        if ($age && $age < 18)
+            $neededSpecs->push('Pediatrics');
+        if ($patient->gender === 'female')
+            $neededSpecs->push('Gynecology');
+
         foreach ($medicalHistory as $mh) {
             $c = strtolower($mh->condition_name ?? '');
-            if (str_contains($c,'bone') || str_contains($c,'joint') || str_contains($c,'arthrit')) $neededSpecs->push('Orthopedics');
-            if (str_contains($c,'skin') || str_contains($c,'dermat')) $neededSpecs->push('Dermatology');
-            if (str_contains($c,'eye') || str_contains($c,'vision') || str_contains($c,'glaucom')) $neededSpecs->push('Ophthalmology');
-            if (str_contains($c,'gastro') || str_contains($c,'stomach') || str_contains($c,'liver')) $neededSpecs->push('Gastroenterology');
-            if (str_contains($c,'neuro') || str_contains($c,'migrain') || str_contains($c,'seizure')) $neededSpecs->push('Neurology');
-            if (str_contains($c,'urin') || str_contains($c,'bladder') || str_contains($c,'prostat')) $neededSpecs->push('Urology');
-            if (str_contains($c,'rheumat') || str_contains($c,'lupus')) $neededSpecs->push('Rheumatology');
-            if (str_contains($c,'ear') || str_contains($c,'throat') || str_contains($c,'sinus')) $neededSpecs->push('Otolaryngology (ENT)');
-            if (str_contains($c,'blood') || str_contains($c,'anemia') || str_contains($c,'anaemia')) $neededSpecs->push('Hematology');
-            if (str_contains($c,'cancer') || str_contains($c,'tumor')) $neededSpecs->push('Oncology');
+            if (str_contains($c,'bone') || str_contains($c,'joint') || str_contains($c,'arthrit'))
+                $neededSpecs->push('Orthopedics');
+            if (str_contains($c,'skin') || str_contains($c,'dermat'))
+                $neededSpecs->push('Dermatology');
+            if (str_contains($c,'eye') || str_contains($c,'vision') || str_contains($c,'glaucom'))
+                $neededSpecs->push('Ophthalmology');
+            if (str_contains($c,'gastro') || str_contains($c,'stomach') || str_contains($c,'liver'))
+                $neededSpecs->push('Gastroenterology');
+            if (str_contains($c,'neuro') || str_contains($c,'migrain') || str_contains($c,'seizure'))
+                $neededSpecs->push('Neurology');
+            if (str_contains($c,'urin') || str_contains($c,'bladder') || str_contains($c,'prostat'))
+                $neededSpecs->push('Urology');
+            if (str_contains($c,'rheumat') || str_contains($c,'lupus'))
+                $neededSpecs->push('Rheumatology');
+            if (str_contains($c,'ear') || str_contains($c,'throat') || str_contains($c,'sinus'))
+                $neededSpecs->push('Otolaryngology (ENT)');
+            if (str_contains($c,'blood') || str_contains($c,'anemia') || str_contains($c,'anaemia'))
+                $neededSpecs->push('Hematology');
+            if (str_contains($c,'cancer') || str_contains($c,'tumor'))
+                $neededSpecs->push('Oncology');
         }
-        $neededSpecs = $neededSpecs->unique()->values();
+
+        $neededSpecs  = $neededSpecs->unique()->values();
         $suggestedDoctors = \App\Models\Doctor::whereIn('specialization', $neededSpecs->toArray())
-            ->where('status','approved')->orderBy('rating','desc')->limit(6)->get();
+            ->where('status','approved')
+            ->orderBy('rating','desc')
+            ->limit(6)
+            ->get();
         @endphp
+
         <p style="font-size:.74rem;color:#888;margin-bottom:.7rem;line-height:1.5">
             Based on your health data recorded on
             <strong>{{ $today->format('d M Y') }}</strong>:
         </p>
+
         @if($neededSpecs->count() > 0)
         <div style="margin-bottom:.85rem">
             <div style="font-size:.7rem;color:#94a3b8;margin-bottom:.35rem;font-weight:600">
@@ -1004,25 +926,36 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             </div>
         </div>
         @endif
+
         @forelse($suggestedDoctors as $doc)
         @php
-            $docImg = $doc->profile_image ? asset('storage/'.$doc->profile_image) : asset('images/default-avatar.png');
-            $rating = round($doc->rating ?? 0);
+            $docImg = $doc->profile_image
+                ? asset('storage/'.$doc->profile_image)
+                : asset('images/default-avatar.png');
+            $rating  = round($doc->rating ?? 0);
         @endphp
         <div class="doc-item">
-            <img src="{{ $docImg }}" class="doc-img" onerror="this.src='{{ asset('images/default-avatar.png') }}'">
+            <img src="{{ $docImg }}" class="doc-img"
+                 onerror="this.src='{{ asset('images/default-avatar.png') }}'">
             <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                <div style="font-weight:700;font-size:.82rem;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                     Dr. {{ $doc->firstname }} {{ $doc->lastname }}
                 </div>
-                <div style="font-size:.72rem;color:var(--teal);font-weight:600">{{ $doc->specialization }}</div>
+                <div style="font-size:.72rem;color:var(--teal);font-weight:600">
+                    {{ $doc->specialization }}
+                </div>
                 <div style="color:#f59e0b;font-size:.62rem;margin-top:.1rem">
                     @for($i=1;$i<=5;$i++)
                     <i class="fas fa-star" style="color:{{ $i<=$rating?'#f59e0b':'#e2e8f0' }}"></i>
                     @endfor
-                    <span style="color:#94a3b8;margin-left:.2rem">{{ number_format($doc->rating ?? 0, 1) }}</span>
+                    <span style="color:#94a3b8;margin-left:.2rem;font-size:.62rem">
+                        {{ number_format($doc->rating ?? 0, 1) }}
+                    </span>
                     @if($doc->consultation_fee)
-                    <span style="color:#94a3b8;margin-left:.3rem">• Rs. {{ number_format($doc->consultation_fee) }}</span>
+                    <span style="color:#94a3b8;margin-left:.3rem">
+                        • Rs. {{ number_format($doc->consultation_fee) }}
+                    </span>
                     @endif
                 </div>
             </div>
@@ -1031,16 +964,20 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                      color:#fff;border-radius:9px;padding:.4rem .75rem;font-size:.7rem;
                      font-weight:700;text-decoration:none;white-space:nowrap;
                      display:inline-flex;align-items:center;gap:.3rem;
-                     box-shadow:0 2px 8px rgba(0,121,107,.25);transition:all .2s;flex-shrink:0"
+                     box-shadow:0 2px 8px rgba(0,121,107,.25);
+                     transition:all .2s;flex-shrink:0"
                onmouseover="this.style.filter='brightness(1.1)'"
                onmouseout="this.style.filter='brightness(1)'">
-                <i class="fas fa-calendar-plus" style="font-size:.65rem"></i> Book
+                <i class="fas fa-calendar-plus" style="font-size:.65rem"></i>
+                Book
             </a>
         </div>
         @empty
         <div style="text-align:center;padding:1.5rem;color:#bbb">
             <i class="fas fa-user-md" style="font-size:2rem;display:block;margin-bottom:.5rem;color:#e2e8f0"></i>
-            <p style="font-size:.78rem;color:#94a3b8">Add your medical conditions above to get specialist recommendations.</p>
+            <p style="font-size:.78rem;color:#94a3b8">
+                Add your medical conditions above to get specialist recommendations.
+            </p>
         </div>
         @endforelse
     </div>
@@ -1051,41 +988,43 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         @php
         $avoid = [];
         if (in_array($bmiCategory, ['Overweight','Obese'])) {
-            $avoid[] = ['icon'=>'fa-burger',      'text'=>'Fried & fast food',               'reason'=>'Very high in calories'];
-            $avoid[] = ['icon'=>'fa-candy-cane',  'text'=>'Sugary snacks & soft drinks',     'reason'=>'Raises blood sugar & weight'];
-            $avoid[] = ['icon'=>'fa-couch',       'text'=>'Sitting for long periods',        'reason'=>'Slows metabolism'];
-            $avoid[] = ['icon'=>'fa-bread-slice', 'text'=>'Large portions of white rice/bread','reason'=>'High glycaemic index'];
+            $avoid[] = ['icon'=>'fa-burger',       'text'=>'Fried & fast food','reason'=>'Very high in calories'];
+            $avoid[] = ['icon'=>'fa-candy-cane',   'text'=>'Sugary snacks & soft drinks','reason'=>'Raises blood sugar & weight'];
+            $avoid[] = ['icon'=>'fa-couch',        'text'=>'Sitting for long periods','reason'=>'Slows metabolism'];
+            $avoid[] = ['icon'=>'fa-bread-slice',  'text'=>'Large portions of white rice/bread','reason'=>'High glycaemic index'];
         }
         if (($sys ?? 0) >= 130) {
-            $avoid[] = ['icon'=>'fa-shaker',      'text'=>'High-salt foods (pickles, chips)','reason'=>'Raises BP'];
-            $avoid[] = ['icon'=>'fa-mug-hot',     'text'=>'Excess coffee/tea (>2 cups/day)', 'reason'=>'Caffeine elevates BP'];
-            $avoid[] = ['icon'=>'fa-face-tired',  'text'=>'Sleep deprivation',               'reason'=>'Significantly raises blood pressure'];
+            $avoid[] = ['icon'=>'fa-shaker',       'text'=>'High-salt foods (pickles, chips)','reason'=>'Raises BP'];
+            $avoid[] = ['icon'=>'fa-mug-hot',      'text'=>'Excess coffee/tea (>2 cups/day)','reason'=>'Caffeine elevates BP'];
+            $avoid[] = ['icon'=>'fa-face-tired',   'text'=>'Sleep deprivation','reason'=>'Significantly raises blood pressure'];
         }
         if (($bs ?? 0) >= 100) {
-            $avoid[] = ['icon'=>'fa-bread-slice', 'text'=>'Refined carbs (white rice, pastries)','reason'=>'Causes blood sugar spikes'];
-            $avoid[] = ['icon'=>'fa-wine-glass',  'text'=>'Alcohol & sweetened drinks',      'reason'=>'Disrupts blood sugar control'];
-            $avoid[] = ['icon'=>'fa-clock',       'text'=>'Skipping meals',                  'reason'=>'Causes dangerous sugar fluctuations'];
+            $avoid[] = ['icon'=>'fa-bread-slice',  'text'=>'Refined carbs (white rice, pastries)','reason'=>'Causes blood sugar spikes'];
+            $avoid[] = ['icon'=>'fa-wine-glass',   'text'=>'Alcohol & sweetened drinks','reason'=>'Disrupts blood sugar control'];
+            $avoid[] = ['icon'=>'fa-clock',        'text'=>'Skipping meals','reason'=>'Causes dangerous sugar fluctuations'];
         }
         if ($hd?->smoking_status === 'current')
-            $avoid[] = ['icon'=>'fa-smoking',     'text'=>'Smoking — quit immediately',      'reason'=>'Raises cancer & heart risk by 3–4×'];
+            $avoid[] = ['icon'=>'fa-smoking',      'text'=>'Smoking — quit immediately','reason'=>'Raises cancer & heart risk by 3–4×'];
         if (in_array($hd?->stress_level, ['high','very_high']))
-            $avoid[] = ['icon'=>'fa-brain',       'text'=>'Ignoring mental health',          'reason'=>'Chronic stress damages heart & immunity'];
+            $avoid[] = ['icon'=>'fa-brain',        'text'=>'Ignoring mental health','reason'=>'Chronic stress damages heart & immunity'];
         if ($hd?->sleep_hours && $hd->sleep_hours < 6)
-            $avoid[] = ['icon'=>'fa-moon',        'text'=>'Less than 6 hours of sleep',      'reason'=>'Linked to obesity, diabetes & weak immunity'];
+            $avoid[] = ['icon'=>'fa-moon',         'text'=>'Less than 6 hours of sleep','reason'=>'Linked to obesity, diabetes & weak immunity'];
         if (in_array($hd?->alcohol_consumption, ['moderate','heavy']))
-            $avoid[] = ['icon'=>'fa-wine-bottle', 'text'=>'Heavy alcohol consumption',       'reason'=>'Damages liver, raises BP & cancer risk'];
+            $avoid[] = ['icon'=>'fa-wine-bottle',  'text'=>'Heavy alcohol consumption','reason'=>'Damages liver, raises BP & cancer risk'];
+
         if (empty($avoid)) {
             $avoid = [
-                ['icon'=>'fa-smoking-ban', 'text'=>'Smoking of any kind',        'reason'=>'Major cause of cancer & heart disease'],
-                ['icon'=>'fa-wine-glass',  'text'=>'Excessive alcohol',           'reason'=>'Liver damage & blood pressure'],
-                ['icon'=>'fa-burger',      'text'=>'Ultra-processed food daily',  'reason'=>'Obesity, BP, blood sugar'],
-                ['icon'=>'fa-couch',       'text'=>'Sedentary lifestyle',         'reason'=>'Metabolic syndrome risk'],
-                ['icon'=>'fa-clock',       'text'=>'Irregular sleep patterns',    'reason'=>'Hormonal imbalance & fatigue'],
+                ['icon'=>'fa-smoking-ban',  'text'=>'Smoking of any kind',         'reason'=>'Major cause of cancer & heart disease'],
+                ['icon'=>'fa-wine-glass',   'text'=>'Excessive alcohol',            'reason'=>'Liver damage & blood pressure'],
+                ['icon'=>'fa-burger',       'text'=>'Ultra-processed food daily',   'reason'=>'Obesity, BP, blood sugar'],
+                ['icon'=>'fa-couch',        'text'=>'Sedentary lifestyle',          'reason'=>'Metabolic syndrome risk'],
+                ['icon'=>'fa-clock',        'text'=>'Irregular sleep patterns',     'reason'=>'Hormonal imbalance & fatigue'],
             ];
         }
         @endphp
         @foreach($avoid as $a)
-        <div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-bottom:1px solid #fef2f2">
+        <div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 0;
+                    border-bottom:1px solid #fef2f2">
             <i class="fas {{ $a['icon'] }}" style="color:#ef4444;width:18px;flex-shrink:0"></i>
             <div style="flex:1">
                 <div style="font-size:.81rem;color:#991b1b;font-weight:600">{{ $a['text'] }}</div>
@@ -1097,7 +1036,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         @endforeach
     </div>
 
-    {{-- ── Health Trends ── --}}
+    {{-- ── Health Trends — Last 6 Months ── --}}
     @if($chartMetrics->count() > 0)
     <div class="hp-card">
         <div class="hp-card-title">
@@ -1107,14 +1046,16 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                     margin-bottom:.9rem;overflow-x:auto">
             @foreach(['weight'=>'Weight','bp'=>'Blood Pressure','hr'=>'Heart Rate','bs'=>'Blood Sugar'] as $k=>$l)
             <a class="hp-tab {{ $k==='weight'?'active':'' }}"
-               onclick="showSideChart('{{ $k }}',this);return false;" href="#">{{ $l }}</a>
+               onclick="showSideChart('{{ $k }}',this);return false;"
+               href="#">{{ $l }}</a>
             @endforeach
         </div>
         <div style="position:relative;height:180px">
             <canvas id="sideMetricsChart"></canvas>
         </div>
         <div style="font-size:.7rem;color:#aaa;text-align:center;margin-top:.5rem">
-            {{ Carbon::now()->subMonths(6)->format('d M Y') }} — {{ Carbon::now()->format('d M Y') }}
+            {{ Carbon::now()->subMonths(6)->format('d M Y') }}
+            — {{ Carbon::now()->format('d M Y') }}
         </div>
     </div>
 
@@ -1127,6 +1068,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             Your overall score of
             <strong style="color:{{ $healthScore['color'] }}">{{ $healthScore['score'] }}/100</strong>
             is rated <strong>{{ $healthScore['level'] }}</strong>.
+            Scores are calculated across 6 categories:
         </p>
         @php
         $detDesc = [
@@ -1147,7 +1089,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div class="sb-meta">
                 <span>
                     <strong>{{ $detLabels[$k] ?? $det['label'] }}</strong>
-                    <span style="font-size:.7rem;color:#aaa;margin-left:.4rem">{{ $detDesc[$k] ?? '' }}</span>
+                    <span style="font-size:.7rem;color:#aaa;margin-left:.4rem">
+                        {{ $detDesc[$k] ?? '' }}
+                    </span>
                 </span>
                 <span style="color:{{ $barColor }};font-weight:800">
                     {{ $det['score'] }} / {{ $det['max'] }} pts
@@ -1195,7 +1139,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
         @forelse($recommendations as $rec)
         <div class="rec-card rec-{{ $rec['type'] }}">
-            <i class="fas {{ $rec['icon'] }}" style="font-size:1.15rem;flex-shrink:0;margin-top:.1rem"></i>
+            <i class="fas {{ $rec['icon'] }}"
+               style="font-size:1.15rem;flex-shrink:0;margin-top:.1rem"></i>
             <div style="flex:1">
                 <strong>{{ $rec['title'] }}</strong>
                 <div style="line-height:1.65">{{ $rec['text'] }}</div>
@@ -1210,19 +1155,23 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
         @empty
         <div style="text-align:center;padding:2rem;color:#bbb">
-            <i class="fas fa-notes-medical" style="font-size:2.5rem;display:block;margin-bottom:.6rem;color:#e2e8f0"></i>
-            <p style="font-size:.84rem;color:#94a3b8">Complete the health form above to receive personalised recommendations.</p>
+            <i class="fas fa-notes-medical"
+               style="font-size:2.5rem;display:block;margin-bottom:.6rem;color:#e2e8f0"></i>
+            <p style="font-size:.84rem;color:#94a3b8">
+                Complete the health form above to receive personalised recommendations.
+            </p>
         </div>
         @endforelse
     </div>
 
-    {{-- Medical History --}}
+    {{-- Medical History (moved here as requested) --}}
     <div class="hp-card">
         <div class="hp-card-title">
             <i class="fas fa-notes-medical"></i> Medical History
         </div>
         @forelse($medicalHistory as $hist)
-        <div style="display:flex;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid #f0f4f0">
+        <div style="display:flex;align-items:center;gap:.8rem;padding:.6rem 0;
+                    border-bottom:1px solid #f0f4f0">
             <i class="fas fa-file-medical" style="color:var(--teal);flex-shrink:0"></i>
             <div style="flex:1">
                 <div style="font-weight:700;font-size:.84rem">{{ $hist->condition_name }}</div>
@@ -1234,7 +1183,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
                 </div>
                 @endif
                 @if($hist->notes)
-                <div style="font-size:.72rem;color:#666;margin-top:.2rem;font-style:italic">{{ $hist->notes }}</div>
+                <div style="font-size:.72rem;color:#666;margin-top:.2rem;font-style:italic">
+                    {{ $hist->notes }}
+                </div>
                 @endif
             </div>
             <span style="padding:.2rem .75rem;border-radius:20px;font-size:.7rem;font-weight:700;
@@ -1254,7 +1205,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 
     @else
     <div class="hp-card" style="text-align:center;padding:1.5rem">
-        <i class="fas fa-chart-line" style="font-size:2rem;color:#e2e8f0;display:block;margin-bottom:.6rem"></i>
+        <i class="fas fa-chart-line" style="font-size:2rem;color:#e2e8f0;
+                                             display:block;margin-bottom:.6rem"></i>
         <p style="font-size:.78rem;color:#bbb">
             Health trend charts will appear here after you save data on multiple dates.
         </p>
@@ -1262,6 +1214,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
     @endif
 
 </div>{{-- end sidebar --}}
+
 </div>{{-- end row --}}
 </div>
 </section>
@@ -1279,432 +1232,94 @@ const MD = {
 };
 
 const chartDefs = {
-    weight:{ds:[{label:'Weight (kg)',data:null,borderColor:'#00796b',backgroundColor:'rgba(0,121,107,.08)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#00796b'}]},
-    bp:    {ds:[{label:'Systolic',data:null,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.05)',tension:.4,fill:false,pointRadius:4},
-                {label:'Diastolic',data:null,borderColor:'#f59e0b',backgroundColor:'transparent',tension:.4,pointRadius:4}]},
+    weight:{ds:[{label:'Weight (kg)',  data:null,borderColor:'#00796b',backgroundColor:'rgba(0,121,107,.08)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#00796b'}]},
+    bp:    {ds:[{label:'Systolic',     data:null,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.05)',tension:.4,fill:false,pointRadius:4},
+                {label:'Diastolic',   data:null,borderColor:'#f59e0b',backgroundColor:'transparent',tension:.4,pointRadius:4}]},
     hr:    {ds:[{label:'Heart Rate (bpm)',data:null,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.08)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#f59e0b'}]},
     bs:    {ds:[{label:'Blood Sugar (mg/dL)',data:null,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#3b82f6'}]},
 };
 
 function makeDatasets(type) {
     const d = JSON.parse(JSON.stringify(chartDefs[type].ds));
-    if(type==='weight'){d[0].data=MD.weight;}
-    else if(type==='bp'){d[0].data=MD.bpSys;d[1].data=MD.bpDia;}
-    else if(type==='hr'){d[0].data=MD.hr;}
-    else if(type==='bs'){d[0].data=MD.bs;}
+    if (type==='weight') { d[0].data = MD.weight; }
+    else if (type==='bp')  { d[0].data = MD.bpSys; d[1].data = MD.bpDia; }
+    else if (type==='hr')  { d[0].data = MD.hr; }
+    else if (type==='bs')  { d[0].data = MD.bs; }
     return d;
 }
 
-let sideChart=null;
-function showSideChart(type,el){
-    const tabs=el.closest('.hp-card').querySelectorAll('.hp-tab');
-    tabs.forEach(t=>{t.classList.remove('active');t.style.color='#888';});
-    el.classList.add('active');el.style.color='#00796b';
-    if(sideChart)sideChart.destroy();
-    const ctx=document.getElementById('sideMetricsChart').getContext('2d');
-    sideChart=new Chart(ctx,{
-        type:'line',
-        data:{labels:MD.labels,datasets:makeDatasets(type)},
-        options:{
-            responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:type==='bp',labels:{font:{size:10}}}},
-            scales:{y:{grid:{color:'rgba(0,121,107,.06)'},ticks:{font:{size:10}}},
-                    x:{grid:{display:false},ticks:{font:{size:10}}}}
+let sideChart = null;
+function showSideChart(type, el) {
+    const tabs = el.closest('.hp-card').querySelectorAll('.hp-tab');
+    tabs.forEach(t => { t.classList.remove('active'); t.style.color='#888'; });
+    el.classList.add('active'); el.style.color='#00796b';
+    if (sideChart) sideChart.destroy();
+    const ctx = document.getElementById('sideMetricsChart').getContext('2d');
+    sideChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: MD.labels, datasets: makeDatasets(type) },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display: type==='bp', labels:{ font:{size:10} } } },
+            scales:{
+                y:{ grid:{ color:'rgba(0,121,107,.06)' }, ticks:{ font:{size:10} } },
+                x:{ grid:{ display:false }, ticks:{ font:{size:10} } }
+            }
         }
     });
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-    const firstTab=document.querySelector('#sideMetricsChart')?.closest('.hp-card')?.querySelector('.hp-tab');
-    if(firstTab) showSideChart('weight',firstTab);
+document.addEventListener('DOMContentLoaded', () => {
+    const firstTab = document.querySelector('#sideMetricsChart')
+        ?.closest('.hp-card')
+        ?.querySelector('.hp-tab');
+    if (firstTab) showSideChart('weight', firstTab);
 });
 
 // ══ Live BMI Calculator ══
-const wIn=document.getElementById('inpWeight');
-const hIn=document.getElementById('inpHeight');
+const wIn = document.getElementById('inpWeight');
+const hIn = document.getElementById('inpHeight');
 
-function calcBMI(){
-    const w=parseFloat(wIn?.value),h=parseFloat(hIn?.value);
-    if(!w||!h||h<50){document.getElementById('bmiPreview').style.display='none';return;}
-    const bmi=+(w/((h/100)**2)).toFixed(1);
-    const cats=[
-        {max:18.5,label:'Underweight',   bg:'#dbeafe',color:'#1e40af',advice:'Eat more nutritious, calorie-dense foods'},
-        {max:25,  label:'Normal ✅',     bg:'#dcfce7',color:'#166534',advice:'Great! Maintain your current habits'},
-        {max:30,  label:'Overweight ⚠️',bg:'#fef3c7',color:'#92400e',advice:'Exercise daily & reduce refined carbs'},
-        {max:999, label:'Obese ❗',      bg:'#fee2e2',color:'#991b1b',advice:'Consult a doctor for a weight management plan'},
+function calcBMI() {
+    const w = parseFloat(wIn?.value), h = parseFloat(hIn?.value);
+    if (!w || !h || h < 50) {
+        document.getElementById('bmiPreview').style.display = 'none';
+        return;
+    }
+    const bmi = +(w / ((h / 100) ** 2)).toFixed(1);
+    const cats = [
+        { max:18.5, label:'Underweight',   bg:'#dbeafe', color:'#1e40af', advice:'Eat more nutritious, calorie-dense foods' },
+        { max:25,   label:'Normal ✅',      bg:'#dcfce7', color:'#166534', advice:'Great! Maintain your current habits' },
+        { max:30,   label:'Overweight ⚠️', bg:'#fef3c7', color:'#92400e', advice:'Exercise daily & reduce refined carbs' },
+        { max:999,  label:'Obese ❗',       bg:'#fee2e2', color:'#991b1b', advice:'Consult a doctor for a weight management plan' },
     ];
-    const cat=cats.find(c=>bmi<c.max);
-    document.getElementById('bmiVal').textContent=bmi;
-    const lbl=document.getElementById('bmiCatLbl');
-    lbl.textContent=cat.label;lbl.style.background=cat.bg;lbl.style.color=cat.color;
-    document.getElementById('bmiAdvice').textContent='→ '+cat.advice;
-    document.getElementById('bmiPreview').style.display='block';
+    const cat = cats.find(c => bmi < c.max);
+    document.getElementById('bmiVal').textContent = bmi;
+    const lbl = document.getElementById('bmiCatLbl');
+    lbl.textContent = cat.label;
+    lbl.style.background = cat.bg;
+    lbl.style.color = cat.color;
+    document.getElementById('bmiAdvice').textContent = '→ ' + cat.advice;
+    document.getElementById('bmiPreview').style.display = 'block';
 }
-wIn?.addEventListener('input',calcBMI);
-hIn?.addEventListener('input',calcBMI);
+wIn?.addEventListener('input', calcBMI);
+hIn?.addEventListener('input', calcBMI);
 calcBMI();
 
 // ══ Save spinner ══
-document.getElementById('healthForm')?.addEventListener('submit',()=>{
-    document.getElementById('saveBtn').disabled=true;
-    document.getElementById('saveSpinner').style.display='inline-flex';
+document.getElementById('healthForm')?.addEventListener('submit', () => {
+    document.getElementById('saveBtn').disabled = true;
+    document.getElementById('saveSpinner').style.display = 'inline-flex';
 });
 
 // ══ Auto-dismiss alerts ══
-document.querySelectorAll('.hp-alert').forEach(el=>{
-    setTimeout(()=>{
-        el.style.transition='opacity .5s';el.style.opacity='0';
-        setTimeout(()=>el.remove(),500);
-    },5000);
+document.querySelectorAll('.hp-alert').forEach(el => {
+    setTimeout(() => {
+        el.style.transition = 'opacity .5s';
+        el.style.opacity    = '0';
+        setTimeout(() => el.remove(), 500);
+    }, 5000);
 });
-
-// ════════════════════════════════════════════════════════════════
-//  DUMMY DATA PROFILES
-// ════════════════════════════════════════════════════════════════
-const DUMMY_PROFILES = {
-    excellent: {
-        label:'Excellent Health',score:91,level:'Excellent',color:'#22c55e',
-        weight:68,height:172,waist:78,hip:94,
-        bp_sys:112,bp_dia:72,hr:68,temp:36.6,bs:88,bs_pp:115,chol:175,spo:99,
-        smoke:'never',alcohol:'none',exercise:'5+/week',sleep:8,diet:'vegetarian',stress:'low',
-        has_diabetes:false,has_hypertension:false,has_heart_disease:false,
-        has_asthma:false,has_kidney_disease:false,has_thyroid:false,
-        fam_diabetes:false,fam_heart:false,fam_bp:false,fam_cancer:false,
-        note:'All vitals normal. BMI ideal. No chronic conditions.',
-        details:{profile:13,bmi:20,bp:15,sugar:15,lifestyle:20,conditions:15}
-    },
-    good: {
-        label:'Good Health',score:68,level:'Good',color:'#3b82f6',
-        weight:78,height:170,waist:84,hip:98,
-        bp_sys:124,bp_dia:80,hr:74,temp:36.8,bs:96,bs_pp:128,chol:195,spo:97,
-        smoke:'former',alcohol:'occasional',exercise:'3-4/week',sleep:7,diet:'omnivore',stress:'moderate',
-        has_diabetes:false,has_hypertension:false,has_heart_disease:false,
-        has_asthma:false,has_kidney_disease:false,has_thyroid:false,
-        fam_diabetes:true,fam_heart:false,fam_bp:true,fam_cancer:false,
-        note:'Slightly elevated BP. Family history of diabetes. Manage proactively.',
-        details:{profile:11,bmi:16,bp:10,sugar:15,lifestyle:11,conditions:15}
-    },
-    fair: {
-        label:'Fair Health',score:52,level:'Fair',color:'#f59e0b',
-        weight:88,height:168,waist:96,hip:104,
-        bp_sys:135,bp_dia:88,hr:88,temp:37.1,bs:108,bs_pp:152,chol:218,spo:96,
-        smoke:'former',alcohol:'moderate',exercise:'1-2/week',sleep:6,diet:'omnivore',stress:'high',
-        has_diabetes:false,has_hypertension:true,has_heart_disease:false,
-        has_asthma:false,has_kidney_disease:false,has_thyroid:false,
-        fam_diabetes:true,fam_heart:true,fam_bp:true,fam_cancer:false,
-        note:'Pre-diabetic range. High BP. Overweight. Needs lifestyle intervention.',
-        details:{profile:10,bmi:6,bp:5,sugar:8,lifestyle:8,conditions:12}
-    },
-    diabetic: {
-        label:'Diabetic Profile',score:44,level:'Fair',color:'#f59e0b',
-        weight:84,height:165,waist:92,hip:102,
-        bp_sys:132,bp_dia:85,hr:82,temp:37.0,bs:145,bs_pp:210,chol:228,spo:96,
-        smoke:'never',alcohol:'none',exercise:'none',sleep:6,diet:'omnivore',stress:'high',
-        has_diabetes:true,has_hypertension:true,has_heart_disease:false,
-        has_asthma:false,has_kidney_disease:false,has_thyroid:false,
-        fam_diabetes:true,fam_heart:false,fam_bp:true,fam_cancer:false,
-        note:'Diagnosed diabetic. High blood sugar. Requires endocrinologist consult.',
-        details:{profile:10,bmi:6,bp:5,sugar:2,lifestyle:9,conditions:7}
-    },
-    obese: {
-        label:'Obese + Hypertensive',score:28,level:'Poor',color:'#ef4444',
-        weight:108,height:167,waist:112,hip:118,
-        bp_sys:158,bp_dia:98,hr:96,temp:37.2,bs:128,bs_pp:195,chol:252,spo:94,
-        smoke:'current',alcohol:'moderate',exercise:'none',sleep:5,diet:'omnivore',stress:'very_high',
-        has_diabetes:true,has_hypertension:true,has_heart_disease:false,
-        has_asthma:true,has_kidney_disease:false,has_thyroid:false,
-        fam_diabetes:true,fam_heart:true,fam_bp:true,fam_cancer:false,
-        note:'Critically high BP, obesity, diabetic range, smoking. Urgent medical attention required.',
-        details:{profile:8,bmi:2,bp:1,sugar:2,lifestyle:0,conditions:1}
-    },
-    critical: {
-        label:'Critical Patient',score:18,level:'Poor',color:'#ef4444',
-        weight:115,height:162,waist:118,hip:122,
-        bp_sys:172,bp_dia:108,hr:112,temp:38.4,bs:198,bs_pp:265,chol:285,spo:89,
-        smoke:'current',alcohol:'heavy',exercise:'none',sleep:4,diet:'omnivore',stress:'very_high',
-        has_diabetes:true,has_hypertension:true,has_heart_disease:true,
-        has_asthma:true,has_kidney_disease:true,has_thyroid:true,
-        fam_diabetes:true,fam_heart:true,fam_bp:true,fam_cancer:true,
-        note:'CRITICAL: Multiple life-threatening conditions. Immediate hospitalization recommended.',
-        details:{profile:6,bmi:2,bp:1,sugar:2,lifestyle:0,conditions:0}
-    }
-};
-
-let selectedProfile = null;
-
-function selectDummyProfile(key, btn) {
-    document.querySelectorAll('.dp-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedProfile = key;
-    const loadBtn = document.getElementById('loadDummyBtn');
-    const p = DUMMY_PROFILES[key];
-    loadBtn.disabled = false;
-    document.getElementById('loadDummyBtnText').textContent = 'Load: ' + p.label;
-}
-
-function clearDummySelection() {
-    selectedProfile = null;
-    document.querySelectorAll('.dp-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('loadDummyBtn').disabled = true;
-    document.getElementById('loadDummyBtnText').textContent = 'Load Selected Profile';
-
-    // Clear all form fields
-    const fields = ['inpWeight','inpHeight','inpWaist','inpHip',
-                    'inpBpSys','inpBpDia','inpHr','inpTemp',
-                    'inpBs','inpBsPp','inpChol','inpSpo','inpSleep'];
-    fields.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-
-    ['inpSmoke','inpAlcohol','inpExercise','inpDiet','inpStress'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.value='';
-    });
-
-    ['has_diabetes','has_hypertension','has_heart_disease','has_asthma',
-     'has_kidney_disease','has_thyroid','family_diabetes','family_heart_disease',
-     'family_hypertension','family_cancer'].forEach(name=>{
-        const el=document.getElementById('inp_'+name);
-        if(el) el.checked=false;
-    });
-
-    document.getElementById('liveScoreCard').style.display='none';
-    document.getElementById('bmiPreview').style.display='none';
-}
-
-function loadDummyData() {
-    if (!selectedProfile) return;
-    const p = DUMMY_PROFILES[selectedProfile];
-
-    const btn = document.getElementById('loadDummyBtn');
-    btn.disabled = true;
-    document.getElementById('loadDummyBtnText').textContent = 'Loading...';
-
-    // Animate fill
-    const inputs = [
-        ['inpWeight', p.weight],
-        ['inpHeight', p.height],
-        ['inpWaist', p.waist],
-        ['inpHip', p.hip],
-        ['inpBpSys', p.bp_sys],
-        ['inpBpDia', p.bp_dia],
-        ['inpHr', p.hr],
-        ['inpTemp', p.temp],
-        ['inpBs', p.bs],
-        ['inpBsPp', p.bs_pp],
-        ['inpChol', p.chol],
-        ['inpSpo', p.spo],
-        ['inpSleep', p.sleep],
-    ];
-
-    let delay = 0;
-    inputs.forEach(([id, val]) => {
-        setTimeout(() => {
-            const el = document.getElementById(id);
-            if (el && val !== undefined) {
-                el.value = val;
-                el.classList.add('filling');
-                el.style.borderColor = '#00796b';
-                el.style.background = '#f0fdf4';
-                setTimeout(() => {
-                    el.classList.remove('filling');
-                    el.style.borderColor = '';
-                    el.style.background = '';
-                }, 800);
-            }
-        }, delay);
-        delay += 60;
-    });
-
-    // Selects
-    setTimeout(() => {
-        setSelect('inpSmoke', p.smoke);
-        setSelect('inpAlcohol', p.alcohol);
-        setSelect('inpExercise', p.exercise);
-        setSelect('inpDiet', p.diet);
-        setSelect('inpStress', p.stress);
-
-        setToggle('inp_has_diabetes', p.has_diabetes);
-        setToggle('inp_has_hypertension', p.has_hypertension);
-        setToggle('inp_has_heart_disease', p.has_heart_disease);
-        setToggle('inp_has_asthma', p.has_asthma);
-        setToggle('inp_has_kidney_disease', p.has_kidney_disease);
-        setToggle('inp_has_thyroid', p.has_thyroid);
-        setToggle('inp_family_diabetes', p.fam_diabetes);
-        setToggle('inp_family_heart_disease', p.fam_heart);
-        setToggle('inp_family_hypertension', p.fam_bp);
-        setToggle('inp_family_cancer', p.fam_cancer);
-
-        calcBMI();
-        updatePreviewScore(p);
-        updateHeroScore(p);
-
-        btn.disabled = false;
-        document.getElementById('loadDummyBtnText').textContent = '✓ Loaded: ' + p.label;
-
-        // Scroll to form
-        document.getElementById('healthForm')?.scrollIntoView({behavior:'smooth', block:'start'});
-    }, delay + 100);
-}
-
-function setSelect(id, val) {
-    const el = document.getElementById(id);
-    if (!el || !val) return;
-    for (let opt of el.options) {
-        if (opt.value === val) { el.value = val; break; }
-    }
-    el.style.borderColor='#00796b';
-    el.style.background='#f0fdf4';
-    setTimeout(()=>{el.style.borderColor='';el.style.background='';},800);
-}
-
-function setToggle(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.checked = !!val;
-}
-
-function updatePreviewScore(p) {
-    const card = document.getElementById('liveScoreCard');
-    card.style.display = 'block';
-
-    const circle = document.getElementById('previewCircle');
-    const num    = document.getElementById('previewScoreNum');
-    const lbl    = document.getElementById('previewScoreLbl');
-    const level  = document.getElementById('previewScoreLevel');
-    const note   = document.getElementById('previewScoreNote');
-    const breakdown = document.getElementById('previewBreakdown');
-
-    // Animate number count
-    let start = 0;
-    const target = p.score;
-    const step = Math.ceil(target / 30);
-    const counter = setInterval(() => {
-        start = Math.min(start + step, target);
-        num.textContent = start;
-        if (start >= target) clearInterval(counter);
-    }, 30);
-
-    // SVG ring
-    const circumference = 314;
-    const offset = circumference - (p.score / 100) * circumference;
-    setTimeout(() => {
-        circle.style.strokeDashoffset = offset;
-        circle.style.stroke = p.color;
-    }, 100);
-
-    num.style.color   = p.color;
-    lbl.textContent   = 'Score';
-    level.textContent = p.level;
-    level.style.color = p.color;
-    note.textContent  = p.note;
-
-    // Score breakdown bars
-    const labels = {profile:'Profile',bmi:'BMI',bp:'Blood Pressure',sugar:'Blood Sugar',lifestyle:'Lifestyle',conditions:'Conditions'};
-    const maxes  = {profile:15,bmi:20,bp:15,sugar:15,lifestyle:20,conditions:15};
-    let html = '';
-    for (const [k, v] of Object.entries(p.details)) {
-        const max = maxes[k];
-        const pct = Math.round((v / max) * 100);
-        const col = pct >= 75 ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
-        html += `
-        <div style="margin-bottom:.6rem">
-            <div style="display:flex;justify-content:space-between;font-size:.73rem;font-weight:600;
-                        color:#374151;margin-bottom:.2rem">
-                <span>${labels[k]}</span>
-                <span style="color:${col}">${v}/${max}</span>
-            </div>
-            <div style="height:8px;background:#e0f2f1;border-radius:20px;overflow:hidden">
-                <div style="height:100%;width:0%;background:${col};border-radius:20px;
-                     transition:width 1s ease" data-w="${pct}"></div>
-            </div>
-        </div>`;
-    }
-    breakdown.innerHTML = html;
-    // Trigger bar animations
-    setTimeout(() => {
-        breakdown.querySelectorAll('[data-w]').forEach(el => {
-            el.style.width = el.dataset.w + '%';
-        });
-    }, 200);
-
-    card.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-function updateHeroScore(p) {
-    // Update hero ring
-    const heroCircle = document.getElementById('heroScoreCircle');
-    const heroNum    = document.getElementById('heroScoreNum');
-    const heroLbl    = document.getElementById('heroScoreLbl');
-
-    if (heroCircle) {
-        const circumference = Math.round(2 * Math.PI * 64);
-        const offset = Math.round((1 - p.score / 100) * circumference);
-        heroCircle.style.strokeDashoffset = offset;
-        heroCircle.style.stroke = p.color;
-    }
-
-    if (heroNum) {
-        heroNum.style.color = p.color;
-        let n = 0;
-        const t = p.score;
-        const s = Math.ceil(t / 25);
-        const c = setInterval(() => {
-            n = Math.min(n + s, t);
-            heroNum.textContent = n;
-            if (n >= t) clearInterval(c);
-        }, 40);
-    }
-    if (heroLbl) {
-        heroLbl.textContent = p.level;
-        heroLbl.style.color = p.color;
-    }
-
-    // Update hero badge details
-    const maxes = {profile:15,bmi:20,bp:15,sugar:15,lifestyle:20,conditions:15};
-    const badges = document.querySelectorAll('#heroScoreBadges [data-key]');
-    badges.forEach(badge => {
-        const key = badge.dataset.key;
-        if (p.details[key] !== undefined) {
-            badge.querySelector('.det-score').textContent =
-                p.details[key] + '/' + maxes[key];
-        }
-    });
-
-    // Update vitals in hero
-    updateHeroVital('bp',  p.bp_sys + ' / ' + p.bp_dia + ' mmHg',
-        p.bp_sys >= 140 ? '#ef4444' : (p.bp_sys >= 130 ? '#f59e0b' : '#22c55e'),
-        p.bp_sys >= 140 ? 'High — Stage 2' : (p.bp_sys >= 130 ? 'High — Stage 1' : 'Normal'));
-    updateHeroVital('hr',  p.hr + ' bpm',
-        (p.hr > 100 || p.hr < 60) ? '#f59e0b' : '#22c55e',
-        (p.hr > 100) ? 'High' : (p.hr < 60 ? 'Low' : 'Normal'));
-    updateHeroVital('bs',  p.bs + ' mg/dL',
-        p.bs >= 126 ? '#ef4444' : (p.bs >= 100 ? '#f59e0b' : '#22c55e'),
-        p.bs >= 126 ? 'Diabetic Range' : (p.bs >= 100 ? 'Pre-Diabetic' : 'Normal'));
-    updateHeroVital('spo', p.spo + '% SpO₂',
-        p.spo < 95 ? '#ef4444' : '#22c55e',
-        p.spo < 90 ? 'Critical' : (p.spo < 95 ? 'Low' : 'Normal'));
-
-    // BMI
-    const bmiH = p.height / 100;
-    const bmiVal = +(p.weight / (bmiH * bmiH)).toFixed(1);
-    const bmiPct = Math.min(100, Math.max(0, Math.round(((bmiVal - 15) / 25) * 100)));
-    const bmiCats = [[18.5,'Underweight','#3b82f6'],[25,'Normal','#22c55e'],[30,'Overweight','#f59e0b'],[999,'Obese','#ef4444']];
-    const bmiMatch = bmiCats.find(c => bmiVal < c[0]);
-    const heroBmiVal = document.getElementById('heroBmiVal');
-    const heroBmiCat = document.getElementById('heroBmiCat');
-    const heroBmiMeta = document.getElementById('heroBmiMeta');
-    const needle = document.getElementById('bmiNeedle');
-    if (heroBmiVal) { heroBmiVal.textContent = bmiVal; heroBmiVal.style.color = bmiMatch[2]; }
-    if (heroBmiCat) { heroBmiCat.textContent = bmiMatch[1]; heroBmiCat.style.color = bmiMatch[2]; }
-    if (heroBmiMeta) heroBmiMeta.textContent = p.weight + ' kg • ' + p.height + ' cm';
-    if (needle) needle.style.left = bmiPct + '%';
-}
-
-function updateHeroVital(key, value, color, badge) {
-    const block = document.querySelector(`[data-vital="${key}"]`);
-    if (!block) return;
-    const valEl = block.querySelector('.vital-val');
-    const badgeEl = block.querySelector('.vital-badge');
-    if (valEl) { valEl.textContent = value; valEl.style.color = color; }
-    if (badgeEl) badgeEl.textContent = badge;
-}
 </script>
 
 @include('partials.footer')
