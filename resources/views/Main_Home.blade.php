@@ -347,8 +347,8 @@
                 <i class="fas fa-chevron-left"></i>
             </button>
 
-            <div class="doctors-slider-wrapper" id="carousel-doctors">
-                <div class="doctors-slider carousel-track">
+            <div class="doctors-slider-wrapper">
+                <div class="doctors-slider carousel-track" id="carousel-doctors">
                     @forelse(($featuredDoctors ?? collect()) as $doctor)
                         @php
                             $profileImage = $doctor->profile_image
@@ -411,8 +411,10 @@
     </div>
 </section>
 
-
-{{-- Healthcare Facilities Section --}}
+{{-- ════════════════════════════════════════════════
+     Healthcare Facilities Section — Main_Home.blade.php
+     Providers: Hospitals | Medical Centres | Labs | Pharmacies
+════════════════════════════════════════════════ --}}
 <section class="facilities-section">
     <div class="container">
         <div class="section-header-center">
@@ -421,6 +423,7 @@
             <p class="section-desc">Access quality healthcare services across Sri Lanka</p>
         </div>
 
+        {{-- ── Tabs ── --}}
         <div class="facilities-tabs">
             <button class="facility-tab active" data-tab="hospitals">
                 <i class="fas fa-hospital"></i><span>Hospitals</span>
@@ -428,298 +431,709 @@
             <button class="facility-tab" data-tab="medical-centres">
                 <i class="fas fa-clinic-medical"></i><span>Medical Centres</span>
             </button>
+            <button class="facility-tab" data-tab="laboratories">
+                <i class="fas fa-flask"></i><span>Laboratories</span>
+            </button>
+            <button class="facility-tab" data-tab="pharmacies">
+                <i class="fas fa-pills"></i><span>Pharmacies</span>
+            </button>
         </div>
 
-        {{-- Hospitals carousel --}}
+        {{-- ══ HOSPITALS ══ --}}
         <div class="carousel-wrap tab-panel active" data-tab-panel="hospitals" data-carousel="hospitals">
-            <button type="button" class="carousel-btn carousel-prev" data-carousel-prev="hospitals" aria-label="Previous">
+            <button type="button" class="carousel-btn carousel-prev"
+                    data-carousel-prev="hospitals" aria-label="Previous">
                 <i class="fas fa-chevron-left"></i>
             </button>
 
             <div class="facilities-grid carousel-track" id="carousel-hospitals">
                 @forelse(($featuredHospitals ?? collect()) as $hospital)
-                    <div class="facility-card carousel-slide" data-aos="fade-up">
+                    @php
+                        $hImg = $hospital->profile_image
+                            ? asset('storage/' . $hospital->profile_image)
+                            : asset('images/default-hospital.png');
+
+                        $hType    = ucfirst($hospital->type ?? 'Hospital');
+                        $hCity    = $hospital->city ?? ($hospital->address ?? 'Sri Lanka');
+                        $hRating  = number_format((float)($hospital->rating ?? 0), 1);
+                    @endphp
+                    <div class="facility-card carousel-slide">
                         <div class="facility-image">
-                            <img src="{{ $hospital->image_url ?? asset('images/default-hospital.png') }}" alt="Hospital">
-                            <div class="facility-type-badge">
-                                {{ ucfirst($hospital->hospital_type ?? 'Hospital') }}
-                            </div>
+                            <img src="{{ $hImg }}"
+                                 alt="{{ $hospital->name }}"
+                                 onerror="this.src='{{ asset('images/default-hospital.png') }}'">
+                            <div class="facility-type-badge">{{ $hType }}</div>
                         </div>
                         <div class="facility-content">
                             <h3>{{ $hospital->name }}</h3>
                             <p class="facility-location">
                                 <i class="fas fa-map-marker-alt"></i>
-                                {{ $hospital->address ?? 'Sri Lanka' }}
+                                {{ $hCity }}
                             </p>
                             <div class="facility-footer">
                                 <div class="facility-rating">
                                     <i class="fas fa-star"></i>
-                                    <span>{{ number_format((float)$hospital->rating, 1) }}</span>
+                                    <span>{{ $hRating }}</span>
                                 </div>
-                                <a href="{{ route('patient.hospitals.show', $hospital->id) }}" class="btn-facility-view">View Details</a>
+                                <a href="{{ route('patient.hospitals.show', $hospital->id) }}"
+                                   class="btn-facility-view">View Details</a>
                             </div>
                         </div>
                     </div>
                 @empty
-                    <p style="color:#fff;">No hospitals found.</p>
+                    <div style="padding:2rem;color:rgba(255,255,255,0.7);font-size:0.88rem;">
+                        <i class="fas fa-hospital-alt" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.5;"></i>
+                        No hospitals available at the moment.
+                    </div>
                 @endforelse
             </div>
 
-            <button type="button" class="carousel-btn carousel-next" data-carousel-next="hospitals" aria-label="Next">
+            <button type="button" class="carousel-btn carousel-next"
+                    data-carousel-next="hospitals" aria-label="Next">
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>
 
-        {{-- Medical centres carousel --}}
+        {{-- ══ MEDICAL CENTRES ══ --}}
         <div class="carousel-wrap tab-panel" data-tab-panel="medical-centres" data-carousel="medical-centres">
-            <button type="button" class="carousel-btn carousel-prev" data-carousel-prev="medical-centres" aria-label="Previous">
+            <button type="button" class="carousel-btn carousel-prev"
+                    data-carousel-prev="medical-centres" aria-label="Previous">
                 <i class="fas fa-chevron-left"></i>
             </button>
 
             <div class="facilities-grid carousel-track" id="carousel-medical-centres">
                 @forelse(($featuredMedicalCentres ?? collect()) as $mc)
-                    <div class="facility-card carousel-slide" data-aos="fade-up">
+                    @php
+                        $mcImg   = $mc->profile_image
+                            ? asset('storage/' . $mc->profile_image)
+                            : asset('images/default-medical-centre.png');
+
+                        $mcCity   = $mc->city ?? ($mc->address ?? 'Sri Lanka');
+                        $mcRating = number_format((float)($mc->rating ?? 0), 1);
+                    @endphp
+                    <div class="facility-card carousel-slide">
                         <div class="facility-image">
-                            <img src="{{ $mc->image_url ?? asset('images/default-medical-centre.png') }}" alt="Medical Centre">
+                            <img src="{{ $mcImg }}"
+                                 alt="{{ $mc->name }}"
+                                 onerror="this.src='{{ asset('images/default-medical-centre.png') }}'">
                             <div class="facility-type-badge">Medical Centre</div>
                         </div>
                         <div class="facility-content">
                             <h3>{{ $mc->name }}</h3>
                             <p class="facility-location">
                                 <i class="fas fa-map-marker-alt"></i>
-                                {{ $mc->address ?? 'Sri Lanka' }}
+                                {{ $mcCity }}
                             </p>
                             <div class="facility-footer">
                                 <div class="facility-rating">
                                     <i class="fas fa-star"></i>
-                                    <span>{{ number_format((float)$mc->rating, 1) }}</span>
+                                    <span>{{ $mcRating }}</span>
                                 </div>
-                                <a href="{{ route('patient.medical-centres.show', $mc->id) }}" class="btn-facility-view">View Details</a>
+                                <a href="{{ route('patient.medical-centres.show', $mc->id) }}"
+                                   class="btn-facility-view">View Details</a>
                             </div>
                         </div>
                     </div>
                 @empty
-                    <p style="color:#fff;">No medical centres found.</p>
+                    <div style="padding:2rem;color:rgba(255,255,255,0.7);font-size:0.88rem;">
+                        <i class="fas fa-clinic-medical" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.5;"></i>
+                        No medical centres available at the moment.
+                    </div>
                 @endforelse
             </div>
 
-            <button type="button" class="carousel-btn carousel-next" data-carousel-next="medical-centres" aria-label="Next">
+            <button type="button" class="carousel-btn carousel-next"
+                    data-carousel-next="medical-centres" aria-label="Next">
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>
 
+        {{-- ══ LABORATORIES ══ --}}
+        <div class="carousel-wrap tab-panel" data-tab-panel="laboratories" data-carousel="laboratories">
+            <button type="button" class="carousel-btn carousel-prev"
+                    data-carousel-prev="laboratories" aria-label="Previous">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+
+            <div class="facilities-grid carousel-track" id="carousel-laboratories">
+                @forelse(($featuredLaboratories ?? collect()) as $lab)
+                    @php
+                        $labImg   = $lab->profile_image
+                            ? asset('storage/' . $lab->profile_image)
+                            : asset('images/default-lab.png');
+
+                        $labCity   = $lab->city ?? ($lab->address ?? 'Sri Lanka');
+                        $labRating = number_format((float)($lab->rating ?? 0), 1);
+                    @endphp
+                    <div class="facility-card carousel-slide">
+                        <div class="facility-image">
+                            <img src="{{ $labImg }}"
+                                 alt="{{ $lab->name }}"
+                                 onerror="this.src='{{ asset('images/default-lab.png') }}'">
+                            <div class="facility-type-badge" style="background:rgba(139,92,246,0.85);">
+                                Laboratory
+                            </div>
+                        </div>
+                        <div class="facility-content">
+                            <h3>{{ $lab->name }}</h3>
+                            <p class="facility-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ $labCity }}
+                            </p>
+                            <div class="facility-footer">
+                                <div class="facility-rating">
+                                    <i class="fas fa-star"></i>
+                                    <span>{{ $labRating }}</span>
+                                </div>
+                                <a href="{{ route('patient.laboratories.show', $lab->id) }}"
+                                   class="btn-facility-view">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div style="padding:2rem;color:rgba(255,255,255,0.7);font-size:0.88rem;">
+                        <i class="fas fa-flask" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.5;"></i>
+                        No laboratories available at the moment.
+                    </div>
+                @endforelse
+            </div>
+
+            <button type="button" class="carousel-btn carousel-next"
+                    data-carousel-next="laboratories" aria-label="Next">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        {{-- ══ PHARMACIES ══ --}}
+        <div class="carousel-wrap tab-panel" data-tab-panel="pharmacies" data-carousel="pharmacies">
+            <button type="button" class="carousel-btn carousel-prev"
+                    data-carousel-prev="pharmacies" aria-label="Previous">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+
+            <div class="facilities-grid carousel-track" id="carousel-pharmacies">
+                @forelse(($featuredPharmacies ?? collect()) as $pharmacy)
+                    @php
+                        $phImg   = $pharmacy->profile_image
+                            ? asset('storage/' . $pharmacy->profile_image)
+                            : asset('images/default-pharmacy.png');
+
+                        $phCity   = $pharmacy->city ?? ($pharmacy->address ?? 'Sri Lanka');
+                        $phRating = number_format((float)($pharmacy->rating ?? 0), 1);
+                        $phDelivery = $pharmacy->delivery_available ?? false;
+                    @endphp
+                    <div class="facility-card carousel-slide">
+                        <div class="facility-image">
+                            <img src="{{ $phImg }}"
+                                 alt="{{ $pharmacy->name }}"
+                                 onerror="this.src='{{ asset('images/default-pharmacy.png') }}'">
+                            <div class="facility-type-badge" style="background:rgba(20,184,166,0.85);">
+                                Pharmacy
+                            </div>
+                            @if($phDelivery)
+                            <div style="position:absolute;top:0.6rem;left:0.6rem;
+                                        background:rgba(34,197,94,0.9);color:#fff;
+                                        font-size:0.6rem;font-weight:700;
+                                        padding:0.18rem 0.55rem;border-radius:8px;">
+                                <i class="fas fa-motorcycle"></i> Delivery
+                            </div>
+                            @endif
+                        </div>
+                        <div class="facility-content">
+                            <h3>{{ $pharmacy->name }}</h3>
+                            <p class="facility-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ $phCity }}
+                            </p>
+                            <div class="facility-footer">
+                                <div class="facility-rating">
+                                    <i class="fas fa-star"></i>
+                                    <span>{{ $phRating }}</span>
+                                </div>
+                                <a href="{{ route('patient.pharmacies.show', $pharmacy->id) }}"
+                                   class="btn-facility-view">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div style="padding:2rem;color:rgba(255,255,255,0.7);font-size:0.88rem;">
+                        <i class="fas fa-pills" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.5;"></i>
+                        No pharmacies available at the moment.
+                    </div>
+                @endforelse
+            </div>
+
+            <button type="button" class="carousel-btn carousel-next"
+                    data-carousel-next="pharmacies" aria-label="Next">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        {{-- ── View All ── --}}
         <div class="facilities-view-all">
             <a href="{{ route('patient.hospitals') }}" class="btn-view-all-facilities">
                 <span>Explore All Facilities</span>
                 <i class="fas fa-arrow-right"></i>
             </a>
         </div>
+
     </div>
 </section>
+{{-- ════════════════════════════════════════════════
+     Health Events & Campaigns Section
+     Main_Home.blade.php ලෙකින් replace කරන්න:
+     <section class="health-events-section"> ... </section>
+     + modal + script
+════════════════════════════════════════════════ --}}
 
-{{-- Health Events & Campaigns Section --}}
+<style>
+/* ── Health Events Section ── */
+.health-events-section {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #0d1b2e 0%, #1a3a5c 60%, #1f5fa6 100%);
+    position: relative; overflow: hidden;
+}
+.health-events-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(ellipse 50% 60% at 90% 20%, rgba(66,166,73,.10), transparent),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(42,100,200,.08), transparent);
+    pointer-events: none;
+}
+.health-events-section .container { position: relative; z-index: 1; }
+
+/* Header */
+.section-header-flex {
+    display: flex; align-items: flex-end;
+    justify-content: space-between; flex-wrap: wrap;
+    gap: 1rem; margin-bottom: 2.5rem;
+}
+.section-header-flex .section-label {
+    display: inline-block;
+    font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: #42a649;
+    background: rgba(66,166,73,.15); border-radius: 20px;
+    padding: .2rem .75rem; margin-bottom: .5rem;
+}
+.section-header-flex .section-title {
+    font-size: 1.9rem; font-weight: 800; color: #fff;
+    margin: 0 0 .3rem; line-height: 1.2;
+}
+.section-header-flex .section-desc {
+    font-size: .88rem; color: rgba(255,255,255,.65); margin: 0;
+}
+.he-view-all {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .8rem; font-weight: 700; color: rgba(255,255,255,.75);
+    text-decoration: none; border: 1.5px solid rgba(255,255,255,.2);
+    padding: .45rem 1rem; border-radius: 20px;
+    transition: all .2s; white-space: nowrap; flex-shrink: 0;
+}
+.he-view-all:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,.1); }
+
+/* Grid */
+.events-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 1.3rem;
+}
+
+/* Card */
+.event-card-modern {
+    background: rgba(255,255,255,.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 18px; overflow: hidden;
+    transition: all .25s; cursor: pointer;
+    display: flex; flex-direction: column;
+}
+.event-card-modern:hover {
+    transform: translateY(-5px);
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.22);
+    box-shadow: 0 16px 40px rgba(0,0,0,.3);
+}
+
+/* Card image */
+.event-card-image {
+    position: relative; overflow: hidden;
+    height: 185px; background: #1a3a5c;
+}
+.event-card-image img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .35s;
+}
+.event-card-modern:hover .event-card-image img { transform: scale(1.06); }
+
+/* Date badge overlay */
+.event-date-badge-overlay {
+    position: absolute; top: .8rem; left: .8rem;
+    border-radius: 10px; padding: .35rem .55rem;
+    text-align: center; min-width: 46px;
+    backdrop-filter: blur(8px);
+}
+.badge-day   { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1.1; }
+.badge-month { font-size: .6rem; font-weight: 700; color: rgba(255,255,255,.85);
+               text-transform: uppercase; letter-spacing: .05em; }
+.date-badge-blue   { background: rgba(37,99,235,.75); }
+.date-badge-green  { background: rgba(22,163,74,.75); }
+.date-badge-purple { background: rgba(124,58,237,.75); }
+.date-badge-red    { background: rgba(220,38,38,.75); }
+.date-badge-amber  { background: rgba(217,119,6,.75); }
+.date-badge-gray   { background: rgba(75,85,99,.75); }
+
+/* Type badge overlay */
+.event-type-badge {
+    position: absolute;  right: .75rem;
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .65rem; font-weight: 700;
+    padding: .22rem .65rem; border-radius: 20px;
+    backdrop-filter: blur(8px);
+    max-width: calc(100% - 1.5rem);
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 2;
+}
+.event-type-blue   { background: rgba(37,99,235,.8);  color: #fff; }
+.event-type-green  { background: rgba(22,163,74,.8);  color: #fff; }
+.event-type-purple { background: rgba(124,58,237,.8); color: #fff; }
+.event-type-red    { background: rgba(220,38,38,.85); color: #fff;
+                     animation: emergPulse 1.5s ease-in-out infinite; }
+.event-type-amber  { background: rgba(217,119,6,.8);  color: #fff; }
+.event-type-gray   { background: rgba(75,85,99,.8);   color: #fff; }
+@keyframes emergPulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+
+/* Card content */
+.event-card-content {
+    padding: 1.1rem 1.2rem 1.2rem;
+    display: flex; flex-direction: column; flex: 1;
+}
+.event-title-modern {
+    font-size: .95rem; font-weight: 700; color: #fff;
+    margin: 0 0 .5rem; line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.event-description-modern {
+    font-size: .8rem; color: rgba(255,255,255,.65);
+    line-height: 1.65; margin: 0 0 .8rem;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    flex: 1;
+}
+.event-info-modern { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .9rem; }
+.event-info-item {
+    display: flex; align-items: center; gap: .3rem;
+    font-size: .73rem; color: rgba(255,255,255,.6);
+}
+.event-info-item i { color: #42a649; font-size: .68rem; }
+
+/* CTA button */
+.btn-register-modern {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: linear-gradient(135deg, #42a649, #2d7a32);
+    color: #fff; border: none; padding: .55rem 1.1rem;
+    border-radius: 20px; font-size: .8rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: all .2s; align-self: flex-start;
+    box-shadow: 0 3px 10px rgba(66,166,73,.35);
+}
+.btn-register-modern:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(66,166,73,.45); }
+
+/* Emergency card highlight */
+.event-card-modern.is-emergency {
+    border-color: rgba(220,38,38,.4);
+    background: rgba(220,38,38,.07);
+}
+
+/* Empty state */
+.he-empty {
+    grid-column: 1/-1; text-align: center;
+    padding: 4rem 1rem; color: rgba(255,255,255,.35);
+}
+.he-empty i { font-size: 3rem; display: block; margin-bottom: 1rem; }
+.he-empty h4 { font-size: 1rem; font-weight: 700; color: rgba(255,255,255,.5); margin-bottom: .4rem; }
+.he-empty p  { font-size: .85rem; margin: 0; }
+
+/* ── Event Detail Modal ── */
+.he-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 9999;
+    align-items: center; justify-content: center;
+    padding: 1rem;
+}
+.he-modal-overlay.open { display: flex; }
+.he-modal-box {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 600px; overflow: hidden;
+    box-shadow: 0 25px 70px rgba(0,0,0,.3);
+    animation: mPop .25s ease;
+    max-height: 90vh; overflow-y: auto;
+    position: relative;
+}
+@keyframes mPop {
+    from { opacity:0; transform:scale(.93) translateY(16px); }
+    to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.hem-close {
+    position: absolute; top: .9rem; right: .9rem; z-index: 10;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(0,0,0,.1); border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: .85rem; color: #fff;
+    transition: background .2s;
+}
+.hem-close:hover { background: rgba(0,0,0,.25); }
+.hem-img { width: 100%; max-height: 240px; object-fit: cover; display: none; }
+.hem-body { padding: 1.4rem 1.5rem 1.8rem; }
+.hem-type {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .7rem; font-weight: 700; padding: .22rem .75rem;
+    border-radius: 20px; margin-bottom: .85rem;
+}
+.hem-title { font-size: 1.2rem; font-weight: 800; color: #1a3a5c; margin-bottom: .5rem; line-height: 1.3; }
+.hem-meta  { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+.hem-meta-item { display: flex; align-items: center; gap: .35rem; font-size: .8rem; color: #6b7a8d; }
+.hem-meta-item i { color: #42a649; font-size: .75rem; }
+.hem-content { font-size: .88rem; color: #4a5568; line-height: 1.8; white-space: pre-line; }
+
+@media (max-width: 768px) {
+    .events-grid-modern { grid-template-columns: 1fr; }
+    .section-header-flex { flex-direction: column; align-items: flex-start; }
+}
+</style>
+
+{{-- ══ SECTION ══ --}}
 <section class="health-events-section">
     <div class="container">
+
         <div class="section-header-flex">
             <div>
                 <span class="section-label">What's Happening</span>
                 <h2 class="section-title">Health Events & Campaigns</h2>
                 <p class="section-desc">Join health camps and awareness programs near you</p>
             </div>
+            {{-- Optional "view all" if you have a dedicated announcements page --}}
+            {{-- <a href="#" class="he-view-all">View All <i class="fas fa-arrow-right"></i></a> --}}
         </div>
 
         <div class="events-grid-modern">
-            @php
-                $announcements = $activeAnnouncements ?? [];
-            @endphp
+        @php
+            // ── Type config — DB values: health_camp | awareness | special_offer | new_service | emergency | general
+            $typeConfig = [
+                'health_camp'   => ['icon'=>'fa-hospital-user',       'label'=>'Health Camp',   'badge'=>'date-badge-green',  'typeCls'=>'event-type-green',  'color'=>'#16a34a'],
+                'awareness'     => ['icon'=>'fa-info-circle',          'label'=>'Awareness',     'badge'=>'date-badge-blue',   'typeCls'=>'event-type-blue',   'color'=>'#2563eb'],
+                'special_offer' => ['icon'=>'fa-tag',                  'label'=>'Special Offer', 'badge'=>'date-badge-purple', 'typeCls'=>'event-type-purple', 'color'=>'#7c3aed'],
+                'new_service'   => ['icon'=>'fa-star',                 'label'=>'New Service',   'badge'=>'date-badge-amber',  'typeCls'=>'event-type-amber',  'color'=>'#d97706'],
+                'emergency'     => ['icon'=>'fa-exclamation-triangle', 'label'=>'Emergency',     'badge'=>'date-badge-red',    'typeCls'=>'event-type-red',    'color'=>'#dc2626'],
+                'general'       => ['icon'=>'fa-bullhorn',             'label'=>'General',       'badge'=>'date-badge-gray',   'typeCls'=>'event-type-gray',   'color'=>'#4b5563'],
+            ];
 
-            @if(count($announcements) > 0)
-                @foreach($announcements as $announcement)
-                    @if($announcement && is_object($announcement))
-                        @php
-                            // (keeping original logic unchanged)
-                            $announcementTitle = $announcement->title ?? 'Untitled Event';
-                            $announcementContent = $announcement->content ?? 'No description available';
-                            $announcementType = $announcement->announcement_type ?? 'general';
-                            $imagePath = $announcement->image_path ?? null;
-                            $startDate = $announcement->start_date ?? null;
-                            $endDate = $announcement->end_date ?? null;
-                            $publisherType = $announcement->publisher_type ?? 'admin';
+            // Placeholder SVG colors (no external service)
+            $svgColors = [
+                'health_camp'   => ['bg'=>'#dcfce7','fg'=>'#16a34a','icon'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16'],
+                'awareness'     => ['bg'=>'#dbeafe','fg'=>'#2563eb','icon'=>'M13 16h-1v-4h-1m1-4h.01'],
+                'special_offer' => ['bg'=>'#ede9fe','fg'=>'#7c3aed','icon'=>'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z'],
+                'new_service'   => ['bg'=>'#fef3c7','fg'=>'#d97706','icon'=>'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'],
+                'emergency'     => ['bg'=>'#fee2e2','fg'=>'#dc2626','icon'=>'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
+                'general'       => ['bg'=>'#f3f4f6','fg'=>'#4b5563','icon'=>'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z'],
+            ];
+        @endphp
 
-                            if ($startDate) {
-                                try {
-                                    $displayDate = \Carbon\Carbon::parse($startDate);
-                                } catch (\Exception $e) {
-                                    $displayDate = now();
-                                }
-                            } else {
-                                $displayDate = now();
-                            }
+        @forelse($activeAnnouncements ?? [] as $ann)
+        @php
+            $type    = $ann->announcement_type ?? 'general';
+            $cfg     = $typeConfig[$type] ?? $typeConfig['general'];
+            $svg     = $svgColors[$type]  ?? $svgColors['general'];
 
-                            $badgeColorClass = 'date-badge-blue';
-                            if (in_array($announcementType, ['healthcamp', 'awareness'])) {
-                                $badgeColorClass = 'date-badge-blue';
-                            } elseif (in_array($announcementType, ['specialoffer', 'newservice'])) {
-                                $badgeColorClass = 'date-badge-purple';
-                            } elseif ($announcementType === 'emergency') {
-                                $badgeColorClass = 'date-badge-red';
-                            }
+            $title   = $ann->title   ?? 'Untitled Event';
+            $content = $ann->content ?? '';
+            $imgPath = $ann->image_path ?? null;
 
-                            $typeBadgeClass = 'event-type-blue';
-                            if (in_array($announcementType, ['healthcamp', 'awareness'])) {
-                                $typeBadgeClass = 'event-type-blue';
-                            } elseif (in_array($announcementType, ['specialoffer', 'newservice'])) {
-                                $typeBadgeClass = 'event-type-purple';
-                            } elseif ($announcementType === 'emergency') {
-                                $typeBadgeClass = 'event-type-red';
-                            } elseif ($announcementType === 'general') {
-                                $typeBadgeClass = 'event-type-gray';
-                            }
+            $startDate = $ann->start_date
+                ? \Carbon\Carbon::parse($ann->start_date)
+                : \Carbon\Carbon::parse($ann->created_at);
+            $endDate   = $ann->end_date
+                ? \Carbon\Carbon::parse($ann->end_date)
+                : null;
 
-                            $placeholderColors = [
-                                'healthcamp' => '10b981',
-                                'awareness' => '3b82f6',
-                                'specialoffer' => '8b5cf6',
-                                'emergency' => 'ef4444'
-                            ];
-                            $placeholderColor = $placeholderColors[$announcementType] ?? '4299e1';
+            // Image src
+            if ($imgPath) {
+                $imgSrc = asset('storage/'.$imgPath);
+            } else {
+                // Inline SVG data URI — no external service needed
+                $imgSrc = null;
+            }
 
-                            $typeDisplayName = ucwords(str_replace('_', ' ', $announcementType));
+            // Escape for data attributes
+            $safeTitle   = htmlspecialchars($title, ENT_QUOTES);
+            $safeContent = htmlspecialchars($content, ENT_QUOTES);
+            $safeImg     = $imgPath ? asset('storage/'.$imgPath) : '';
+            $safeDateStr = $startDate->format('d M Y');
+            $safeType    = $cfg['label'];
+            $safeDateRange = $endDate
+                ? $startDate->format('d M').' – '.$endDate->format('d M Y')
+                : $startDate->format('d M Y');
+        @endphp
 
-                            $modalData = [
-                                'title' => str_replace("'", "\\'", $announcementTitle),
-                                'content' => str_replace("'", "\\'", $announcementContent),
-                                'image' => $imagePath ? asset('storage/' . $imagePath) : '',
-                                'date' => $displayDate->format('M d, Y'),
-                                'type' => $typeDisplayName
-                            ];
-                        @endphp
+        <div class="event-card-modern {{ $type === 'emergency' ? 'is-emergency' : '' }}"
+             onclick="heOpenModal(this)"
+             data-title="{{ $safeTitle }}"
+             data-content="{{ $safeContent }}"
+             data-image="{{ $safeImg }}"
+             data-date="{{ $safeDateRange }}"
+             data-type="{{ $safeType }}"
+             data-type-key="{{ $type }}"
+             data-icon="{{ $cfg['icon'] }}"
+             data-color="{{ $cfg['color'] }}">
 
-                        <div class="event-card-modern" data-aos="fade-up" data-aos-delay="{{ $loop->index * 100 }}">
+            {{-- Image --}}
+            <div class="event-card-image">
+                @if($imgSrc)
+                    <img src="{{ $imgSrc }}" alt="{{ $title }}"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    {{-- fallback --}}
+                    <div style="display:none;position:absolute;inset:0;background:{{ $svg['bg'] }};
+                                align-items:center;justify-content:center;">
+                        <i class="fas {{ $cfg['icon'] }}" style="font-size:3rem;color:{{ $cfg['color'] }};opacity:.35;"></i>
+                    </div>
+                @else
+                    <div style="position:absolute;inset:0;background:{{ $svg['bg'] }};
+                                display:flex;align-items:center;justify-content:center;">
+                        <i class="fas {{ $cfg['icon'] }}" style="font-size:3.5rem;color:{{ $cfg['color'] }};opacity:.4;"></i>
+                    </div>
+                @endif
 
-                            {{-- Card Image --}}
-                            <div class="event-card-image">
-                                @if($imagePath)
-                                    <img src="{{ asset('storage/' . $imagePath) }}"
-                                         alt="{{ $announcementTitle }}"
-                                         onerror="this.src='https://via.placeholder.com/400x250/{{ $placeholderColor }}/ffffff?text=Health+Event'">
-                                @else
-                                    <img src="https://via.placeholder.com/400x250/{{ $placeholderColor }}/ffffff?text={{ urlencode(substr($announcementTitle, 0, 20)) }}"
-                                         alt="{{ $announcementTitle }}">
-                                @endif
+                {{-- Date badge --}}
+                <div class="event-date-badge-overlay {{ $cfg['badge'] }}">
+                    <div class="badge-day">{{ $startDate->format('d') }}</div>
+                    <div class="badge-month">{{ strtoupper($startDate->format('M')) }}</div>
+                </div>
 
-                                <div class="event-date-badge-overlay {{ $badgeColorClass }}">
-                                    <div class="badge-day">{{ $displayDate->format('d') }}</div>
-                                    <div class="badge-month">{{ strtoupper($displayDate->format('M')) }}</div>
-                                </div>
+                {{-- Type badge --}}
+                <div class="event-type-badge {{ $cfg['typeCls'] }}">
+                    <i class="fas {{ $cfg['icon'] }}"></i>
+                    <span>{{ $cfg['label'] }}</span>
+                </div>
+            </div>
 
-                                {{-- Event Type Badge --}}
-                                <div class="event-type-badge {{ $typeBadgeClass }}">
-                                    @if($announcementType === 'healthcamp')
-                                        <i class="fas fa-heartbeat"></i>
-                                    @elseif($announcementType === 'awareness')
-                                        <i class="fas fa-info-circle"></i>
-                                    @elseif($announcementType === 'specialoffer')
-                                        <i class="fas fa-tag"></i>
-                                    @elseif($announcementType === 'newservice')
-                                        <i class="fas fa-star"></i>
-                                    @elseif($announcementType === 'emergency')
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    @else
-                                        <i class="fas fa-bullhorn"></i>
-                                    @endif
-                                    <span>{{ $typeDisplayName }}</span>
-                                </div>
-                            </div>
+            {{-- Content --}}
+            <div class="event-card-content">
+                <h3 class="event-title-modern">{{ $title }}</h3>
+                <p class="event-description-modern">
+                    {{ \Illuminate\Support\Str::limit($content, 120) }}
+                </p>
 
-                            {{-- Card Content --}}
-                            <div class="event-card-content">
-                                <h3 class="event-title-modern">{{ $announcementTitle }}</h3>
-                                <p class="event-description-modern">
-                                    {{ strlen($announcementContent) > 100 ? substr($announcementContent, 0, 100) . '...' : $announcementContent }}
-                                </p>
-
-                                <div class="event-info-modern">
-                                    @if($startDate && $endDate)
-                                        <div class="event-info-item">
-                                            <i class="fas fa-calendar-alt"></i>
-                                            <span>
-                                                {{ \Carbon\Carbon::parse($startDate)->format('M d') }} -
-                                                {{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }}
-                                            </span>
-                                        </div>
-                                    @elseif($startDate)
-                                        <div class="event-info-item">
-                                            <i class="fas fa-calendar-alt"></i>
-                                            <span>{{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }}</span>
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <button type="button"
-                                        class="btn-register-modern"
-                                        data-title="{{ $modalData['title'] }}"
-                                        data-content="{{ $modalData['content'] }}"
-                                        data-image="{{ $modalData['image'] }}"
-                                        data-date="{{ $modalData['date'] }}"
-                                        data-type="{{ $modalData['type'] }}"
-                                        onclick="openEventModal(this)">
-                                    View Details
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
-                        </div>
+                <div class="event-info-modern">
+                    <div class="event-info-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>{{ $safeDateRange }}</span>
+                    </div>
+                    @if($ann->publisher_type && $ann->publisher_type !== 'admin')
+                    <div class="event-info-item">
+                        <i class="fas fa-building"></i>
+                        <span>{{ ucfirst(str_replace('_',' ',$ann->publisher_type)) }}</span>
+                    </div>
                     @endif
-                @endforeach
-            @else
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-calendar-times fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
-                    <h5 class="text-muted">No Events Available</h5>
-                    <p class="text-muted">No health events or campaigns are currently scheduled.</p>
-                </div>
-            @endif
-        </div>
-    </div>
-</section>
-
-{{-- Event Details Modal --}}
-<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content modern-modal">
-            <div class="modal-header">
-                <h5 class="modal-title" id="eventModalLabel">
-                    <i class="fas fa-bullhorn"></i>
-                    <span id="modalTitle">Event Details</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="modalImageContainer" style="display: none; margin-bottom: 1.5rem;">
-                    <img id="modalImage" src="" alt="Event" style="width: 100%; border-radius: 12px; max-height: 350px; object-fit: cover;">
                 </div>
 
-                {{-- Event Meta Info --}}
-                <div class="modal-event-meta" style="margin-bottom: 1.5rem;">
-                    <div id="modalTypeContainer" style="margin-bottom: 1rem;">
-                        <span id="modalTypeBadge" class="badge" style="font-size: 0.85rem; padding: 0.5rem 1rem;"></span>
-                    </div>
-
-                    <div style="color: #64748b; font-size: 0.95rem; margin-bottom: 0.5rem;">
-                        <i class="fas fa-calendar" style="width: 20px;"></i>
-                        <span id="modalDateText"></span>
-                    </div>
-                </div>
-
-                <div id="modalContent" style="line-height: 1.8; color: #475569; white-space: pre-wrap;"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> Close
+                <button type="button" class="btn-register-modern">
+                    View Details <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
+        @empty
+        <div class="he-empty">
+            <i class="fas fa-calendar-times"></i>
+            <h4>No Events Available</h4>
+            <p>No health events or campaigns are currently scheduled.</p>
+        </div>
+        @endforelse
+
+        </div>{{-- /events-grid-modern --}}
+    </div>
+</section>
+
+{{-- ══ EVENT DETAIL MODAL ══ --}}
+<div class="he-modal-overlay" id="heModal">
+    <div class="he-modal-box">
+        <button class="hem-close" onclick="heCloseModal()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <img id="hemImg" class="hem-img" src="" alt="Event">
+
+        <div class="hem-body">
+            <span id="hemType" class="hem-type"></span>
+            <h2 id="hemTitle" class="hem-title"></h2>
+            <div class="hem-meta">
+                <div class="hem-meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="hemDate"></span>
+                </div>
+            </div>
+            <div id="hemContent" class="hem-content"></div>
+        </div>
     </div>
 </div>
+
+<script>
+/* ── Type badge colors ── */
+const HE_TYPE_COLORS = {
+    'health_camp'   : { bg:'#dcfce7', color:'#16a34a' },
+    'awareness'     : { bg:'#dbeafe', color:'#2563eb' },
+    'special_offer' : { bg:'#ede9fe', color:'#7c3aed' },
+    'new_service'   : { bg:'#fef3c7', color:'#d97706' },
+    'emergency'     : { bg:'#fee2e2', color:'#dc2626' },
+    'general'       : { bg:'#f3f4f6', color:'#4b5563' },
+};
+
+function heOpenModal(card) {
+    const title   = card.dataset.title   || 'Event Details';
+    const content = card.dataset.content || '';
+    const img     = card.dataset.image   || '';
+    const date    = card.dataset.date    || '';
+    const type    = card.dataset.type    || '';
+    const typeKey = card.dataset.typeKey || 'general';
+    const icon    = card.dataset.icon    || 'fa-bullhorn';
+    const color   = HE_TYPE_COLORS[typeKey] || HE_TYPE_COLORS['general'];
+
+    document.getElementById('hemTitle').textContent   = title;
+    document.getElementById('hemContent').textContent = content;
+    document.getElementById('hemDate').textContent    = date;
+
+    // Type badge
+    const typeBadge = document.getElementById('hemType');
+    typeBadge.innerHTML = `<i class="fas ${icon}" style="font-size:.75rem;"></i> ${type}`;
+    typeBadge.style.background = color.bg;
+    typeBadge.style.color      = color.color;
+
+    // Image
+    const hemImg = document.getElementById('hemImg');
+    if (img && img.trim() !== '') {
+        hemImg.src   = img;
+        hemImg.style.display = 'block';
+        hemImg.onerror = () => { hemImg.style.display = 'none'; };
+    } else {
+        hemImg.style.display = 'none';
+    }
+
+    document.getElementById('heModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function heCloseModal() {
+    document.getElementById('heModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Close on backdrop click
+document.getElementById('heModal').addEventListener('click', function(e) {
+    if (e.target === this) heCloseModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') heCloseModal(); });
+</script>
 
 {{-- Scripts --}}
 <script>

@@ -399,9 +399,9 @@
                 @foreach($hospitals as $hospital)
                     <div class="hospital-card">
                         <div class="hospital-image">
-                           <img src="{{ $hospital->image_url }}"
-                            alt="{{ $hospital->name }}"
-                            onerror="this.src='{{ asset('images/default-hospital.png') }}'">
+                           <img src="{{ $hospital->profile_image ? asset('storage/' . $hospital->profile_image) : asset('images/default-hospital.png') }}"
+                                alt="{{ $hospital->name }}"
+                                onerror="this.src='{{ asset('images/default-hospital.png') }}'">
 
                             @if($hospital->status == 'approved')
                                 <div class="hospital-badge">

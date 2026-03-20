@@ -330,10 +330,10 @@
         <div class="row justify-content-center text-center">
             <div class="col-lg-8">
                 {{-- Logo --}}
-                <img src="{{ $hospital->image_url }}"
-                     alt="{{ $hospital->name }}"
-                     class="hosp-avatar"
-                     onerror="this.src='{{ asset('images/default-hospital.png') }}'">
+                <img src="{{ $hospital->profile_image ? asset('storage/'.$hospital->profile_image) : asset('images/default-hospital.png') }}"
+                    alt="{{ $hospital->name }}"
+                    class="hosp-avatar"
+                    onerror="this.src='{{ asset('images/default-hospital.png') }}'">
 
                 {{-- Name + Pills --}}
                 <h1 class="hosp-hero-name">

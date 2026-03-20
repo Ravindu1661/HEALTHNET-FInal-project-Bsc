@@ -537,65 +537,81 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
 
     //MAIN HOME PAGE - ලොග් උනාම පිටුව
-    Route::get('/Main-page', function () {
-        // Featured Doctors (approved + active user)
-        $featuredDoctors = Doctor::query()
-            ->with([
-                'user',
-                'workplaces' => function ($q) {
-                    $q->where('status', 'approved')->with(['hospital', 'medicalCentre']);
-                }
-            ])
-            ->where('status', 'approved')
-            ->whereHas('user', fn($q) => $q->where('status', 'active'))
-            ->orderByDesc('rating')
-            ->orderByDesc('created_at')
-            ->limit(12)
-            ->get();
 
-        // Featured Hospitals (approved)
-        $featuredHospitals = Hospital::query()
-            ->where('status', 'approved')
-            ->orderByDesc('rating')
-            ->orderBy('name')
-            ->limit(12)
-            ->get();
+Route::get('/Main-page', function () {
 
-        // Featured Medical Centres (approved) - used when tab is Medical Centres
-        $featuredMedicalCentres = MedicalCentre::query()
-            ->where('status', 'approved')
-            ->orderByDesc('rating')
-            ->orderBy('name')
-            ->limit(12)
-            ->get();
+    // Featured Doctors
+    $featuredDoctors = \App\Models\Doctor::query()
+        ->with([
+            'user',
+            'workplaces' => function ($q) {
+                $q->where('status', 'approved')->with(['hospital', 'medicalCentre']);
+            }
+        ])
+        ->where('status', 'approved')
+        ->whereHas('user', fn($q) => $q->where('status', 'active'))
+        ->orderByDesc('rating')
+        ->orderByDesc('created_at')
+        ->limit(12)
+        ->get();
 
+    // Featured Hospitals
+    $featuredHospitals = \App\Models\Hospital::query()
+        ->where('status', 'approved')
+        ->orderByDesc('rating')
+        ->orderBy('name')
+        ->limit(12)
+        ->get();
 
-               // ✅ NEW: Load Active Announcements from Database
+    // Featured Medical Centres
+    $featuredMedicalCentres = \App\Models\MedicalCentre::query()
+        ->where('status', 'approved')
+        ->orderByDesc('rating')
+        ->orderBy('name')
+        ->limit(12)
+        ->get();
+
+    // ✅ Featured Laboratories
+    $featuredLaboratories = \App\Models\Laboratory::query()
+        ->where('status', 'approved')
+        ->orderByDesc('rating')
+        ->orderBy('name')
+        ->limit(12)
+        ->get();
+
+    // ✅ Featured Pharmacies
+    $featuredPharmacies = \App\Models\Pharmacy::query()
+        ->where('status', 'approved')
+        ->orderByDesc('rating')
+        ->orderBy('name')
+        ->limit(12)
+        ->get();
+
+    // Active Announcements
     $activeAnnouncements = \App\Models\Announcement::query()
-        ->where('is_active', 1) // Only active announcements
-        ->where(function($q) {
-            // Check if start_date is null or in the past/today
+        ->where('is_active', 1)
+        ->where(function ($q) {
             $q->whereNull('start_date')
               ->orWhere('start_date', '<=', now()->toDateString());
         })
-        ->where(function($q) {
-            // Check if end_date is null or in the future/today
+        ->where(function ($q) {
             $q->whereNull('end_date')
               ->orWhere('end_date', '>=', now()->toDateString());
         })
         ->orderByDesc('created_at')
-        ->limit(6) // Show only 6 announcements
+        ->limit(6)
         ->get();
 
-        return view('Main_Home', compact(
+    return view('Main_Home', compact(
         'featuredDoctors',
         'featuredHospitals',
         'featuredMedicalCentres',
-         'activeAnnouncements'
+        'featuredLaboratories',   // ✅ NEW
+        'featuredPharmacies',     // ✅ NEW
+        'activeAnnouncements'
     ));
-    })->name('patient.dashboard');
 
-
+})->name('patient.dashboard');
     //FIND DOCTORS PAGE
     // Route::get('/patient/Doctors', function () {
     //     return view('patient.Find-doctors');

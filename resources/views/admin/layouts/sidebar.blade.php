@@ -79,10 +79,10 @@
             <i class="fas fa-clipboard-list"></i>
             <span>System Logs</span>
         </a>
-        {{-- <a href="{{ route('admin.announcements.index') }}" class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
+        <a href="{{ route('admin.announcements.index') }}" class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
             <i class="fas fa-bullhorn"></i>
             <span>Announcements</span>
-        </a> --}}
+        </a>
         <a href="{{ route('admin.settings') }}" class="nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
