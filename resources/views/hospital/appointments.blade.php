@@ -491,6 +491,8 @@
                         <th>Doctor</th>
                         <th>Date & Time</th>
                         <th class="hide-md">Phone</th>
+                        <th>Fee</th>
+                        <th>Payment</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -698,7 +700,7 @@ function renderTable(data) {
     if (!items.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="no-label" style="padding:0;">
+                <td colspan="10" class="no-label" style="padding:0;">
                     <div class="empty-state">
                         <i class="fas fa-calendar-times"></i>
                         <h6>No appointments found</h6>
@@ -720,6 +722,30 @@ function renderTable(data) {
             cancelled: ['cancelled', 'fa-times-circle',   'Cancelled'],
         };
         const [cls, icon, label] = statusMap[apt.status] ?? ['pending','fa-clock','Pending'];
+
+        // Fee display
+        const fee = parseFloat(apt.consultation_fee || 0);
+        const adv = parseFloat(apt.advance_payment  || 0);
+        const bal = fee - adv;
+        let feeHtml = '';
+        if (apt.payment_status === 'partial') {
+            feeHtml = `
+                <div style="font-size:.78rem;font-weight:700;">LKR ${fee.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
+                <div style="font-size:.68rem;color:#27ae60;"><i class="fas fa-check-circle"></i> Adv: LKR ${adv.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
+                <div style="font-size:.68rem;color:#e74c3c;"><i class="fas fa-hourglass-half"></i> Bal: LKR ${bal.toLocaleString('en-US',{minimumFractionDigits:2})}</div>`;
+        } else {
+            feeHtml = `<span style="font-size:.78rem;font-weight:700;">LKR ${fee.toLocaleString('en-US',{minimumFractionDigits:2})}</span>`;
+        }
+
+        // Payment badge
+        let payHtml = '';
+        if (apt.payment_status === 'paid') {
+            payHtml = `<span class="status-pill" style="background:#d1e7dd;color:#0f5132;font-size:.68rem;padding:.2rem .55rem;"><i class="fas fa-check-circle"></i> Paid</span>`;
+        } else if (apt.payment_status === 'partial') {
+            payHtml = `<span class="status-pill" style="background:#fff3cd;color:#856404;font-size:.68rem;padding:.2rem .55rem;"><i class="fas fa-adjust"></i> Advance Paid</span>`;
+        } else {
+            payHtml = `<span class="status-pill" style="background:#f8d7da;color:#842029;font-size:.68rem;padding:.2rem .55rem;"><i class="fas fa-times-circle"></i> Unpaid</span>`;
+        }
 
         // Action buttons based on status
         let actions = `
@@ -786,6 +812,8 @@ function renderTable(data) {
                 </div>
             </td>
             <td data-label="Phone" class="hide-md">${apt.patient_phone ?? '—'}</td>
+            <td data-label="Fee">${feeHtml}</td>
+            <td data-label="Payment">${payHtml}</td>
             <td data-label="Status">
                 <span class="status-pill ${cls}">
                     <i class="fas ${icon}"></i>${label}
@@ -876,6 +904,36 @@ function viewApt(id) {
         };
         const [sbg, scolor, sicon] = statusMap[apt.status] ?? ['#f0f4f8','#555','fa-question'];
 
+        const fee = parseFloat(apt.consultation_fee || 0);
+        const adv = parseFloat(apt.advance_payment  || 0);
+        const bal = fee - adv;
+
+        let paymentRows = '';
+        if (apt.payment_status === 'partial') {
+            paymentRows = `
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-check-circle me-2" style="color:#27ae60;"></i>Advance Paid</span>
+                <span class="detail-value" style="color:#27ae60;font-weight:700;">
+                    LKR ${adv.toLocaleString('en-US',{minimumFractionDigits:2})}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-hourglass-half me-2" style="color:#e74c3c;"></i>Balance Due</span>
+                <span class="detail-value" style="color:#e74c3c;font-weight:700;">
+                    LKR ${bal.toLocaleString('en-US',{minimumFractionDigits:2})}
+                </span>
+            </div>`;
+        }
+
+        let payBadge = '';
+        if (apt.payment_status === 'paid') {
+            payBadge = `<span style="background:#d1e7dd;color:#0f5132;padding:.25rem .6rem;border-radius:6px;font-size:.78rem;font-weight:700;">✔ Paid</span>`;
+        } else if (apt.payment_status === 'partial') {
+            payBadge = `<span style="background:#fff3cd;color:#856404;padding:.25rem .6rem;border-radius:6px;font-size:.78rem;font-weight:700;">⟳ Advance Paid</span>`;
+        } else {
+            payBadge = `<span style="background:#f8d7da;color:#842029;padding:.25rem .6rem;border-radius:6px;font-size:.78rem;font-weight:700;">✕ Unpaid</span>`;
+        }
+
         document.getElementById('viewModalBody').innerHTML = `
             <div style="background:linear-gradient(135deg,#f0f6ff,#e8f0fb);
                         border-radius:12px;padding:1rem;margin-bottom:1rem;
@@ -920,6 +978,17 @@ function viewApt(id) {
                 <span class="detail-label"><i class="fas fa-clock me-2"></i>Time</span>
                 <span class="detail-value">${timeStr}</span>
             </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-money-bill-wave me-2"></i>Consultation Fee</span>
+                <span class="detail-value" style="font-weight:700;">
+                    LKR ${fee.toLocaleString('en-US',{minimumFractionDigits:2})}
+                </span>
+            </div>
+            ${paymentRows}
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-credit-card me-2"></i>Payment Status</span>
+                <span class="detail-value">${payBadge}</span>
+            </div>
             ${apt.notes ? `
             <div class="detail-row">
                 <span class="detail-label"><i class="fas fa-notes-medical me-2"></i>Notes</span>
@@ -932,7 +1001,6 @@ function viewApt(id) {
             </div>` : ''}`;
     });
 }
-
 // ════════════════════════════════════════════════
 // CONFIRM APPOINTMENT
 // ════════════════════════════════════════════════

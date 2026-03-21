@@ -252,54 +252,64 @@ class HospitalDashboardController extends Controller
         return view('hospital.appointments', compact('hospital'));
     }
 
-    public function appointmentsData(Request $request)
-    {
-        $hospital = $this->getHospital();
-        if (!$hospital) {
-            return response()->json(['data' => [], 'total' => 0]);
-        }
-
-        $query = DB::table('appointments as a')
-            ->join('patients as p', 'a.patient_id', '=', 'p.id')
-            ->join('doctors as d', 'a.doctor_id', '=', 'd.id')
-            ->where('a.workplace_type', 'hospital')
-            ->where('a.workplace_id', $hospital->id)
-            ->select(
-                'a.*',
-                DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_name"),
-                'p.phone as patient_phone',
-                DB::raw("CONCAT('Dr. ', d.first_name, ' ', d.last_name) as doctor_name"),
-                'd.specialization'
-            );
-
-        // Filters
-        if ($request->filled('status')) {
-            $query->where('a.status', $request->status);
-        }
-        if ($request->filled('date')) {
-            $query->whereDate('a.appointment_date', $request->date);
-        }
-        if ($request->filled('search')) {
-            $search = '%' . $request->search . '%';
-            $query->where(function ($q) use ($search) {
-                $q->where(DB::raw("CONCAT(p.first_name,' ',p.last_name)"), 'like', $search)
-                  ->orWhere('a.appointment_number', 'like', $search)
-                  ->orWhere('p.phone', 'like', $search);
-            });
-        }
-        if ($request->filled('doctor_id')) {
-            $query->where('a.doctor_id', $request->doctor_id);
-        }
-
-        $total        = $query->count();
-        $perPage      = $request->per_page ?? 15;
-        $appointments = $query
-            ->orderByDesc('a.appointment_date')
-            ->orderBy('a.appointment_time')
-            ->paginate($perPage);
-
-        return response()->json($appointments);
+   public function appointmentsData(Request $request)
+{
+    $hospital = $this->getHospital();
+    if (!$hospital) {
+        return response()->json(['data' => [], 'total' => 0]);
     }
+
+    $query = DB::table('appointments as a')
+        ->join('patients as p', 'a.patient_id', '=', 'p.id')
+        ->join('doctors as d', 'a.doctor_id', '=', 'd.id')
+        ->where('a.workplace_type', 'hospital')
+        ->where('a.workplace_id', $hospital->id)
+        ->select(
+            'a.id',
+            'a.appointment_number',
+            'a.appointment_date',
+            'a.appointment_time',
+            'a.status',
+            'a.payment_status',           // ✅ ADD
+            'a.consultation_fee',         // ✅ ADD
+            'a.advance_payment',          // ✅ ADD
+            'a.reason',
+            'a.notes',
+            'a.cancellation_reason',
+            DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_name"),
+            'p.phone as patient_phone',
+            DB::raw("CONCAT('Dr. ', d.first_name, ' ', d.last_name) as doctor_name"),
+            'd.specialization'
+        );
+
+    // Filters
+    if ($request->filled('status')) {
+        $query->where('a.status', $request->status);
+    }
+    if ($request->filled('date')) {
+        $query->whereDate('a.appointment_date', $request->date);
+    }
+    if ($request->filled('search')) {
+        $search = '%' . $request->search . '%';
+        $query->where(function ($q) use ($search) {
+            $q->where(DB::raw("CONCAT(p.first_name,' ',p.last_name)"), 'like', $search)
+              ->orWhere('a.appointment_number', 'like', $search)
+              ->orWhere('p.phone', 'like', $search);
+        });
+    }
+    if ($request->filled('doctor_id')) {
+        $query->where('a.doctor_id', $request->doctor_id);
+    }
+
+    $total        = $query->count();
+    $perPage      = $request->per_page ?? 15;
+    $appointments = $query
+        ->orderByDesc('a.appointment_date')
+        ->orderBy('a.appointment_time')
+        ->paginate($perPage);
+
+    return response()->json($appointments);
+}
 
     public function confirmAppointment($id)
     {

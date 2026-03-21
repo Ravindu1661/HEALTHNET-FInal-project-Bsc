@@ -386,5 +386,6 @@ document.addEventListener('keydown', e => {
 </script>
 
 @stack('scripts')
+@include('../../partials.chatbot-widget')
 </body>
 </html>

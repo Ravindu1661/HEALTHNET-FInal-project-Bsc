@@ -434,5 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 @stack('scripts')
+@include('../../partials.chatbot-widget')
 </body>
 </html>

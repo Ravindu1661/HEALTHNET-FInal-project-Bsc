@@ -168,13 +168,29 @@
                             @endif
                         </td>
 
+                        {{-- Payment column --}}
                         <td>
                             @if($appointment->payment_status === 'paid')
                                 <span class="badge bg-success">Paid</span>
                             @elseif($appointment->payment_status === 'partial')
-                                <span class="badge bg-warning text-dark">Partial</span>
+                                <span class="badge bg-warning text-dark">Advance Paid</span>
                             @else
                                 <span class="badge bg-danger">Unpaid</span>
+                            @endif
+                        </td>
+
+                        {{-- Fee column --}}
+                        <td>
+                            @if($appointment->payment_status === 'partial')
+                                <div><strong>LKR {{ number_format((float)$appointment->consultation_fee, 2) }}</strong></div>
+                                <small class="text-success d-block">
+                                    <i class="fas fa-check-circle"></i> Adv: LKR {{ number_format((float)($appointment->advance_payment ?? 0), 2) }}
+                                </small>
+                                <small class="text-danger d-block">
+                                    <i class="fas fa-hourglass-half"></i> Bal: LKR {{ number_format((float)(($appointment->consultation_fee ?? 0) - ($appointment->advance_payment ?? 0)), 2) }}
+                                </small>
+                            @else
+                                <strong>LKR {{ number_format((float)$appointment->consultation_fee, 2) }}</strong>
                             @endif
                         </td>
 

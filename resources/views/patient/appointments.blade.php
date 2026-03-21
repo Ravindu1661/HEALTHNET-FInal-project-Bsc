@@ -801,7 +801,11 @@
                 'partial' => 'fas fa-adjust',
                 default   => 'fas fa-times',
             };
-            $paymentLabel = ucfirst($appointment->payment_status ?? 'Unpaid');
+           $paymentLabel = match($appointment->payment_status) {
+                'paid'    => 'Fully Paid',
+                'partial' => 'Advance Paid (50%)',
+                default   => 'Unpaid',
+            };
 
             $canCancel = in_array($appointment->status, ['pending', 'confirmed']);
             $canPay    = in_array($appointment->status, ['pending', 'confirmed'])
@@ -877,62 +881,69 @@
             </div>
 
             {{-- Card Footer --}}
-            <div class="appt-card-footer">
-                {{-- Fee --}}
-                <div class="appt-fee-box">
-                    <span class="appt-fee-label">
-                        <i class="fas fa-receipt me-1"></i> Consultation Fee:
-                    </span>
-                    <span class="appt-fee-amount">
-                        Rs. {{ number_format($appointment->consultation_fee ?? 0, 2) }}
-                    </span>
-                    @if($appointment->payment_status === 'partial' && $appointment->advance_payment)
-                    <span style="font-size:0.78rem;color:#856404;margin-left:0.5rem;">
-                        (Paid: Rs. {{ number_format($appointment->advance_payment, 2) }})
-                    </span>
-                    @endif
-                </div>
+<div class="appt-card-footer">
+    {{-- Fee --}}
+    <div class="appt-fee-box" style="flex-wrap:wrap;gap:0.3rem;">
+        <span class="appt-fee-label">
+            <i class="fas fa-receipt me-1"></i> Consultation Fee:
+        </span>
+        <span class="appt-fee-amount">
+            Rs. {{ number_format($appointment->consultation_fee ?? 0, 2) }}
+        </span>
+        @if($appointment->payment_status === 'partial' && $appointment->advance_payment)
+        <span style="font-size:0.78rem;color:#27ae60;font-weight:600;margin-left:0.3rem;">
+            &bull; <i class="fas fa-check-circle"></i> Advance: Rs. {{ number_format($appointment->advance_payment, 2) }}
+        </span>
+        <span style="font-size:0.78rem;color:#e74c3c;font-weight:600;margin-left:0.3rem;">
+            &bull; <i class="fas fa-hourglass-half"></i> Balance: Rs. {{ number_format(($appointment->consultation_fee ?? 0) - $appointment->advance_payment, 2) }}
+        </span>
+        @elseif($appointment->payment_status === 'paid')
+        <span style="font-size:0.78rem;color:#155724;font-weight:600;margin-left:0.3rem;">
+            &bull; <i class="fas fa-check-double"></i> Fully Paid
+        </span>
+        @endif
+    </div>
 
-                {{-- Action Buttons --}}
-                <div class="appt-action-btns">
-                    {{-- Pay Now --}}
-                    @if($canPay)
-                    <a href="{{ route('patient.appointments.payment', $appointment->id) }}"
-                       class="btn-appt-pay">
-                        <i class="fas fa-credit-card"></i>
-                        Pay Now
-                    </a>
-                    @endif
+    {{-- Action Buttons --}}
+    <div class="appt-action-btns">
+        @if($canPay)
+        <a href="{{ route('patient.appointments.payment', $appointment->id) }}"
+           class="btn-appt-pay">
+            <i class="fas fa-credit-card"></i>
+            @if($appointment->payment_status === 'partial')
+                Pay Balance
+            @else
+                Pay Now
+            @endif
+        </a>
+        @endif
 
-                    {{-- View Doctor Profile --}}
-                    @if($doctor)
-                    <a href="{{ route('patient.doctors.show', $doctor->id) }}"
-                       class="btn-appt-view">
-                        <i class="fas fa-user-md"></i>
-                        Doctor Profile
-                    </a>
-                    @endif
+        @if($doctor)
+        <a href="{{ route('patient.doctors.show', $doctor->id) }}"
+           class="btn-appt-view">
+            <i class="fas fa-user-md"></i>
+            Doctor Profile
+        </a>
+        @endif
 
-                    {{-- Leave Review --}}
-                    @if($canReview)
-                    <a href="#reviewModal{{ $appointment->id }}"
-                       class="btn-appt-review"
-                       onclick="openReviewModal({{ $appointment->id }})">
-                        <i class="fas fa-star"></i>
-                        Review
-                    </a>
-                    @endif
+        @if($canReview)
+        <a href="#reviewModal{{ $appointment->id }}"
+           class="btn-appt-review"
+           onclick="openReviewModal({{ $appointment->id }})">
+            <i class="fas fa-star"></i>
+            Review
+        </a>
+        @endif
 
-                    {{-- Cancel --}}
-                    @if($canCancel)
-                    <button class="btn-appt-cancel"
-                            onclick="openCancelModal({{ $appointment->id }}, '{{ $doctor->first_name ?? 'Doctor' }}', '{{ $apptDate->format('d M Y') }}')">
-                        <i class="fas fa-times"></i>
-                        Cancel
-                    </button>
-                    @endif
-                </div>
-            </div>
+        @if($canCancel)
+        <button class="btn-appt-cancel"
+                onclick="openCancelModal({{ $appointment->id }}, '{{ $doctor->first_name ?? 'Doctor' }}', '{{ $apptDate->format('d M Y') }}')">
+            <i class="fas fa-times"></i>
+            Cancel
+        </button>
+        @endif
+    </div>
+</div>
         </div>
         @empty
         <div class="appt-empty">

@@ -454,10 +454,29 @@
                         <td style="font-weight:700;font-size:.8rem;white-space:nowrap;">
                             {{ $apt->consultation_fee ? 'LKR '.number_format($apt->consultation_fee,2) : '–' }}
                         </td>
+                       {{-- Payment column --}}
                         <td>
-                            <span class="pay-badge {{ $apt->payment_status ?? 'unpaid' }}">
-                                {{ ucfirst($apt->payment_status ?? 'unpaid') }}
-                            </span>
+                            @if($apt->payment_status === 'paid')
+                                <span class="pay-badge paid">
+                                    <i class="fas fa-check-circle" style="font-size:.6rem;"></i> Paid
+                                </span>
+                            @elseif($apt->payment_status === 'partial')
+                                <span class="pay-badge partial">
+                                    <i class="fas fa-adjust" style="font-size:.6rem;"></i> Advance Paid
+                                </span>
+                                @if($apt->advance_payment)
+                                <div style="font-size:.67rem;color:#664d03;margin-top:.2rem;line-height:1.4;">
+                                    Adv: LKR {{ number_format($apt->advance_payment, 2) }}<br>
+                                    <span style="color:#58151c;">
+                                        Bal: LKR {{ number_format(($apt->consultation_fee ?? 0) - $apt->advance_payment, 2) }}
+                                    </span>
+                                </div>
+                                @endif
+                            @else
+                                <span class="pay-badge unpaid">
+                                    <i class="fas fa-times-circle" style="font-size:.6rem;"></i> Unpaid
+                                </span>
+                            @endif
                         </td>
                         <td>
                             <span class="apt-badge {{ $apt->status }}">
@@ -715,7 +734,7 @@ const CSRF = '{{ csrf_token() }}';
 // ══════════════════════════════════════════
 // DETAIL MODAL — reads from hidden data islands
 // ══════════════════════════════════════════
-const PAY_LABELS = { unpaid:'Unpaid', partial:'Partial', paid:'Paid' };
+const PAY_LABELS = { unpaid: 'Unpaid', partial: 'Advance Paid', paid: 'Paid' };
 const PAY_BG     = { unpaid:'#f8d7da', partial:'#fff3cd', paid:'#d1e7dd' };
 const PAY_COLOR  = { unpaid:'#58151c', partial:'#664d03', paid:'#0a3622' };
 const ST_BG      = { pending:'#fff3cd', confirmed:'#cfe2ff', completed:'#d1e7dd', cancelled:'#f8d7da', noshow:'#e2e3e5' };
@@ -727,6 +746,33 @@ function openDetailModal(id) {
     const d = el.dataset;
 
     document.getElementById('dm-num').textContent = d.num;
+
+    const fee = parseFloat((d.fee || '0').replace(/[^0-9.]/g, ''));
+    const adv = parseFloat((d.advance || '0').replace(/[^0-9.]/g, ''));
+    const bal = fee - adv;
+
+    const payLabel = { unpaid: 'Unpaid', partial: 'Advance Paid', paid: 'Paid' };
+    const payBgMap = { unpaid: '#f8d7da', partial: '#fff3cd', paid: '#d1e7dd' };
+    const payClrMap = { unpaid: '#58151c', partial: '#664d03', paid: '#0a3622' };
+
+    let advanceRow = '';
+    let balanceRow = '';
+    if (d.payment === 'partial') {
+        advanceRow = `
+        <div class="apt-detail-item">
+            <label>Advance Paid</label>
+            <span style="color:#e67e22;font-weight:800;">
+                LKR ${adv.toLocaleString('en-US',{minimumFractionDigits:2})}
+            </span>
+        </div>`;
+        balanceRow = `
+        <div class="apt-detail-item">
+            <label>Balance Due</label>
+            <span style="color:#e74c3c;font-weight:800;">
+                LKR ${bal.toLocaleString('en-US',{minimumFractionDigits:2})}
+            </span>
+        </div>`;
+    }
 
     document.getElementById('dm-body').innerHTML = `
         <div class="apt-person-card">
@@ -756,38 +802,22 @@ function openDetailModal(id) {
                         ${d.statusLabel}
                     </span></span>
                 </div>
-                <div class="apt-detail-item"><label>Consultation Fee</label>
+                <div class="apt-detail-item">
+                    <label>Consultation Fee</label>
                     <span style="font-weight:800;color:var(--mc-primary);">${d.fee}</span>
                 </div>
-                <div class="apt-detail-item"><label>Advance Paid</label><span>${d.advance}</span></div>
-                <div class="apt-detail-item"><label>Payment Status</label>
-                    <span><span class="pay-badge ${d.payment}">${PAY_LABELS[d.payment] ?? d.payment}</span></span>
-                </div>
-            </div>
-        </div>
-        ${d.reason ? `<div class="apt-detail-section">
-            <h6><i class="fas fa-comment-medical"></i> Reason for Visit</h6>
-            <p style="font-size:.82rem;background:#f8fbff;border-radius:9px;padding:.75rem;
-                      border:1px solid var(--border);margin:0;">${d.reason}</p>
-        </div>` : ''}
-        ${d.notes ? `<div class="apt-detail-section">
-            <h6><i class="fas fa-sticky-note"></i> Notes</h6>
-            <p style="font-size:.82rem;background:#f8fbff;border-radius:9px;padding:.75rem;
-                      border:1px solid var(--border);margin:0;">${d.notes}</p>
-        </div>` : ''}
-        ${d.cancelReason ? `<div class="apt-detail-section">
-            <h6 style="color:#e74c3c;border-bottom-color:#fdecea;">
-                <i class="fas fa-times-circle"></i> Cancellation Reason
-            </h6>
-            <p style="font-size:.82rem;color:#58151c;background:#fdecea;border-radius:9px;
-                      padding:.75rem;border:1px solid #f5c6cb;margin:0;">${d.cancelReason}</p>
-        </div>` : ''}
-        <div class="apt-detail-section">
-            <h6><i class="fas fa-info-circle"></i> Record Info</h6>
-            <div class="apt-detail-grid">
-                <div class="apt-detail-item"><label>Created At</label><span>${d.created}</span></div>
-                <div class="apt-detail-item"><label>Appointment No</label>
-                    <span style="font-family:monospace;color:var(--mc-primary);">${d.num}</span>
+                ${advanceRow}
+                ${balanceRow}
+                <div class="apt-detail-item">
+                    <label>Payment Status</label>
+                    <span>
+                        <span style="background:${payBgMap[d.payment]||'#e2e3e5'};
+                                     color:${payClrMap[d.payment]||'#383d41'};
+                                     padding:.2rem .5rem;border-radius:6px;
+                                     font-size:.72rem;font-weight:700;">
+                            ${payLabel[d.payment] ?? d.payment}
+                        </span>
+                    </span>
                 </div>
             </div>
         </div>`;

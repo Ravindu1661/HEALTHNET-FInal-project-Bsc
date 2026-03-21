@@ -220,20 +220,37 @@
                     </div>
                     <div style="font-size:.68rem;color:#aaa">{{ ucfirst($apt->workplace_type) }}</div>
                 </td>
-                <td>
-                    <span style="font-weight:700;color:#198754;font-size:.83rem">
-                        LKR {{ number_format($apt->consultation_fee, 2) }}
-                    </span>
-                </td>
-                <td>
-                    @php
-                        $pColors = ['unpaid'=>'warning','partial'=>'info','paid'=>'success'];
-                        $pc = $pColors[$apt->payment_status] ?? 'secondary';
-                    @endphp
-                    <span class="badge bg-{{ $pc }}" style="font-size:.65rem">
-                        {{ ucfirst($apt->payment_status) }}
-                    </span>
-                </td>
+               {{-- Fee column --}}
+<td>
+    @if($apt->payment_status === 'partial')
+        <div style="font-weight:700;color:#198754;font-size:.83rem">
+            LKR {{ number_format($apt->consultation_fee ?? 0, 2) }}
+        </div>
+        <div style="font-size:.7rem;color:#27ae60;">
+            <i class="fas fa-check-circle"></i> Adv: LKR {{ number_format($apt->advance_payment ?? 0, 2) }}
+        </div>
+        <div style="font-size:.7rem;color:#dc3545;">
+            <i class="fas fa-hourglass-half"></i> Bal: LKR {{ number_format(($apt->consultation_fee ?? 0) - ($apt->advance_payment ?? 0), 2) }}
+        </div>
+    @else
+        <span style="font-weight:700;color:#198754;font-size:.83rem">
+            LKR {{ number_format($apt->consultation_fee ?? 0, 2) }}
+        </span>
+    @endif
+</td>
+
+{{-- Payment column --}}
+<td>
+    @php
+        $pColors  = ['unpaid' => 'warning', 'partial' => 'warning', 'paid' => 'success'];
+        $pLabels  = ['unpaid' => 'Unpaid',  'partial' => 'Advance Paid', 'paid' => 'Paid'];
+        $pc = $pColors[$apt->payment_status] ?? 'secondary';
+        $pl = $pLabels[$apt->payment_status] ?? ucfirst($apt->payment_status ?? 'unpaid');
+    @endphp
+    <span class="badge bg-{{ $pc }} text-dark" style="font-size:.65rem">
+        {{ $pl }}
+    </span>
+</td>
                 <td>
                     <span class="sp {{ $apt->status }}">
                         @if($apt->status === 'pending')   <i class="fas fa-clock"></i>

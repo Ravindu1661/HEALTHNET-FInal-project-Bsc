@@ -372,9 +372,9 @@
                                         </div>
                                         <div style="font-size:.75rem;color:#888;margin-top:.1rem">{{ $authUser->email }}</div>
                                         @if($authPatient?->nic)
-                                        <div style="font-size:.72rem;color:#00796b;margin-top:.15rem">
-                                            <i class="fas fa-id-card me-1"></i>{{ $authPatient->nic }}
-                                        </div>
+                                        {{-- <div style="font-size:.72rem;color:#00796b;margin-top:.15rem">
+                                           <i class="fas fa-id-card me-1"></i>{{ $authPatient->nic }}
+                                        </div> --}}
                                         @endif
                                     </div>
                                 </li>
